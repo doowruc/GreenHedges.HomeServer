@@ -54,6 +54,58 @@ public sealed class MergedViewTests : IAsyncLifetime
         Assert.Equal([21.5, 21.0], (await QueryAsync("SELECT 'x', TemperatureC, Humidity FROM dbo.Indoor ORDER BY TimeUtc")).Select(r => r.Item2));
     }
 
+    [SqlServerFact]
+    public async Task Hourly_follows_each_write_with_the_same_source_order()
+    {
+        await History(HistoryPublisher.WeathercloudSource, [Obs(H0.AddMinutes(10), 30.0, pressure: 1003.0, indoor: 21.0), Obs(H0.AddMinutes(20), 31.0, pressure: 1005.0, indoor: 22.0), Obs(H0.AddHours(1).AddMinutes(10), 32.0)]);
+        var before = await HourlyAsync();
+        Assert.Equal([("weathercloud", 30.5, 2), ("weathercloud", 32.0, 1)], before.Select(h => (h.Source, h.Temperature, h.Rows)));
+        Assert.Equal((1004.0, 1003.0, 1005.0, 21.5), (before[0].Pressure, before[0].PressureMin, before[0].PressureMax, before[0].Indoor));
+
+        // The radio arrives for the first hour: it takes over that hour's outdoor readings; pressure and indoor stay.
+        await _store.WriteAsync([Minute(H0.AddMinutes(30), 10.0), Minute(H0.AddMinutes(31), 12.0)], "minutes-v1", 1, Now, CancellationToken.None);
+        var after = await HourlyAsync();
+        Assert.Equal([("radio", 11.0, 2), ("weathercloud", 32.0, 1)], after.Select(h => (h.Source, h.Temperature, h.Rows)));
+        Assert.Equal((1004.0, 21.5), (after[0].Pressure, after[0].Indoor));
+    }
+
+    [SqlServerFact]
+    public async Task Upgrading_to_the_hourly_table_fills_it_from_the_data_already_there()
+    {
+        await _store.WriteAsync([Minute(H0, 10.0)], "minutes-v1", 1, Now, CancellationToken.None);
+        await History(HistoryPublisher.WeathercloudSource, [Obs(H0.AddHours(-3), 5.0)]);
+        await ExecuteAsync("DROP TABLE dbo.Hourly; UPDATE dbo.SchemaVersion SET Version = 3;");
+
+        await _store.InitialiseAsync(CancellationToken.None);
+
+        Assert.Equal([("weathercloud", 5.0, 1), ("radio", 10.0, 1)], (await HourlyAsync()).Select(h => (h.Source, h.Temperature, h.Rows)));
+    }
+
+    private async Task<List<(string Source, double Temperature, int Rows, double Pressure, double PressureMin, double PressureMax, double Indoor)>> HourlyAsync()
+    {
+        await using var connection = new SqlConnection(_sql!.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(
+            "SELECT Source, TemperatureAvgC, OutdoorRows, PressureHpa, PressureMinHpa, PressureMaxHpa, IndoorTemperatureC FROM dbo.Hourly ORDER BY HourUtc", connection);
+        await using var reader = await command.ExecuteReaderAsync();
+        var rows = new List<(string, double, int, double, double, double, double)>();
+        while (await reader.ReadAsync())
+        {
+            double D(int i) => reader.IsDBNull(i) ? double.NaN : reader.GetDouble(i);
+            rows.Add((reader.GetString(0), D(1), reader.GetInt32(2), D(3), D(4), D(5), D(6)));
+        }
+
+        return rows;
+    }
+
+    private async Task ExecuteAsync(string sql)
+    {
+        await using var connection = new SqlConnection(_sql!.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new SqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
+    }
+
     private Task History(string source, IReadOnlyList<HistoryObservation> rows) =>
         _store.ReplaceHistoryAsync(source, DateTime.MinValue, DateTime.MaxValue, rows, source + "-test", 1, Now, CancellationToken.None);
 

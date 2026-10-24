@@ -104,7 +104,74 @@ public sealed class SummaryStore(string connectionString)
         FROM dbo.HistoryObservations
         WHERE Source = 'weathercloud' AND (IndoorTemperatureC IS NOT NULL OR IndoorHumidity IS NOT NULL);
         """,
+        // v4: the views' data by UTC hour, for long ranges (five years is 44,000 rows instead of a million). Kept
+        // current by the writes below, in their transactions; filled from everything when this migration runs.
+        // WindX/WindY are speed-weighted direction sums, so intervals of hours can still get a vector-mean direction.
+        """
+        CREATE TABLE dbo.Hourly (
+            HourUtc              datetime2(0) NOT NULL CONSTRAINT PK_Hourly PRIMARY KEY,
+            Source               varchar(20)  NULL,
+            OutdoorRows          int          NOT NULL,
+            TemperatureAvgC      float        NULL,
+            TemperatureMinC      float        NULL,
+            TemperatureMaxC      float        NULL,
+            HumidityAvg          float        NULL,
+            HumidityMin          float        NULL,
+            HumidityMax          float        NULL,
+            DewPointC            float        NULL,
+            WindAvgMs            float        NULL,
+            WindMaxMs            float        NULL,
+            GustMaxMs            float        NULL,
+            WindX                float        NULL,
+            WindY                float        NULL,
+            RainMm               float        NULL,
+            PressureHpa          float        NULL,
+            PressureMinHpa       float        NULL,
+            PressureMaxHpa       float        NULL,
+            IndoorTemperatureC   float        NULL,
+            IndoorTemperatureMin float        NULL,
+            IndoorTemperatureMax float        NULL,
+            IndoorHumidity       float        NULL
+        );
+        """,
     ];
+
+    /// <summary>Recomputes <c>dbo.Hourly</c> for the hours from <c>@from</c> (inclusive) to <c>@to</c> (exclusive), from the views.</summary>
+    private const string RefreshHourlySql =
+        """
+        DELETE dbo.Hourly WHERE HourUtc >= @from AND HourUtc < @to;
+        WITH o AS (
+            SELECT DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0) AS h, MIN(Source) AS Source, COUNT(*) AS OutdoorRows,
+                   AVG(TemperatureAvgC) AS TemperatureAvgC, MIN(TemperatureMinC) AS TemperatureMinC, MAX(TemperatureMaxC) AS TemperatureMaxC,
+                   AVG(HumidityAvg) AS HumidityAvg, MIN(HumidityAvg) AS HumidityMin, MAX(HumidityAvg) AS HumidityMax,
+                   AVG(DewPointC) AS DewPointC, AVG(WindAvgMs) AS WindAvgMs, MAX(WindAvgMs) AS WindMaxMs, MAX(GustMaxMs) AS GustMaxMs,
+                   SUM(WindAvgMs * SIN(RADIANS(WindDirDeg))) AS WindX, SUM(WindAvgMs * COS(RADIANS(WindDirDeg))) AS WindY,
+                   SUM(RainMm) AS RainMm
+            FROM dbo.Outdoor WHERE TimeUtc >= @from AND TimeUtc < @to
+            GROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0)),
+        p AS (
+            SELECT DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0) AS h, AVG(PressureHpa) AS PressureHpa,
+                   MIN(PressureHpa) AS PressureMinHpa, MAX(PressureHpa) AS PressureMaxHpa
+            FROM dbo.Pressure WHERE TimeUtc >= @from AND TimeUtc < @to
+            GROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0)),
+        i AS (
+            SELECT DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0) AS h, AVG(TemperatureC) AS IndoorTemperatureC,
+                   MIN(TemperatureC) AS IndoorTemperatureMin, MAX(TemperatureC) AS IndoorTemperatureMax, AVG(Humidity) AS IndoorHumidity
+            FROM dbo.Indoor WHERE TimeUtc >= @from AND TimeUtc < @to
+            GROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0))
+        INSERT dbo.Hourly
+        SELECT COALESCE(o.h, p.h, i.h), o.Source, ISNULL(o.OutdoorRows, 0),
+               o.TemperatureAvgC, o.TemperatureMinC, o.TemperatureMaxC, o.HumidityAvg, o.HumidityMin, o.HumidityMax, o.DewPointC,
+               o.WindAvgMs, o.WindMaxMs, o.GustMaxMs, o.WindX, o.WindY, o.RainMm,
+               p.PressureHpa, p.PressureMinHpa, p.PressureMaxHpa,
+               i.IndoorTemperatureC, i.IndoorTemperatureMin, i.IndoorTemperatureMax, i.IndoorHumidity
+        FROM o
+        FULL JOIN p ON p.h = o.h
+        FULL JOIN i ON i.h = COALESCE(o.h, p.h);
+        """;
+
+    /// <summary>The migration that creates <c>dbo.Hourly</c>: after it, the table is filled from everything already there.</summary>
+    private const int HourlyMigration = 4;
 
     public static int SchemaVersion => Migrations.Length;
 
@@ -138,6 +205,11 @@ public sealed class SummaryStore(string connectionString)
             foreach (var batch in Migrations[next].Split("\nGO\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 await ExecuteAsync(connection, transaction, batch, cancellationToken);
+            }
+
+            if (next + 1 == HourlyMigration)
+            {
+                await RefreshHourlyAsync(connection, transaction, DateTime.MinValue, DateTime.MaxValue, cancellationToken);
             }
 
             await ExecuteAsync(connection, transaction, $"UPDATE dbo.SchemaVersion SET Version = {next + 1};", cancellationToken);
@@ -204,6 +276,13 @@ public sealed class SummaryStore(string connectionString)
                 cancellationToken);
         }
 
+        if (minutes.Count > 0)
+        {
+            var first = minutes.Min(m => m.MinuteUtc);
+            var last = minutes.Max(m => m.MinuteUtc);
+            await RefreshHourlyAsync(connection, transaction, HourOf(first), HourOf(last).AddHours(1), cancellationToken);
+        }
+
         await SetPositionAsync(connection, transaction, target, lastMessageId, now, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
@@ -253,6 +332,8 @@ public sealed class SummaryStore(string connectionString)
             await bulk.WriteToServerAsync(ToTable(source, observations), cancellationToken);
         }
 
+        // History rows are intervals ending at TimeUtc, so an hour's rows can end exactly on the next hour.
+        await RefreshHourlyAsync(connection, transaction, HourOf(fromUtc), HourOf(toUtc).AddHours(1), cancellationToken);
         await SetPositionAsync(connection, transaction, target, position, now, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
@@ -326,9 +407,22 @@ public sealed class SummaryStore(string connectionString)
     private static async Task ExecuteAsync(
         SqlConnection connection, SqlTransaction? transaction, string sql, CancellationToken cancellationToken)
     {
-        await using var command = new SqlCommand(sql, connection, transaction);
+        await using var command = new SqlCommand(sql, connection, transaction) { CommandTimeout = 600 };
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
+
+    private static async Task RefreshHourlyAsync(
+        SqlConnection connection, SqlTransaction transaction, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken)
+    {
+        // Filling everything (the migration) takes a while on a small server: allow it.
+        await using var command = new SqlCommand(RefreshHourlySql, connection, transaction) { CommandTimeout = 600 };
+        command.Parameters.Add("@from", SqlDbType.DateTime2).Value = fromUtc;
+        command.Parameters.Add("@to", SqlDbType.DateTime2).Value = toUtc;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static DateTime HourOf(DateTime utc) =>
+        utc == DateTime.MaxValue ? utc.AddHours(-1) : new DateTime(utc.Ticks - utc.Ticks % TimeSpan.TicksPerHour, DateTimeKind.Utc);
 
     private static DataTable ToTable(IReadOnlyList<MinuteSummary> minutes)
     {
