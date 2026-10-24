@@ -1,0 +1,18 @@
+# The Weather collector's minute summaries: database Weather on the host's SQL Server, read-only login grafana
+# (deploy/grafana/setup-database.sh, which also puts its password in /etc/grafana/grafana.env).
+apiVersion: 1
+
+datasources:
+  - name: Weather
+    uid: weather
+    type: mssql
+    url: 127.0.0.1:1433
+    user: grafana
+    jsonData:
+      database: Weather
+      encrypt: "true"
+      tlsSkipVerify: true      # SQL Server's own self-signed certificate, on the same machine
+      maxOpenConns: 5
+    secureJsonData:
+      password: $WEATHER_DB_PASSWORD
+    editable: false

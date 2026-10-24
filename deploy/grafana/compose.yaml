@@ -1,0 +1,50 @@
+# Grafana: dashboards for the home server's data (so far the Weather collector's), at https://grafana.<home domain>
+# on the tailnet, through Caddy. Installed on the host in /opt/grafana with its provisioning and dashboards; settings in
+# /etc/grafana/grafana.env. See deploy/grafana/HOST-SETUP.md. Install or update with deploy/grafana/deploy-grafana.sh.
+#
+# Host networking so Grafana reaches SQL Server on the host's 127.0.0.1:1433; it listens on 127.0.0.1:3000 only, and
+# publishes no ports (Docker's would bypass ufw). Data sources and dashboards come from this repository (read-only in
+# Grafana); /var/lib/grafana holds only its own database (users, preferences), which needs no backup.
+
+name: grafana
+
+services:
+  grafana:
+    # Pinned. grafana/grafana is the open-source edition (grafana/grafana-oss is no longer updated).
+    image: grafana/grafana:13.2.4
+    restart: unless-stopped
+    network_mode: host
+    user: "472"                          # grafana in the image; owns /var/lib/grafana
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - /etc/grafana/grafana.env         # GF_SERVER_ROOT_URL, GF_SECURITY_ADMIN_PASSWORD, WEATHER_DB_PASSWORD
+    environment:
+      GF_SERVER_HTTP_ADDR: 127.0.0.1
+      GF_SERVER_HTTP_PORT: "3000"
+      # Anyone on the tailnet may view (the tailnet is the access boundary, as for Nightscout); editing needs the admin.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_DATE_FORMATS_DEFAULT_TIMEZONE: Europe/London
+      # Nothing phoned home or downloaded at startup.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      - /var/lib/grafana:/var/lib/grafana
+      - /opt/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /opt/grafana/dashboards:/etc/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
