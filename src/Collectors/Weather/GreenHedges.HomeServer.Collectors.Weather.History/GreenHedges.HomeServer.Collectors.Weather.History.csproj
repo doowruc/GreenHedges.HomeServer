@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="GreenHedges.HomeServer.Collectors.Weather.History.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GreenHedges.HomeServer.Collectors.Weather.Storage\GreenHedges.HomeServer.Collectors.Weather.Storage.csproj" />
+  </ItemGroup>
+
+</Project>

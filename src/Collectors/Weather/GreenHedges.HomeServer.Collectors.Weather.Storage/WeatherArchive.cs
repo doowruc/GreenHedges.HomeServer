@@ -14,6 +14,7 @@ public sealed class WeatherArchive
 {
     // Fixed-width UTC text sorts in time order and is easy to read in the sqlite3 shell.
     private const string TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'";
+    private const string DateFormat = "yyyy-MM-dd";
 
     // Append-only. Each entry upgrades the schema by one version (tracked in PRAGMA user_version).
     private static readonly string[] Migrations =
@@ -59,6 +60,40 @@ public sealed class WeatherArchive
             is_station     INTEGER NOT NULL,
             PRIMARY KEY (model, device_id)
         );
+        """,
+        // v2: Weather Underground's history of the station (the console's uploads): each day's API response as
+        // received, and a typed copy of its observations (rebuildable from the responses). Metric units, as requested.
+        """
+        CREATE TABLE wunderground_days (
+            local_date        TEXT    PRIMARY KEY,
+            fetched_at_utc    TEXT    NOT NULL,
+            observation_count INTEGER NOT NULL,
+            raw_json          TEXT    NOT NULL
+        );
+        CREATE INDEX wunderground_days_by_fetch ON wunderground_days (fetched_at_utc);
+
+        CREATE TABLE wunderground_observations (
+            epoch             INTEGER PRIMARY KEY,
+            obs_time_utc      TEXT    NOT NULL,
+            local_date        TEXT    NOT NULL REFERENCES wunderground_days (local_date),
+            temp_avg_c        REAL,
+            temp_high_c       REAL,
+            temp_low_c        REAL,
+            humidity_avg      REAL,
+            humidity_high     REAL,
+            humidity_low      REAL,
+            dewpt_avg_c       REAL,
+            wind_avg_kmh      REAL,
+            wind_high_kmh     REAL,
+            gust_high_kmh     REAL,
+            wind_dir_avg_deg  REAL,
+            pressure_max_hpa  REAL,
+            pressure_min_hpa  REAL,
+            precip_rate_mmh   REAL,
+            precip_total_mm   REAL,
+            qc_status         INTEGER
+        );
+        CREATE INDEX wunderground_observations_by_date ON wunderground_observations (local_date, epoch);
         """,
     ];
 
@@ -267,6 +302,158 @@ public sealed class WeatherArchive
         return readings;
     }
 
+    /// <summary>When each Weather Underground day was last fetched, by local date.</summary>
+    public async Task<IReadOnlyDictionary<DateOnly, DateTimeOffset>> GetWundergroundDaysAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await _database.OpenAsync(cancellationToken);
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT local_date, fetched_at_utc FROM wunderground_days;";
+
+        var days = new Dictionary<DateOnly, DateTimeOffset>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            days[DateOnly.ParseExact(reader.GetString(0), DateFormat, CultureInfo.InvariantCulture)] = Parse(reader.GetString(1));
+        }
+
+        return days;
+    }
+
+    /// <summary>
+    /// Stores one Weather Underground day: the response as received and its observations, replacing any earlier fetch of
+    /// the same day, in one transaction.
+    /// </summary>
+    public async Task SaveWundergroundDayAsync(
+        DateOnly localDate, DateTimeOffset fetchedAtUtc, string rawJson, IReadOnlyList<WundergroundObservation> observations,
+        CancellationToken cancellationToken)
+    {
+        var date = localDate.ToString(DateFormat, CultureInfo.InvariantCulture);
+        await using var connection = await _database.OpenAsync(cancellationToken);
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var command = connection.CreateCommand())
+        {
+            command.Transaction = transaction;
+            command.CommandText =
+                """
+                DELETE FROM wunderground_observations WHERE local_date = $date;
+                INSERT INTO wunderground_days (local_date, fetched_at_utc, observation_count, raw_json)
+                VALUES ($date, $fetched, $count, $raw)
+                ON CONFLICT (local_date) DO UPDATE SET
+                    fetched_at_utc = excluded.fetched_at_utc,
+                    observation_count = excluded.observation_count,
+                    raw_json = excluded.raw_json;
+                """;
+            command.Parameters.AddWithValue("$date", date);
+            command.Parameters.AddWithValue("$fetched", Format(fetchedAtUtc));
+            command.Parameters.AddWithValue("$count", observations.Count);
+            command.Parameters.AddWithValue("$raw", rawJson);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using (var insert = connection.CreateCommand())
+        {
+            insert.Transaction = transaction;
+            insert.CommandText =
+                """
+                INSERT OR REPLACE INTO wunderground_observations (
+                    epoch, obs_time_utc, local_date, temp_avg_c, temp_high_c, temp_low_c, humidity_avg, humidity_high,
+                    humidity_low, dewpt_avg_c, wind_avg_kmh, wind_high_kmh, gust_high_kmh, wind_dir_avg_deg,
+                    pressure_max_hpa, pressure_min_hpa, precip_rate_mmh, precip_total_mm, qc_status)
+                VALUES (
+                    $epoch, $time, $date, $temp_avg, $temp_high, $temp_low, $hum_avg, $hum_high, $hum_low, $dewpt,
+                    $wind_avg, $wind_high, $gust_high, $wind_dir, $pres_max, $pres_min, $precip_rate, $precip_total, $qc);
+                """;
+            var p = insert.Parameters;
+            foreach (var name in new[] { "$epoch", "$time", "$date", "$temp_avg", "$temp_high", "$temp_low", "$hum_avg", "$hum_high", "$hum_low", "$dewpt", "$wind_avg", "$wind_high", "$gust_high", "$wind_dir", "$pres_max", "$pres_min", "$precip_rate", "$precip_total", "$qc" })
+            {
+                p.Add(new SqliteParameter { ParameterName = name });
+            }
+
+            foreach (var o in observations)
+            {
+                p["$epoch"].Value = o.Epoch;
+                p["$time"].Value = Format(o.ObsTimeUtc);
+                p["$date"].Value = date;
+                p["$temp_avg"].Value = Db(o.TempAvgC);
+                p["$temp_high"].Value = Db(o.TempHighC);
+                p["$temp_low"].Value = Db(o.TempLowC);
+                p["$hum_avg"].Value = Db(o.HumidityAvg);
+                p["$hum_high"].Value = Db(o.HumidityHigh);
+                p["$hum_low"].Value = Db(o.HumidityLow);
+                p["$dewpt"].Value = Db(o.DewPointAvgC);
+                p["$wind_avg"].Value = Db(o.WindAvgKmh);
+                p["$wind_high"].Value = Db(o.WindHighKmh);
+                p["$gust_high"].Value = Db(o.GustHighKmh);
+                p["$wind_dir"].Value = Db(o.WindDirAvgDeg);
+                p["$pres_max"].Value = Db(o.PressureMaxHpa);
+                p["$pres_min"].Value = Db(o.PressureMinHpa);
+                p["$precip_rate"].Value = Db(o.PrecipRateMmh);
+                p["$precip_total"].Value = Db(o.PrecipTotalMm);
+                p["$qc"].Value = Db(o.QcStatus);
+                await insert.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Weather Underground days fetched after <paramref name="afterUtc"/>, oldest fetch first (at most
+    /// <paramref name="limit"/>), each with its observations in time order: what's new to publish.
+    /// </summary>
+    public async Task<IReadOnlyList<WundergroundDay>> ReadWundergroundDaysFetchedAfterAsync(
+        DateTimeOffset afterUtc, int limit, CancellationToken cancellationToken)
+    {
+        await using var connection = await _database.OpenAsync(cancellationToken);
+        var days = new List<(DateOnly Date, DateTimeOffset Fetched)>();
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                """
+                SELECT local_date, fetched_at_utc FROM wunderground_days
+                WHERE fetched_at_utc > $after ORDER BY fetched_at_utc, local_date LIMIT $limit;
+                """;
+            command.Parameters.AddWithValue("$after", Format(afterUtc));
+            command.Parameters.AddWithValue("$limit", limit);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                days.Add((DateOnly.ParseExact(reader.GetString(0), DateFormat, CultureInfo.InvariantCulture), Parse(reader.GetString(1))));
+            }
+        }
+
+        var result = new List<WundergroundDay>();
+        foreach (var (date, fetched) in days)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT epoch, obs_time_utc, temp_avg_c, temp_high_c, temp_low_c, humidity_avg, humidity_high, humidity_low,
+                       dewpt_avg_c, wind_avg_kmh, wind_high_kmh, gust_high_kmh, wind_dir_avg_deg, pressure_max_hpa,
+                       pressure_min_hpa, precip_rate_mmh, precip_total_mm, qc_status
+                FROM wunderground_observations WHERE local_date = $date ORDER BY epoch;
+                """;
+            command.Parameters.AddWithValue("$date", date.ToString(DateFormat, CultureInfo.InvariantCulture));
+            var observations = new List<WundergroundObservation>();
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    observations.Add(new WundergroundObservation(
+                        reader.GetInt64(0), Parse(reader.GetString(1)),
+                        Real(reader, 2), Real(reader, 3), Real(reader, 4), Real(reader, 5), Real(reader, 6), Real(reader, 7),
+                        Real(reader, 8), Real(reader, 9), Real(reader, 10), Real(reader, 11), Real(reader, 12), Real(reader, 13),
+                        Real(reader, 14), Real(reader, 15), Real(reader, 16), Int(reader, 17)));
+                }
+            }
+
+            result.Add(new WundergroundDay(date, fetched, observations));
+        }
+
+        return result;
+    }
+
     /// <summary>The number of archived messages.</summary>
     public async Task<long> CountMessagesAsync(CancellationToken cancellationToken)
     {
@@ -301,3 +488,30 @@ public sealed record DeviceSummary(
 
 /// <summary>A typed station reading, as stored.</summary>
 public sealed record StationReading(long MessageId, DateTimeOffset ReceivedAtUtc, string DeviceId, WeatherFields Weather);
+
+/// <summary>
+/// One Weather Underground observation of the station: a 5-minute interval ending at <see cref="ObsTimeUtc"/>, as the
+/// console uploaded it, in metric units (km/h, hPa, mm). <see cref="PrecipTotalMm"/> is the running total for the local day.
+/// </summary>
+public sealed record WundergroundObservation(
+    long Epoch,
+    DateTimeOffset ObsTimeUtc,
+    double? TempAvgC,
+    double? TempHighC,
+    double? TempLowC,
+    double? HumidityAvg,
+    double? HumidityHigh,
+    double? HumidityLow,
+    double? DewPointAvgC,
+    double? WindAvgKmh,
+    double? WindHighKmh,
+    double? GustHighKmh,
+    double? WindDirAvgDeg,
+    double? PressureMaxHpa,
+    double? PressureMinHpa,
+    double? PrecipRateMmh,
+    double? PrecipTotalMm,
+    int? QcStatus);
+
+/// <summary>A fetched Weather Underground day (a local date) and its observations, in time order.</summary>
+public sealed record WundergroundDay(DateOnly LocalDate, DateTimeOffset FetchedAtUtc, IReadOnlyList<WundergroundObservation> Observations);

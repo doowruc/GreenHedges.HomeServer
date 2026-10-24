@@ -14,4 +14,7 @@ public sealed class WeatherAlertOptions
 
     /// <summary>Alert if publishing minute summaries (to SQL Server, for Grafana) has been failing for this long.</summary>
     public TimeSpan PublishStalledAfter { get; set; } = TimeSpan.FromMinutes(30);
+
+    /// <summary>Alert if Weather Underground history runs have been failing for this long (one is retried hourly).</summary>
+    public TimeSpan WundergroundFailingAfter { get; set; } = TimeSpan.FromHours(6);
 }

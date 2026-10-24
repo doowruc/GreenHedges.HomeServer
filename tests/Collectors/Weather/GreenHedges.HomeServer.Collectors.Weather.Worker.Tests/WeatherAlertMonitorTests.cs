@@ -1,6 +1,7 @@
 using GreenHedges.HomeServer.Common.Alerts;
 using GreenHedges.HomeServer.Common.Backups;
 using GreenHedges.HomeServer.Common.Hosting;
+using GreenHedges.HomeServer.Collectors.Weather.History;
 using GreenHedges.HomeServer.Collectors.Weather.Rtl433;
 using GreenHedges.HomeServer.Collectors.Weather.Storage;
 using GreenHedges.HomeServer.Collectors.Weather.Worker.Alerts;
@@ -23,6 +24,7 @@ public sealed class WeatherAlertMonitorTests : IDisposable
     private StationOptions _station = new() { DeviceIds = [StationId] };
     private bool _backupsEnabled;
     private string _summariesConnectionString = "Server=sql;Database=Weather";
+    private WundergroundOptions _wunderground = new() { StationId = "ISTATION1", ApiKey = "key" };
     private CollectorHealth _health = null!;
     private ReceiverHealth _receiver = null!;
     private BackupHealth _backupHealth = null!;
@@ -64,6 +66,7 @@ public sealed class WeatherAlertMonitorTests : IDisposable
             new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Weather"] = _summariesConnectionString })
                 .Build(),
+            Options.Create(_wunderground),
             new BackupMonitor(
                 _backupHealth,
                 Options.Create(new BackupOptions { Enabled = _backupsEnabled, AlertAfter = TimeSpan.FromHours(36) }),
@@ -311,6 +314,23 @@ public sealed class WeatherAlertMonitorTests : IDisposable
         await CheckAfter(TimeSpan.FromSeconds(30));
 
         Assert.Equal("[WeatherCollector] RESOLVED: Summaries for Grafana stalled", _sender.Sent[^1].Subject);
+    }
+
+    [Fact]
+    public async Task Weather_underground_failing_for_six_hours_alerts_and_resolves_after_a_run_finishes()
+    {
+        _health.RecordWundergroundFailure(new HttpRequestException("Weather Underground answered 503"));
+        await CheckAfter(TimeSpan.FromHours(6));
+        Assert.DoesNotContain(_sender.Sent, m => m.Subject.Contains("Weather Underground"));
+
+        await CheckAfter(TimeSpan.FromMinutes(1));
+        var problem = Assert.Single(_sender.Sent, m => m.Subject.Contains("Weather Underground"));
+        Assert.Equal("[WeatherCollector] PROBLEM: Weather Underground history failing", problem.Subject);
+        Assert.Contains("HttpRequestException: Weather Underground answered 503", problem.Body);
+
+        _health.RecordWundergroundSuccess();
+        await CheckAfter(TimeSpan.FromSeconds(30));
+        Assert.Equal("[WeatherCollector] RESOLVED: Weather Underground history failing", _sender.Sent[^1].Subject);
     }
 
     [Fact]

@@ -14,6 +14,9 @@ public sealed class SummaryOptions
 
     /// <summary>Readings per batch (one transaction each); about 16 hours of them.</summary>
     public int BatchSize { get; set; } = 5000;
+
+    /// <summary>The station's time zone, for the local days of its uploaded history.</summary>
+    public string TimeZone { get; set; } = "Europe/London";
 }
 
 /// <summary>
