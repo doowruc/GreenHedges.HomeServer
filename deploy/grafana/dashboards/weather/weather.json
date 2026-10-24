@@ -1,7 +1,7 @@
 {
   "uid": "weather-overview",
   "title": "Weather",
-  "description": "The station now, and the last day: temperature, humidity, wind and rain, from the minute summaries.",
+  "description": "The station now and over the selected range: temperature, humidity, wind, rain, pressure and indoor readings. Each hour comes from the radio if it has any of it, else from the station's uploads (Weather Underground, then Weathercloud), so long ranges reach back to November 2021.",
   "tags": [
     "weather"
   ],
@@ -42,7 +42,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 TemperatureAvgC AS [Temperature] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -30, @to) AND TemperatureAvgC IS NOT NULL\nORDER BY MinuteUtc DESC"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 TemperatureAvgC AS [Temperature] FROM dbo.Outdoor\nWHERE TimeUtc <= @to AND TimeUtc > DATEADD(MINUTE, -30, @to) AND TemperatureAvgC IS NOT NULL\nORDER BY TimeUtc DESC"
         }
       ],
       "fieldConfig": {
@@ -106,7 +106,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max] FROM dbo.MinuteSummaries\nWHERE MinuteUtc >= @day AND MinuteUtc <= @to"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max] FROM dbo.Outdoor\nWHERE TimeUtc >= @day AND TimeUtc <= @to"
         }
       ],
       "fieldConfig": {
@@ -170,7 +170,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 HumidityAvg AS [Humidity], (243.12 * (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)) / (17.62 - (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)))) AS [Dew point] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -30, @to) AND HumidityAvg > 0 AND TemperatureAvgC IS NOT NULL\nORDER BY MinuteUtc DESC"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 HumidityAvg AS [Humidity], DewPointC AS [Dew point] FROM dbo.Outdoor\nWHERE TimeUtc <= @to AND TimeUtc > DATEADD(MINUTE, -30, @to) AND HumidityAvg > 0 AND TemperatureAvgC IS NOT NULL\nORDER BY TimeUtc DESC"
         }
       ],
       "fieldConfig": {
@@ -267,7 +267,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -10, @to)"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust] FROM dbo.Outdoor\nWHERE TimeUtc <= @to AND TimeUtc > DATEADD(MINUTE, -10, @to)"
         }
       ],
       "fieldConfig": {
@@ -331,7 +331,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT CASE WHEN d < 0 THEN d + 360 ELSE d END AS [From]\nFROM (\n  SELECT DEGREES(ATN2(SUM(WindAvgMs * SIN(RADIANS(WindDirDeg))), SUM(WindAvgMs * COS(RADIANS(WindDirDeg))))) AS d\n  FROM dbo.MinuteSummaries\n  WHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -10, @to) AND WindDirDeg IS NOT NULL\n  HAVING SUM(WindAvgMs) > 0) AS w"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT CASE WHEN d < 0 THEN d + 360 ELSE d END AS [From]\nFROM (\n  SELECT DEGREES(ATN2(SUM(WindAvgMs * SIN(RADIANS(WindDirDeg))), SUM(WindAvgMs * COS(RADIANS(WindDirDeg))))) AS d\n  FROM dbo.Outdoor\n  WHERE TimeUtc <= @to AND TimeUtc > DATEADD(MINUTE, -10, @to) AND WindDirDeg IS NOT NULL\n  HAVING SUM(WindAvgMs) > 0) AS w"
         }
       ],
       "fieldConfig": {
@@ -567,7 +567,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(CASE WHEN MinuteUtc >= @day THEN RainMm END), 1), 0) AS [Today],\n       ISNULL(ROUND(SUM(RainMm), 1), 0) AS [24 hours]\nFROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(HOUR, -24, @to)"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(CASE WHEN TimeUtc >= @day THEN RainMm END), 1), 0) AS [Today],\n       ISNULL(ROUND(SUM(RainMm), 1), 0) AS [24 hours]\nFROM dbo.Outdoor\nWHERE TimeUtc <= @to AND TimeUtc > DATEADD(HOUR, -24, @to)"
         }
       ],
       "fieldConfig": {
@@ -644,7 +644,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc)"
+          "rawSql": "SELECT MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc)"
         }
       ],
       "fieldConfig": {
@@ -686,7 +686,7 @@
       "gridPos": {
         "x": 0,
         "y": 6,
-        "w": 6,
+        "w": 4,
         "h": 4
       },
       "datasource": {
@@ -708,7 +708,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT MIN(HumidityAvg) AS [Min], MAX(HumidityAvg) AS [Max] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc) AND HumidityAvg > 0"
+          "rawSql": "SELECT MIN(HumidityAvg) AS [Min], MAX(HumidityAvg) AS [Max] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc) AND HumidityAvg > 0"
         }
       ],
       "fieldConfig": {
@@ -748,9 +748,9 @@
       },
       "id": 10,
       "gridPos": {
-        "x": 6,
+        "x": 4,
         "y": 6,
-        "w": 6,
+        "w": 4,
         "h": 4
       },
       "datasource": {
@@ -772,7 +772,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Total] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc)"
+          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Total] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc)"
         }
       ],
       "fieldConfig": {
@@ -812,9 +812,9 @@
       },
       "id": 11,
       "gridPos": {
-        "x": 12,
+        "x": 8,
         "y": 6,
-        "w": 6,
+        "w": 4,
         "h": 4
       },
       "datasource": {
@@ -836,7 +836,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT MAX(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc)"
+          "rawSql": "SELECT MAX(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc)"
         }
       ],
       "fieldConfig": {
@@ -876,9 +876,9 @@
       },
       "id": 12,
       "gridPos": {
-        "x": 18,
+        "x": 12,
         "y": 6,
-        "w": 6,
+        "w": 4,
         "h": 4
       },
       "datasource": {
@@ -887,7 +887,135 @@
       }
     },
     {
+      "type": "stat",
+      "title": "Pressure",
+      "description": "The lowest and highest pressure in the range, from the console (via Weather Underground, else Weathercloud). Up to the end of yesterday: Weather Underground is fetched nightly.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT MIN(PressureHpa) AS [Min], MAX(PressureHpa) AS [Max] FROM dbo.Pressure WHERE $__timeFilter(TimeUtc)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressurehpa",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
       "id": 13,
+      "gridPos": {
+        "x": 16,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Indoor",
+      "description": "The console's indoor temperature, lowest and highest in the range (from Weathercloud's exports, so up to the last one imported).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT MIN(TemperatureC) AS [Min], MAX(TemperatureC) AS [Max] FROM dbo.Indoor WHERE $__timeFilter(TimeUtc)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 14,
+      "gridPos": {
+        "x": 20,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "id": 15,
       "type": "row",
       "title": "Over time",
       "collapsed": false,
@@ -913,7 +1041,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max], AVG(TemperatureAvgC) AS [Temperature], AVG(CASE WHEN HumidityAvg > 0 THEN (243.12 * (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)) / (17.62 - (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)))) END) AS [Dew point]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, $__interval, NULL), MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max], AVG(TemperatureAvgC) AS [Temperature], AVG(CASE WHEN HumidityAvg > 0 THEN DewPointC END) AS [Dew point]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, $__interval)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1053,7 +1181,7 @@
           "sort": "none"
         }
       },
-      "id": 14,
+      "id": 16,
       "gridPos": {
         "x": 0,
         "y": 11,
@@ -1079,7 +1207,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), AVG(HumidityAvg) AS [Humidity]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, $__interval, NULL), AVG(HumidityAvg) AS [Humidity]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, $__interval)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1128,7 +1256,7 @@
           "sort": "none"
         }
       },
-      "id": 15,
+      "id": 17,
       "gridPos": {
         "x": 12,
         "y": 11,
@@ -1154,7 +1282,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, $__interval, NULL), AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, $__interval)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1239,7 +1367,7 @@
           "sort": "none"
         }
       },
-      "id": 16,
+      "id": 18,
       "gridPos": {
         "x": 0,
         "y": 20,
@@ -1254,7 +1382,7 @@
     {
       "type": "timeseries",
       "title": "Wind direction",
-      "description": "Where the wind came from, minute by minute (calm minutes left out). 0/360 = north, 90 = east, 180 = south, 270 = west.",
+      "description": "Where the wind came from: the speed-weighted mean direction in each interval (calm left out). 0/360 = north, 90 = east, 180 = south, 270 = west.",
       "targets": [
         {
           "refId": "A",
@@ -1265,7 +1393,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT MinuteUtc AS time, WindDirDeg AS [From]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\nORDER BY 1"
+          "rawSql": "SELECT time, CASE WHEN d < 0 THEN d + 360 ELSE d END AS [From]\nFROM (\n  SELECT $__timeGroupAlias(TimeUtc, $__interval),\n         DEGREES(ATN2(SUM(WindAvgMs * SIN(RADIANS(WindDirDeg))), SUM(WindAvgMs * COS(RADIANS(WindDirDeg))))) AS d\n  FROM dbo.Outdoor\n  WHERE $__timeFilter(TimeUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\n  GROUP BY $__timeGroup(TimeUtc, $__interval)) AS w\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1317,7 +1445,7 @@
           "sort": "none"
         }
       },
-      "id": 17,
+      "id": 19,
       "gridPos": {
         "x": 12,
         "y": 20,
@@ -1343,7 +1471,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, '1h', 0), ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, '1h', 0)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, '1h', 0), ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, '1h', 0)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -1393,7 +1521,7 @@
           "sort": "none"
         }
       },
-      "id": 18,
+      "id": 20,
       "gridPos": {
         "x": 0,
         "y": 29,
@@ -1419,7 +1547,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "WITH points AS (SELECT * FROM (VALUES (0, 'N'), (1, 'NNE'), (2, 'NE'), (3, 'ENE'), (4, 'E'), (5, 'ESE'), (6, 'SE'), (7, 'SSE'), (8, 'S'), (9, 'SSW'), (10, 'SW'), (11, 'WSW'), (12, 'W'), (13, 'WNW'), (14, 'NW'), (15, 'NNW')) AS p (n, name)),\ncounts AS (\n  SELECT CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16 AS n, COUNT(*) AS minutes\n  FROM dbo.MinuteSummaries\n  WHERE $__timeFilter(MinuteUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\n  GROUP BY CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16)\nSELECT p.name AS [From], ISNULL(100.0 * c.minutes / NULLIF(SUM(c.minutes) OVER (), 0), 0) AS [Share]\nFROM points p LEFT JOIN counts c ON c.n = p.n\nORDER BY p.n"
+          "rawSql": "WITH points AS (SELECT * FROM (VALUES (0, 'N'), (1, 'NNE'), (2, 'NE'), (3, 'ENE'), (4, 'E'), (5, 'ESE'), (6, 'SE'), (7, 'SSE'), (8, 'S'), (9, 'SSW'), (10, 'SW'), (11, 'WSW'), (12, 'W'), (13, 'WNW'), (14, 'NW'), (15, 'NNW')) AS p (n, name)),\ncounts AS (\n  SELECT CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16 AS n, COUNT(*) AS minutes\n  FROM dbo.Outdoor\n  WHERE $__timeFilter(TimeUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\n  GROUP BY CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16)\nSELECT p.name AS [From], ISNULL(100.0 * c.minutes / NULLIF(SUM(c.minutes) OVER (), 0), 0) AS [Share]\nFROM points p LEFT JOIN counts c ON c.n = p.n\nORDER BY p.n"
         }
       ],
       "fieldConfig": {
@@ -1452,10 +1580,191 @@
           "mode": "single"
         }
       },
-      "id": 19,
+      "id": 21,
       "gridPos": {
         "x": 12,
         "y": 29,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Pressure",
+      "description": "Sea-level pressure from the console, via Weather Underground (else Weathercloud). Up to the end of yesterday: Weather Underground is fetched nightly.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, $__interval, NULL), AVG(PressureHpa) AS [Pressure]\nFROM dbo.Pressure\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, $__interval)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressurehpa",
+          "decimals": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pressure"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 22,
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Indoor",
+      "description": "The console's indoor temperature and humidity, from Weathercloud's exports (up to the last one imported).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(TimeUtc, $__interval, NULL), AVG(TemperatureC) AS [Temperature], AVG(Humidity) AS [Humidity]\nFROM dbo.Indoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY $__timeGroup(TimeUtc, $__interval)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temperature"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 23,
+      "gridPos": {
+        "x": 12,
+        "y": 37,
         "w": 12,
         "h": 8
       },

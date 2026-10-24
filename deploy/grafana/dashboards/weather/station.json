@@ -567,6 +567,104 @@
       }
     },
     {
+      "type": "state-timeline",
+      "title": "Data sources: green radio, blue Weather Underground, purple Weathercloud, red no outdoor sensor",
+      "description": "Where each day's outdoor readings come from: the radio (this collector), else Weather Underground, else Weathercloud. Red: readings but no outdoor sensor (e.g. its failure from September 2024). Choose a long range (e.g. 5 years) to see the whole record.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time,\n       CASE WHEN COUNT(TemperatureAvgC) = 0 THEN 4 ELSE MIN(CASE Source WHEN 'radio' THEN 1 WHEN 'wunderground' THEN 2 ELSE 3 END) END AS [Source]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Radio",
+                  "color": "green"
+                },
+                "2": {
+                  "text": "Weather Underground",
+                  "color": "blue"
+                },
+                "3": {
+                  "text": "Weathercloud",
+                  "color": "purple"
+                },
+                "4": {
+                  "text": "No outdoor sensor",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "blue",
+                "value": 1.5
+              },
+              {
+                "color": "purple",
+                "value": 2.5
+              },
+              {
+                "color": "red",
+                "value": 3.5
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 0
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 5
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
       "type": "table",
       "title": "Gaps",
       "description": "Runs of more than 4 minutes with no station message (collector down, receiver trouble or no reception), newest first.",
@@ -633,10 +731,10 @@
         "showHeader": true,
         "cellHeight": "sm"
       },
-      "id": 8,
+      "id": 9,
       "gridPos": {
         "x": 0,
-        "y": 20,
+        "y": 25,
         "w": 24,
         "h": 8
       },

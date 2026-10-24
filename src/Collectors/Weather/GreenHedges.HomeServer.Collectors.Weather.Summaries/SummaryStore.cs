@@ -61,6 +61,49 @@ public sealed class SummaryStore(string connectionString)
         );
         CREATE INDEX IX_HistoryObservations_Time ON dbo.HistoryObservations (TimeUtc) INCLUDE (Source);
         """,
+        // v3: what the dashboards read, merging the sources. Outdoor: for each UTC hour, the radio's minutes if the radio
+        // has any in that hour, else Weather Underground's, else Weathercloud's (so a long range shows everything since
+        // 2021, each hour from its best source). Pressure: Weather Underground, else Weathercloud. Indoor: Weathercloud.
+        // History rows are intervals ending at TimeUtc; the radio's dew point is calculated here (Magnus formula).
+        """
+        CREATE VIEW dbo.Outdoor AS
+        SELECT MinuteUtc AS TimeUtc, CAST('radio' AS varchar(20)) AS Source, 1 AS IntervalMinutes,
+               TemperatureAvgC, TemperatureMinC, TemperatureMaxC, HumidityAvg,
+               CASE WHEN HumidityAvg > 0 AND TemperatureAvgC IS NOT NULL
+                    THEN 243.12 * (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC))
+                         / (17.62 - (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC))) END AS DewPointC,
+               WindAvgMs, GustMaxMs, WindDirDeg, RainMm
+        FROM dbo.MinuteSummaries
+        UNION ALL
+        SELECT h.TimeUtc, h.Source, h.IntervalMinutes,
+               h.TemperatureAvgC, COALESCE(h.TemperatureMinC, h.TemperatureAvgC), COALESCE(h.TemperatureMaxC, h.TemperatureAvgC),
+               h.HumidityAvg, h.DewPointC, h.WindAvgMs, h.GustMaxMs, h.WindDirDeg, h.RainMm
+        FROM dbo.HistoryObservations h
+        WHERE NOT EXISTS (
+                  SELECT 1 FROM dbo.MinuteSummaries m
+                  WHERE m.MinuteUtc >= DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc), 0)
+                    AND m.MinuteUtc < DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc) + 1, 0))
+          AND (h.Source = 'wunderground' OR NOT EXISTS (
+                  SELECT 1 FROM dbo.HistoryObservations w
+                  WHERE w.Source = 'wunderground'
+                    AND w.TimeUtc >= DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc), 0)
+                    AND w.TimeUtc < DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc) + 1, 0)));
+        GO
+        CREATE VIEW dbo.Pressure AS
+        SELECT h.TimeUtc, h.Source, h.PressureHpa
+        FROM dbo.HistoryObservations h
+        WHERE h.PressureHpa IS NOT NULL
+          AND (h.Source = 'wunderground' OR NOT EXISTS (
+                  SELECT 1 FROM dbo.HistoryObservations w
+                  WHERE w.Source = 'wunderground' AND w.PressureHpa IS NOT NULL
+                    AND w.TimeUtc >= DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc), 0)
+                    AND w.TimeUtc < DATEADD(HOUR, DATEDIFF(HOUR, 0, h.TimeUtc) + 1, 0)));
+        GO
+        CREATE VIEW dbo.Indoor AS
+        SELECT TimeUtc, IndoorTemperatureC AS TemperatureC, IndoorHumidity AS Humidity
+        FROM dbo.HistoryObservations
+        WHERE Source = 'weathercloud' AND (IndoorTemperatureC IS NOT NULL OR IndoorHumidity IS NOT NULL);
+        """,
     ];
 
     public static int SchemaVersion => Migrations.Length;
@@ -91,7 +134,12 @@ public sealed class SummaryStore(string connectionString)
         for (var next = version; next < Migrations.Length; next++)
         {
             await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
-            await ExecuteAsync(connection, transaction, Migrations[next], cancellationToken);
+            // A migration may hold several batches (CREATE VIEW must start one), separated by GO lines.
+            foreach (var batch in Migrations[next].Split("\nGO\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                await ExecuteAsync(connection, transaction, batch, cancellationToken);
+            }
+
             await ExecuteAsync(connection, transaction, $"UPDATE dbo.SchemaVersion SET Version = {next + 1};", cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }

@@ -158,8 +158,18 @@ The station's own uploads, from before the collector existed (and, for pressure,
 Both sources go into the **SQLite archive** first, as received, so they're backed up and copied off-site with the radio
 data (once the services stop holding them, ours is the only copy); from there they're published to SQL Server's
 `HistoryObservations` (one shape for both; each row an interval ending at `TimeUtc`, with pressure and, from
-Weathercloud, the indoor readings the radio never carries). The dashboards merge it with the minute summaries: the radio
-first, then Weather Underground, then Weathercloud.
+Weathercloud, the indoor readings the radio never carries). The dashboards merge it with the minute summaries through
+views in the `Weather` database (summaries schema v3), so their queries stay simple:
+
+- **`dbo.Outdoor`**: for each UTC hour, the radio's minutes if the radio has any in that hour, else Weather
+  Underground's 5-minute rows, else Weathercloud's 10-minute rows (each row with its `Source`; the radio's dew point is
+  calculated in the view). A partly covered hour at a source's edge comes from the better source only.
+- **`dbo.Pressure`**: Weather Underground, else Weathercloud (the radio has none). Up to the end of yesterday, since
+  Weather Underground is fetched nightly.
+- **`dbo.Indoor`**: Weathercloud's indoor temperature and humidity, up to the last export imported.
+
+The Weather and Rain dashboards read `Outdoor` (so a 5-year range shows everything since November 2021, in about a
+second), plus `Pressure` and `Indoor` charts; the Station dashboard shows which source covered each day.
 
 - **Weather Underground** (PWS history API, `api.weather.com/v2/pws/history/all`, one local day per call, the station
   owner's API key, metric units): 5-minute intervals with high/low/average temperature, humidity, wind, gust, dew point,
