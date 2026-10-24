@@ -57,6 +57,12 @@
 		reverse_proxy 127.0.0.1:1337
 	}
 
+	# Grafana (deploy/grafana): the dashboards.
+	@grafana host grafana.{$HOME_DOMAIN}
+	handle @grafana {
+		reverse_proxy 127.0.0.1:3000
+	}
+
 	# Any other name under the wildcard: no such app.
 	handle {
 		respond "Not found" 404

@@ -1,0 +1,14 @@
+# Dashboards are JSON files in this repository (deploy/grafana/dashboards/<folder>/), installed read-only: change them
+# in a PR, not in Grafana (an edit there can be saved as a copy, or exported as JSON to commit).
+apiVersion: 1
+
+providers:
+  - name: weather
+    folder: Weather
+    folderUid: weather
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /etc/grafana/dashboards/weather

@@ -13,6 +13,8 @@ An always-on service that keeps **your own complete, permanent archive** of a we
 
 Once it's running there's nothing to do. You'll hear from it only when something needs attention.
 
+**Dashboards:** `https://grafana.<home domain>` → **Weather** (Grafana, [deploy/grafana/](../../deploy/grafana/HOST-SETUP.md)), from the minute summaries. Dashboards are JSON files in `deploy/grafana/dashboards/weather/`.
+
 ### Emails you might get
 
 Subjects start `[WeatherCollector]`. Every PROBLEM email is followed by one RESOLVED email, including across restarts (open alerts are kept in `/var/lib/weathercollector/alert-state.json`). An alert resolves only on real evidence, such as a new message from the station.
