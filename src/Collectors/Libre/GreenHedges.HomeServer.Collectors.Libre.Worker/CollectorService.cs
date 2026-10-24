@@ -146,7 +146,7 @@ public sealed class CollectorService(
         {
             health.RecordReading(current.TimestampUtc);
             var inserted = await archive.InsertAsync(
-                [ToArchived(current, ReadingSource.Current, receivedAt, connection.Sensor?.Serial)],
+                [ToArchived(current, ReadingSource.Current, receivedAt, sensors.SerialAt(current.TimestampUtc))],
                 cancellationToken);
             if (inserted > 0)
             {
@@ -169,14 +169,14 @@ public sealed class CollectorService(
 
         if (receivedAt >= _nextGraphAt)
         {
-            await CollectGraphAsync(connection.PatientId, connection.Sensor?.Serial, cancellationToken);
+            await CollectGraphAsync(connection.PatientId, cancellationToken);
             _nextGraphAt = receivedAt + _options.GraphInterval;
         }
 
         return connection.Current?.TimestampUtc;
     }
 
-    private async Task CollectGraphAsync(string patientId, string? sensorSerial, CancellationToken cancellationToken)
+    private async Task CollectGraphAsync(string patientId, CancellationToken cancellationToken)
     {
         var graph = await client.GetGraphAsync(patientId, cancellationToken);
         var receivedAt = time.GetUtcNow();
@@ -185,7 +185,7 @@ public sealed class CollectorService(
         if (graph.Current is { } current)
         {
             health.RecordReading(current.TimestampUtc);
-            rows.Add(ToArchived(current, ReadingSource.Current, receivedAt, sensorSerial));
+            rows.Add(ToArchived(current, ReadingSource.Current, receivedAt, sensors.SerialAt(current.TimestampUtc)));
         }
 
         var inserted = await archive.InsertAsync(rows, cancellationToken);

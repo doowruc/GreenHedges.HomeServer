@@ -371,6 +371,103 @@ public sealed class LibreAlertMonitorTests : IDisposable
         Assert.Empty(_sender.Sent);
     }
 
+    /// <summary>A sensor swap like the real one: the old sensor's last reading, then activation 27 s later, 60 min warm-up.</summary>
+    private DateTimeOffset SwapSensor(string serial = "NEW")
+    {
+        _health.RecordReading(_time.GetUtcNow());
+        _time.Advance(TimeSpan.FromSeconds(27));
+        var activated = _time.GetUtcNow();
+        _health.RecordSensor(new SensorStatus(serial, activated, activated.AddMinutes(60), activated.AddDays(15)));
+        return activated;
+    }
+
+    [Fact]
+    public async Task No_stale_alert_during_a_new_sensors_warm_up()
+    {
+        var activated = SwapSensor();
+
+        // Checked every minute to 19 minutes after warm-up is due to end.
+        while (_time.GetUtcNow() < activated.AddMinutes(60 + 19))
+        {
+            await CheckAfter(TimeSpan.FromMinutes(1));
+        }
+
+        Assert.Empty(_sender.Sent);
+    }
+
+    [Fact]
+    public async Task Stale_alert_if_warm_up_overruns_says_when_readings_were_expected()
+    {
+        var activated = SwapSensor();
+
+        _time.Advance(TimeSpan.FromMinutes(60 + 21));
+        await _monitor.CheckAsync(CancellationToken.None);
+
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Equal("[LibreCollector] PROBLEM: No new glucose readings", problem.Subject);
+        Assert.Contains("No new glucose reading for 1h 21m.", problem.Body);
+        Assert.Contains($"New sensor NEW was activated {activated:u}; its readings were expected from {activated.AddMinutes(60):u}.", problem.Body);
+        Assert.Contains("Sensor: NEW, activated", problem.Body);
+    }
+
+    [Fact]
+    public async Task Warm_up_hold_survives_a_restart()
+    {
+        var activated = SwapSensor();
+        await CheckAfter(TimeSpan.FromMinutes(10));
+
+        await RestartAsync(); // no readings in the new process; the tracker reloads the sensor at startup
+        _health.RecordSensor(new SensorStatus("NEW", activated, activated.AddMinutes(60), activated.AddDays(15)));
+        await CheckAfter(TimeSpan.FromMinutes(60 + 19 - 10));
+
+        Assert.Empty(_sender.Sent);
+    }
+
+    [Fact]
+    public async Task Readings_from_the_new_sensor_end_the_hold()
+    {
+        var activated = SwapSensor();
+        _time.Advance(TimeSpan.FromMinutes(61));
+        _health.RecordReading(_time.GetUtcNow());   // first reading from the new sensor
+
+        await CheckAfter(TimeSpan.FromMinutes(21)); // then nothing: an ordinary stale alert
+
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Contains("No new glucose reading for 21m.", problem.Body);
+        Assert.DoesNotContain("was activated", problem.Body);
+        Assert.True(activated < _time.GetUtcNow());
+    }
+
+    [Fact]
+    public async Task Stale_alert_open_before_a_swap_stays_open_until_a_reading()
+    {
+        await CheckAfter(TimeSpan.FromMinutes(21));
+        Assert.Single(_sender.Sent);
+
+        await CheckAfter(TimeSpan.FromHours(3));    // sensor failed; replaced hours later
+        var activated = _time.GetUtcNow();
+        _health.RecordSensor(new SensorStatus("NEW", activated, activated.AddMinutes(60), activated.AddDays(15)));
+        await CheckAfter(TimeSpan.FromMinutes(30)); // mid-warm-up: neither a second PROBLEM nor a RESOLVED
+        Assert.Single(_sender.Sent);
+
+        _time.Advance(TimeSpan.FromMinutes(31));
+        _health.RecordReading(_time.GetUtcNow());
+        await CheckAfter(TimeSpan.FromMinutes(1));
+        Assert.Equal("[LibreCollector] RESOLVED: No new glucose readings", _sender.Sent[^1].Subject);
+    }
+
+    [Fact]
+    public async Task Stale_alert_after_the_sensors_expected_end_says_it_has_probably_expired()
+    {
+        var activated = _time.GetUtcNow().AddDays(-15).AddMinutes(-5);
+        _health.RecordSensor(new SensorStatus("OLD", activated, activated.AddMinutes(60), activated.AddDays(15)));
+        await CheckAfter(TimeSpan.FromMinutes(21));
+
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Contains($"Sensor OLD reached its expected end at {activated.AddDays(15):u}; it has probably expired.", problem.Body);
+        Assert.DoesNotContain("was activated", problem.Body);
+    }
+
     private sealed class RecordingSender : IAlertSender
     {
         public List<(string Subject, string Body)> Sent { get; } = [];
