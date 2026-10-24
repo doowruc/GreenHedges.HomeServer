@@ -33,10 +33,11 @@ Subjects start `[WeatherCollector]`. Every PROBLEM email is followed by one RESO
 | **Sensor battery low** | The sensor has reported `battery_ok` = 0 for an hour | Change its batteries. |
 | **Backups failing** | No good backup for 36 hours | Check disk space and the log. |
 | **Summaries for Grafana stalled** | Publishing minute summaries to SQL Server has failed for 30 minutes | Check SQL Server (`sudo docker compose -f /opt/sqlserver/compose.yaml ps`) and the log (`Publishing minute summaries failed`). Collection is unaffected, and the summaries catch up by themselves. |
+| **Weather Underground history failing** | Fetching the station's history from Weather Underground has failed for 6 hours (it retries hourly) | Check the log (`Weather Underground`): a refused key (`Wunderground:ApiKey` / `StationId` in the env file) or the service being down. The radio archive is unaffected; missing days are fetched once it works. Test with `--fetch-wunderground` ([HOST-SETUP §13](../../deploy/weather/HOST-SETUP.md)). |
 | **Off-site backup failing** | No off-site copy for 36 hours, or straight away if the off-site settings are wrong | Check the log (`Off-site copy … failed` or `Off-site backup is misconfigured`): AWS key, bucket, or `age` missing. Fix the env file and restart. Collection and local backups are unaffected. |
 | healthchecks.io "down" | No ping for 5 minutes plus grace | The collector pings only while the station is being heard, so: host off or offline, collector stopped, or no reception. |
 
-Thresholds are in the `Alerts` section of [`appsettings.json`](../../src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/appsettings.json) (`StationSilentAfter`, `ReceiverEndsPerHour`, `BatteryLowAfter`, `PublishStalledAfter`) and can be overridden in the env file. Without `Station:DeviceIds` the station alerts are off and the heartbeat stays silent. Without `ConnectionStrings:Weather` the summaries (and their alert) are off.
+Thresholds are in the `Alerts` section of [`appsettings.json`](../../src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/appsettings.json) (`StationSilentAfter`, `ReceiverEndsPerHour`, `BatteryLowAfter`, `PublishStalledAfter`, `WundergroundFailingAfter`) and can be overridden in the env file. Without `Station:DeviceIds` the station alerts are off and the heartbeat stays silent. Without `ConnectionStrings:Weather` the summaries (and their alert) are off; without `Wunderground:StationId` and `Wunderground:ApiKey`, Weather Underground's history is.
 
 ### Useful commands (on the host)
 
@@ -65,6 +66,18 @@ the server and the collector refills it within a few minutes:
 
 ```bash
 sudo docker compose -f /opt/sqlserver/compose.yaml exec -T sqlserver sh -c '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d Weather -Q "DELETE dbo.MinuteSummaries; DELETE dbo.PublishState;"'
+```
+
+### Weather Underground history
+
+The collector keeps a copy of the station's Weather Underground history in the archive (`wunderground_days`, as
+received): a few minutes after startup and every night at 04:30 it fetches every day not yet fetched in full, newest
+first, up to 1,000 a day, so the backlog since November 2021 arrives over the first two nights. The log shows
+`Weather Underground: N days to fetch` and `fetched N days`. Then it's published to SQL Server with the summaries.
+
+```bash
+sqlite3 -readonly /var/lib/weathercollector/weathercollector.db \
+  "SELECT COUNT(*), MIN(local_date), MAX(local_date), SUM(observation_count) FROM wunderground_days;"
 ```
 
 ### Battery changes

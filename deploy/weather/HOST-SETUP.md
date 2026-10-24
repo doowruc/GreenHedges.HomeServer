@@ -207,3 +207,39 @@ sudo docker compose -f /opt/sqlserver/compose.yaml exec -T sqlserver sh -c '/opt
 ```
 
 `last` is within the last minute or two.
+
+## 13. Weather Underground history (in a browser, then the server)
+
+**In a browser:** wunderground.com → **My Profile** → **API Keys**: copy the key (create one if there's none). Keep it in
+your password manager, with the station id (`I…`, on the station's page).
+
+**On the server**, add both to the env file (paste the key straight in):
+
+```bash
+sudo nano /etc/weathercollector/env
+```
+
+```
+Wunderground__StationId=I…
+Wunderground__ApiKey=…
+```
+
+Check them, fetching yesterday without storing it:
+
+```bash
+sudo systemd-run --quiet --wait --pipe --uid=weathercollector -p EnvironmentFile=/etc/weathercollector/env -p WorkingDirectory=/var/lib/weathercollector /opt/weathercollector/GreenHedges.HomeServer.Collectors.Weather.Worker --fetch-wunderground
+```
+
+Expect about 288 observations, with temperatures, rain and pressure. Then restart the collector, which starts fetching
+the history a couple of minutes later:
+
+```bash
+sudo systemctl restart weathercollector
+```
+
+```bash
+journalctl -u weathercollector -f -o cat | grep -i 'weather underground'
+```
+
+Expect `Weather Underground: … days to fetch`, progress every 100 days, then `Published N days of Weather Underground
+history`. The rest of the backlog comes the next night at 04:30.

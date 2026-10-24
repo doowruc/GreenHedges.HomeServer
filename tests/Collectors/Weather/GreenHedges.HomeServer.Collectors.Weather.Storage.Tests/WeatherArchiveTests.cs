@@ -32,14 +32,14 @@ public sealed class WeatherArchiveTests : IDisposable
     }
 
     [Fact]
-    public async Task Initialise_creates_schema_v1_in_wal_mode_and_is_idempotent()
+    public async Task Initialise_creates_schema_v2_in_wal_mode_and_is_idempotent()
     {
         await _archive.InitialiseAsync(CancellationToken.None);
         await _archive.InitialiseAsync(CancellationToken.None);
 
-        Assert.Equal(1, WeatherArchive.SchemaVersion);
+        Assert.Equal(2, WeatherArchive.SchemaVersion);
         Assert.Equal("wal", await ScalarAsync("PRAGMA journal_mode;"));
-        Assert.Equal(1L, await ScalarAsync("PRAGMA user_version;"));
+        Assert.Equal(2L, await ScalarAsync("PRAGMA user_version;"));
     }
 
     [Fact]
@@ -170,6 +170,35 @@ public sealed class WeatherArchiveTests : IDisposable
         Assert.Equal((r1, 998.4), (rainBefore?.MessageId, rainBefore?.Weather.RainMm));
         Assert.Null(await _archive.GetLatestStationReadingBeforeAsync(T0, withRain: false, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task A_weather_underground_day_is_stored_whole_and_replaced_by_a_later_fetch()
+    {
+        await _archive.InitialiseAsync(CancellationToken.None);
+        var day = new DateOnly(2026, 10, 18);
+        var first = WundergroundObservation(1792195494, 0.0);
+        await _archive.SaveWundergroundDayAsync(day, T0, "{\"observations\":[1]}", [first], CancellationToken.None);
+        await _archive.SaveWundergroundDayAsync(new DateOnly(2026, 10, 17), T0.AddSeconds(3), "", [], CancellationToken.None);
+
+        var later = T0.AddDays(1);
+        await _archive.SaveWundergroundDayAsync(day, later, "{\"observations\":[1,2]}", [first with { PrecipTotalMm = 0.4 }, WundergroundObservation(1792195794, 0.8)], CancellationToken.None);
+
+        var fetched = await _archive.GetWundergroundDaysAsync(CancellationToken.None);
+        Assert.Equal(later, fetched[day]);
+        Assert.Equal(T0.AddSeconds(3), fetched[new DateOnly(2026, 10, 17)]);
+        Assert.Equal("{\"observations\":[1,2]}", await ScalarAsync("SELECT raw_json FROM wunderground_days WHERE local_date = '2026-10-18';"));
+        Assert.Equal(2L, await ScalarAsync("SELECT observation_count FROM wunderground_days WHERE local_date = '2026-10-18';"));
+
+        var days = await _archive.ReadWundergroundDaysFetchedAfterAsync(T0.AddSeconds(1), 10, CancellationToken.None);
+        Assert.Equal([new DateOnly(2026, 10, 17), day], days.Select(d => d.LocalDate));
+        Assert.Empty(days[0].Observations);
+        Assert.Equal([0.4, 0.8], days[1].Observations.Select(o => o.PrecipTotalMm));
+        Assert.Equal(first with { PrecipTotalMm = 0.4 }, days[1].Observations[0]);
+    }
+
+    private static WundergroundObservation WundergroundObservation(long epoch, double rain) => new(
+        epoch, DateTimeOffset.FromUnixTimeSeconds(epoch), 10.5, 11.0, 10.0, 90, 92, 88, 8.9, 7.2, 9.0, 14.4, 225,
+        1012.4, 1012.0, 0.0, rain, 1);
 
     private async Task<object?> ScalarAsync(string sql)
     {

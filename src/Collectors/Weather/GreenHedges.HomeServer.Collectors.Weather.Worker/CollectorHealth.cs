@@ -20,6 +20,9 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
     private DateTimeOffset? _publishFailingSince;
     private DateTimeOffset? _lastPublishSuccessAt;
     private Exception? _lastPublishError;
+    private DateTimeOffset? _wundergroundFailingSince;
+    private DateTimeOffset? _lastWundergroundSuccessAt;
+    private Exception? _lastWundergroundError;
 
     public DateTimeOffset StartedAt { get; } = time.GetUtcNow();
 
@@ -76,6 +79,26 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
         }
     }
 
+    /// <summary>Records a Weather Underground history run that finished.</summary>
+    public void RecordWundergroundSuccess()
+    {
+        lock (_lock)
+        {
+            _wundergroundFailingSince = null;
+            _lastWundergroundError = null;
+            _lastWundergroundSuccessAt = time.GetUtcNow();
+        }
+    }
+
+    public void RecordWundergroundFailure(Exception error)
+    {
+        lock (_lock)
+        {
+            _wundergroundFailingSince ??= time.GetUtcNow();
+            _lastWundergroundError = error;
+        }
+    }
+
     /// <summary>Healthy for the heartbeat if a station message arrived within the interval.</summary>
     public string? HealthyStatus(DateTimeOffset now, TimeSpan interval)
     {
@@ -92,7 +115,8 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
             return new CollectorHealthSnapshot(
                 StartedAt, _lastStationMessageAt, _lastStationDeviceId, _lastBatteryOk, _batteryLowSince,
                 _lastArchivedAt, _lastArchiveError, _lastArchiveErrorAt,
-                _publishFailingSince, _lastPublishError, _lastPublishSuccessAt);
+                _publishFailingSince, _lastPublishError, _lastPublishSuccessAt,
+                _wundergroundFailingSince, _lastWundergroundError, _lastWundergroundSuccessAt);
         }
     }
 }
@@ -101,6 +125,7 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
 /// <param name="BatteryLowSince">When the station's <c>battery_ok</c> turned 0, while it stays 0; null once it's 1 (or not seen).</param>
 /// <param name="LastArchiveError">The latest failure to archive a line, cleared by the next success.</param>
 /// <param name="PublishFailingSince">When publishing minute summaries started failing; null while it's healthy.</param>
+/// <param name="WundergroundFailingSince">When Weather Underground history runs started failing; null after one finishes.</param>
 public sealed record CollectorHealthSnapshot(
     DateTimeOffset StartedAt,
     DateTimeOffset? LastStationMessageAt,
@@ -112,4 +137,7 @@ public sealed record CollectorHealthSnapshot(
     DateTimeOffset? LastArchiveErrorAt,
     DateTimeOffset? PublishFailingSince = null,
     Exception? LastPublishError = null,
-    DateTimeOffset? LastPublishSuccessAt = null);
+    DateTimeOffset? LastPublishSuccessAt = null,
+    DateTimeOffset? WundergroundFailingSince = null,
+    Exception? LastWundergroundError = null,
+    DateTimeOffset? LastWundergroundSuccessAt = null);

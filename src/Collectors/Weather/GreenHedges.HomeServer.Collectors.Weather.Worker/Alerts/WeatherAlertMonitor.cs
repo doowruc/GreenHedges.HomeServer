@@ -1,6 +1,7 @@
 using System.Text;
 using GreenHedges.HomeServer.Common.Alerts;
 using GreenHedges.HomeServer.Common.Backups;
+using GreenHedges.HomeServer.Collectors.Weather.History;
 using GreenHedges.HomeServer.Collectors.Weather.Rtl433;
 using GreenHedges.HomeServer.Collectors.Weather.Storage;
 using Microsoft.Extensions.Options;
@@ -9,7 +10,7 @@ namespace GreenHedges.HomeServer.Collectors.Weather.Worker.Alerts;
 
 /// <summary>
 /// The Weather collector's checks: the station going quiet, the receiver (dongle, rtl_433), the station's
-/// id changing, its battery, publishing the minute summaries, and backups. Emails and their persistence are the shared <see cref="AlertBook"/>'s.
+/// id changing, its battery, publishing the minute summaries, Weather Underground's history, and backups. Emails and their persistence are the shared <see cref="AlertBook"/>'s.
 /// </summary>
 public sealed class WeatherAlertMonitor(
     CollectorHealth health,
@@ -20,6 +21,7 @@ public sealed class WeatherAlertMonitor(
     IOptions<WeatherAlertOptions> options,
     IOptions<StationOptions> stationOptions,
     IConfiguration configuration,
+    IOptions<WundergroundOptions> wundergroundOptions,
     BackupMonitor backups,
     TimeProvider time,
     ILogger<WeatherAlertMonitor> logger) : AlertMonitorService(alerts, alertOptions, time, logger)
@@ -45,6 +47,9 @@ public sealed class WeatherAlertMonitor(
 
         /// <summary>Publishing minute summaries failing for longer than <see cref="WeatherAlertOptions.PublishStalledAfter"/>.</summary>
         PublishStalled,
+
+        /// <summary>Weather Underground history runs failing for longer than <see cref="WeatherAlertOptions.WundergroundFailingAfter"/>.</summary>
+        WundergroundFailing,
     }
 
     protected override IReadOnlyCollection<string> AlertKeys => Keys;
@@ -67,7 +72,31 @@ public sealed class WeatherAlertMonitor(
         }
 
         await CheckPublishingAsync(snapshot, now, context, cancellationToken);
+        await CheckWundergroundAsync(snapshot, now, context, cancellationToken);
         await backups.CheckAsync(Alerts, now, context, cancellationToken);
+    }
+
+    private async Task CheckWundergroundAsync(CollectorHealthSnapshot snapshot, DateTimeOffset now, string context, CancellationToken cancellationToken)
+    {
+        if (snapshot.WundergroundFailingSince is { } failingSince && now - failingSince > _options.WundergroundFailingAfter)
+        {
+            await RaiseAsync(
+                AlertKind.WundergroundFailing,
+                "Weather Underground history failing",
+                $"""
+                Fetching the station's history from Weather Underground has been failing for {FormatDuration(now - failingSince)} (retried hourly).
+                The radio archive is unaffected; missing days are fetched once it works again.
+                Last error: {(snapshot.LastWundergroundError is { } e ? $"{e.GetType().Name}: {e.Message}" : "none recorded")}
+
+                {context}
+                """,
+                cancellationToken);
+        }
+        else if (!wundergroundOptions.Value.Enabled
+                 || (snapshot.WundergroundFailingSince is null && snapshot.LastWundergroundSuccessAt is not null))
+        {
+            await ResolveAsync(AlertKind.WundergroundFailing, cancellationToken);
+        }
     }
 
     private async Task CheckPublishingAsync(CollectorHealthSnapshot snapshot, DateTimeOffset now, string context, CancellationToken cancellationToken)
