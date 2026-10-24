@@ -1,0 +1,4 @@
+# Nothing provisioned here yet. Grafana always reads this folder, and logs an error if it is missing (and a
+# warning for any file that is not YAML or JSON), so it holds this empty file.
+apiVersion: 1
+apps: []
