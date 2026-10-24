@@ -1,13 +1,12 @@
 # Tailscale Services: one-off setup
 
-Each web app on the server gets its own tailnet address, `https://<name>.<tailnet>.ts.net`, with no port or path:
-`tailscale serve --service=svc:<name>` publishes it, with HTTPS. Only devices on the tailnet can reach it. Services is in
-public beta (free on all plans for now); if that changes, a port on the server's own name works instead
-(`tailscale serve --bg --https=<port> …`), and only the app's address and Auth0 callback change.
+The server's web apps are reached through one Tailscale Service, `svc:home`: a tailnet address of its own whose TCP
+443 `tailscale serve` passes to Caddy, which serves each app at `https://<app>.<home domain>`
+([caddy/HOST-SETUP.md](caddy/HOST-SETUP.md)). Only devices on the tailnet can reach it. Services is in public beta
+(free on all plans for now).
 
 A host must have a tag (not a user) to serve a Service. These steps make the server `tag:server` and let your devices
-reach its Services. Do them once; each app's host setup then adds its own Service (e.g. Vehicle Manager:
-[vehicle-manager/HOST-SETUP.md](vehicle-manager/HOST-SETUP.md)).
+reach `svc:home`. Do them once.
 
 ## 1. Access controls (admin console)
 
@@ -18,33 +17,26 @@ reach its Services. Do them once; each app's host setup then adds its own Servic
   "tag:server": ["autogroup:admin"],
 },
 "grants": [
-  // Your devices may reach the server's web apps.
-  { "src": ["autogroup:member"], "dst": ["svc:vehicles"], "ip": ["443"] },
+  // Your devices may reach the server's web apps (Caddy).
+  { "src": ["autogroup:member"], "dst": ["svc:home"], "ip": ["443"] },
 ],
 "autoApprovers": {
   "services": {
-    "svc:vehicles": ["tag:server"],
+    "svc:home": ["tag:server"],
   },
 },
 ```
-
-Each new app adds its `svc:<name>` to both lists.
 
 ## 2. Tag the server (admin console)
 
 **Machines** → the server → **⋯** → **Edit tags** → add `tag:server` → **Save**. No re-authentication is needed. The
 machine stops belonging to your user account (a device has tags or a user, not both); its key expiry stays off, and
-SSH, `tailscale serve` for Nightscout and everything else carry on.
+SSH and everything else carry on.
 
-## 3. Define the Service (admin console)
-
-**Services** → **Advertise** → **Define a Service**: name `vehicles`, a description (e.g. "Vehicle Manager"), endpoint
-`tcp:443`. Then **Add service**.
-
-## 4. Check (on the server)
+## 3. Check (on the server)
 
 ```bash
 tailscale status --self --json | grep -A2 '"Tags"'
 ```
 
-It lists `tag:server`.
+It lists `tag:server`. The Service itself is defined in [caddy/HOST-SETUP.md](caddy/HOST-SETUP.md) §1.

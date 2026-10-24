@@ -37,7 +37,7 @@ services:
       TZ: Europe/London
       NIGHTSCOUT_HOSTNAME: 0.0.0.0
       PORT: "1337"
-      INSECURE_USE_HTTP: "true"          # plain HTTP inside; HTTPS is provided by `tailscale serve`
+      INSECURE_USE_HTTP: "true"          # plain HTTP inside; HTTPS is provided by Caddy
       MONGO_CONNECTION: mongodb://mongo:27017/nightscout
       AUTH_DEFAULT_ROLES: readable       # the tailnet is the access boundary
       DISPLAY_UNITS: mmol

@@ -23,7 +23,7 @@ Environment=ASPNETCORE_ENVIRONMENT=Production
 # state). Without this ASP.NET looks for it in the working directory, and e.g. HttpClient request logging (which would
 # write registrations to the journal) isn't turned down.
 Environment=ASPNETCORE_CONTENTROOT=/opt/vehiclemanager
-# Localhost only: `tailscale serve --service=svc:vehicles` publishes it on the tailnet, with HTTPS.
+# Localhost only: Caddy publishes it on the tailnet, with HTTPS, as https://vehicles.<home domain>.
 Environment=ASPNETCORE_URLS=http://127.0.0.1:5080
 Environment=DataProtection__KeysFolder=keys
 Environment=Backup__Enabled=true

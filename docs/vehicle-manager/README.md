@@ -146,8 +146,8 @@ without them.
 Setting it up on the server, step by step: [deploy/vehicle-manager/HOST-SETUP.md](../../deploy/vehicle-manager/HOST-SETUP.md).
 The systemd unit sets the address (`127.0.0.1:5080`), the keys folder and the backup folders; the env file holds the rest.
 
-On the server the app listens on localhost only and is published on the tailnet by `tailscale serve`, which handles
-HTTPS:
+On the server the app listens on localhost only and is published on the tailnet by Caddy (`deploy/caddy/`), which
+handles HTTPS:
 
 - **Address:** ASP.NET listens on `localhost` by default; set the port with `ASPNETCORE_URLS=http://127.0.0.1:<port>`.
 - **Forwarded headers:** `X-Forwarded-Proto` and `X-Forwarded-For` are trusted from a proxy on the same machine only,

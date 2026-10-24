@@ -1,11 +1,11 @@
 # Vehicle Manager: host setup
 
-Runs Vehicle Manager on the home server, on its SQL Server, at `https://vehicles.<tailnet>.ts.net`. What it does and
+Runs Vehicle Manager on the home server, on its SQL Server, at `https://vehicles.<home domain>` (through Caddy). What it does and
 its settings: [docs/vehicle-manager/README.md](../../docs/vehicle-manager/README.md). `<your-user>@<host>` is your
 login on the server; the deploy scripts default to `COLLECTORS_SSH` from `deploy/local.env`.
 
-**First:** SQL Server ([deploy/sqlserver/HOST-SETUP.md](../sqlserver/HOST-SETUP.md)) and the one-off Tailscale
-Services setup ([deploy/TAILSCALE-SERVICES.md](../TAILSCALE-SERVICES.md)).
+**First:** SQL Server ([deploy/sqlserver/HOST-SETUP.md](../sqlserver/HOST-SETUP.md)) and Caddy
+([deploy/caddy/HOST-SETUP.md](../caddy/HOST-SETUP.md)), whose Caddyfile already has the `vehicles` name.
 
 ## 1. Service account and folders (on the server)
 
@@ -108,8 +108,8 @@ It creates the database if §3 didn't, the `vehiclemanager` login as its owner, 
 
 ## 5. Auth0 (in a browser)
 
-In the Auth0 dashboard, the application's settings: add `https://vehicles.<tailnet>.ts.net/callback` to **Allowed
-Callback URLs** and `https://vehicles.<tailnet>.ts.net/Account/SignedOut` to **Allowed Logout URLs** (keep the
+In the Auth0 dashboard, the application's settings: add `https://vehicles.<home domain>/callback` to **Allowed
+Callback URLs** and `https://vehicles.<home domain>/Account/SignedOut` to **Allowed Logout URLs** (keep the
 localhost ones). Save.
 
 ## 6. Deploy (on the Mac)
@@ -118,17 +118,7 @@ localhost ones). Save.
 deploy/vehicle-manager/deploy.sh
 ```
 
-## 7. Publish it on the tailnet (on the server)
-
-```bash
-sudo tailscale serve --service=svc:vehicles --https=443 127.0.0.1:5080
-```
-
-```bash
-tailscale serve status
-```
-
-## 8. Check
+## 7. Check
 
 On the server:
 
@@ -145,11 +135,11 @@ journalctl -u vehiclemanager -n 40 --no-pager -o cat
 ```
 
 Expect `Healthy`, the test email, and in the log `Backup written: /var/lib/vehiclemanager/backups/vehiclemanager-….bak.gz`
-and `Off-site copy uploaded: …` (the first backup is taken at startup). Then open `https://vehicles.<tailnet>.ts.net`
+and `Off-site copy uploaded: …` (the first backup is taken at startup). Then open `https://vehicles.<home domain>`
 on the Mac and your phone (Tailscale on), sign in, and check the dashboard's figures against the local copy's. The
 healthchecks.io check turns green within 5 minutes.
 
-## 9. Backup pull to the Mac (on the Mac, then the server)
+## 8. Backup pull to the Mac (on the Mac, then the server)
 
 **On the Mac:**
 
@@ -174,7 +164,7 @@ printf '%s\n' 'https://hc-ping.com/<uuid>' > ~/.config/vehiclemanager/backup-pin
 ~/.local/bin/vehiclemanager-pull-backups
 ```
 
-## 10. Afterwards (on the Mac)
+## 9. Afterwards (on the Mac)
 
 Don't run the app locally against the real data again (its nightly jobs would send twice). For development, point
 it at the local SQL Server: *Local database* in the [README](../../docs/vehicle-manager/README.md).

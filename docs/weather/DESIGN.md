@@ -28,10 +28,11 @@ Outdoor sensor ──868 MHz──► Station console ──► Weather Undergro
                         ▼                        ▼                         ▼
                  SQLite archive           Derived summaries         Alerts + heartbeat
           (every message, as received;    (1-minute rollups,        (Resend email,
-           source of truth, kept forever;  rain increments)          healthchecks.io)
-           nightly backups + off-site)           │
+           source of truth, kept forever;  rain increments;          healthchecks.io)
+           nightly backups + off-site)     SQL Server)
+                                                 │
                                                  ▼
-                              Grafana (Docker, 127.0.0.1) ◄── tailscale serve (tailnet HTTPS)
+                              Grafana (Docker, 127.0.0.1) ◄── Caddy (tailnet HTTPS)
 ```
 
 | Topic | Decision |
@@ -40,7 +41,7 @@ Outdoor sensor ──868 MHz──► Station console ──► Weather Undergro
 | Receiving | `rtl_433` from the Ubuntu package, run by the worker as a **child process** reading JSON lines from stdout. One service and one account; no MQTT broker. (MQTT can be added later, e.g. for Home Assistant.) |
 | What is archived | **Every decoded message from every device**, including neighbours' sensors, with the raw JSON line. "My station" is a configured device id, with a history of id changes. |
 | Archive | **SQLite** (WAL), the single source of truth; insert-only. |
-| Dashboards | **Grafana** in Docker on `127.0.0.1:3000`, published on the tailnet with `tailscale serve` on another HTTPS port (e.g. 8443). Reads the archive's derived tables through the SQLite data source plugin; datasource and dashboards provisioned from this repository. |
+| Dashboards | **Grafana** in Docker on `127.0.0.1:3000`, published on the tailnet by Caddy as `https://weather.<home domain>`. Reads the derived data from **SQL Server** (the server's, shared with the web apps) through Grafana's built-in Microsoft SQL Server data source; datasource and dashboards provisioned from this repository. |
 | Remote access | Nothing exposed to the internet or the LAN; Tailscale only. |
 
 ## The sensor and rtl_433
@@ -118,7 +119,7 @@ Index on `(model, device_id, received_at_utc)`.
 
 ## Derived data
 
-Kept in the same database, rebuilt by the worker on demand, and refreshed incrementally (watermark by `messages.id`, as the Libre collector's Nightscout publisher does).
+Published to SQL Server (see Grafana), rebuilt by the worker on demand, and refreshed incrementally (watermark by `messages.id`, as the Libre collector's Nightscout publisher does).
 
 - **`minute_summaries`** per station and UTC minute: temperature avg/min/max, humidity avg, wind average, gust max, vector-mean wind direction, rain increment, message count (completeness).
 - **Rain increments:** for consecutive rain totals `prev` → `cur` from the station:
@@ -129,9 +130,8 @@ Kept in the same database, rebuilt by the worker on demand, and refreshed increm
 
 ## Grafana
 
-- Docker compose in `/opt/grafana` (pinned version), `127.0.0.1:3000`, `tailscale serve --bg --https=8443 http://127.0.0.1:3000`. Anonymous **Viewer** access (the tailnet is the access boundary, as for Nightscout); an admin account for editing.
-- **SQLite data source** plugin (`frser-sqlite-datasource`), with the data folder mounted. Time columns as epoch seconds or RFC 3339.
-- **To prove first (spike):** reading a WAL database from another process needs write access to its `-shm` file even when opened read-only. Options: mount the data folder read-write but open the database `mode=ro` with Grafana's user in the service's group; or have the worker write the derived tables to a **separate** database that Grafana owns read access to. If neither works well, fall back to publishing the derived data into **InfluxDB** (rebuildable, as Nightscout's MongoDB is for the Libre collector).
+- Docker compose in `/opt/grafana` (pinned version), `127.0.0.1:3000`, published by Caddy as `weather.<home domain>` (a block in `deploy/caddy/Caddyfile`). Anonymous **Viewer** access (the tailnet is the access boundary, as for Nightscout); an admin account for editing.
+- **Data: SQL Server** (decided 2026-10-24). The worker writes the derived tables to its own database on the server's SQL Server (`deploy/sqlserver/`), and Grafana reads them with its built-in Microsoft SQL Server data source and a read-only login. This replaces the original plan of the community SQLite plugin reading the archive directly, which needed a spike on sharing a WAL database with another process. The SQLite archive stays the single source of truth; the SQL Server copy is derived and can be rebuilt from it. About 0.5 million minute rows a year, far inside Express's 10 GB.
 - Dashboards are provisioned from this repository (JSON), so they're versioned. No community dashboard exists for this data; build: current conditions, temperature/humidity, wind (speed, gust, rose), rain (hour/day/month), battery and signal.
 
 ## Backups and monitoring
@@ -166,7 +166,7 @@ From the private 2021 WeatherLogger project, both as one-off CLI modes, idempote
 0. **Reception test** ✅: protocol 172 confirmed on the host, strong signal.
    Then the move into GreenHedges.Collectors (since renamed GreenHedges.HomeServer) ✅: shared host setup, alerts, heartbeat, backups and off-site copies in `Common`.
 1. **Archive:** projects `GreenHedges.HomeServer.Collectors.Weather.Rtl433` (process + parsing), `.Storage` and `.Worker`, with tests; collection and supervision, archive schema, deploy script and host setup, systemd unit (first deploy here, to be running before the sensor's battery change); then backups, off-site copies, alerts and heartbeat from `Common`. Deploy and leave running.
-2. **Dashboards:** derived tables, the Grafana WAL spike, Grafana compose + provisioning, dashboards, `tailscale serve`.
+2. **Dashboards:** derived tables (published to SQL Server), Grafana compose + provisioning, dashboards, a Caddy name.
 3. **History import:** Weather Underground, then Weathercloud.
 
 ## Open questions
