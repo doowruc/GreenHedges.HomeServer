@@ -80,6 +80,14 @@ sqlite3 -readonly /var/lib/weathercollector/weathercollector.db \
   "SELECT COUNT(*), MIN(local_date), MAX(local_date), SUM(observation_count) FROM wunderground_days;"
 ```
 
+### Weathercloud history
+
+Weathercloud's exports (10-minute rows with the console's indoor readings and pressure) are imported by hand:
+[HOST-SETUP §14](../../deploy/weather/HOST-SETUP.md). They're kept in the archive (`weathercloud_days`,
+`weathercloud_rows`, with each row's line as it was in the file) and published to SQL Server with the rest of the history.
+Values a working sensor can't read (e.g. the failing outdoor sensor's 57 °C in September 2024) are left out of what's
+published, not out of the archive.
+
 ### Battery changes
 
 After changing the sensor's batteries, check `devices` (above) for a new id of the same model. If there is one, **add** it to `/etc/weathercollector/env` as the next item (`Station__DeviceIds__1=…`), keeping the old one so its history stays the station's, then `sudo systemctl restart weathercollector`. Until then its messages are archived, but not as the station's.
