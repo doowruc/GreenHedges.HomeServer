@@ -1,0 +1,608 @@
+{
+  "uid": "weather-rain",
+  "title": "Rain",
+  "description": "Rain by day (UK days), month and year, and the wettest days and hours.",
+  "tags": [
+    "weather"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "graphTooltip": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "schemaVersion": 41,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Rain in range",
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "This month",
+      "description": "Since the 1st of the range's last month (UK time).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @month datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE MinuteUtc >= @month AND MinuteUtc <= @to"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "This year",
+      "description": "Since 1 January of the range's last year (UK time). Only since the collector started.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @year datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1, 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE MinuteUtc >= @year AND MinuteUtc <= @to"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Rain days in range",
+      "description": "Days (UK time) with at least 0.2 mm.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT COUNT(*) AS [Days] FROM (SELECT CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS d FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc) GROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') HAVING SUM(RainMm) >= 0.2) AS days"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Rain per day",
+      "description": "Each bar is a UK day, midnight to midnight.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT CAST(CAST(CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null,
+            "drawStyle": "bars",
+            "barAlignment": 1
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rain"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 24,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Rain per month",
+      "description": "Months (UK time) in the range; the first and last may be partial.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT FORMAT(DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1), 'MMM yyyy') AS [Month], ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)\nORDER BY DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "min": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "xField": "Month",
+        "showValue": "auto",
+        "barWidth": 0.6,
+        "groupWidth": 0.7,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Running total",
+      "description": "Rain since the start of the range, day by day.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT time, SUM(rain) OVER (ORDER BY time ROWS UNBOUNDED PRECEDING) AS [Rain]\nFROM (\n  SELECT CAST(CAST(CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS rain\n  FROM dbo.MinuteSummaries\n  WHERE $__timeFilter(MinuteUtc)\n  GROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')) AS days\nORDER BY time"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null,
+            "lineInterpolation": "stepAfter"
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rain"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Wettest days",
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT TOP 10 CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS [Day], ROUND(SUM(RainMm), 1) AS [Rain (mm)], ROUND(MAX(RainMm), 1) AS [Wettest minute (mm)]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Day"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: ddd D MMM YYYY"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "table",
+      "title": "Wettest hours",
+      "description": "Hours in local time.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT TOP 10 CAST(DATEADD(HOUR, DATEDIFF(HOUR, 0, MinuteUtc), 0) AS datetimeoffset) AS [Hour], ROUND(SUM(RainMm), 1) AS [Rain (mm)]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, MinuteUtc), 0)\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1,
+          "custom": {
+            "align": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Hour"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time: ddd D MMM YYYY, HH:mm"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    }
+  ],
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "weather"
+      ],
+      "asDropdown": false,
+      "title": "Weather",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ]
+}

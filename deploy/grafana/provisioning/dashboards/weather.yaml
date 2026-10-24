@@ -1,5 +1,6 @@
 # Dashboards are JSON files in this repository (deploy/grafana/dashboards/<folder>/), installed read-only: change them
-# in a PR, not in Grafana (an edit there can be saved as a copy, or exported as JSON to commit).
+# in a PR, not in Grafana (an edit there can be saved as a copy, or exported as JSON to commit). Removing a file
+# removes its dashboard.
 apiVersion: 1
 
 providers:
@@ -7,7 +8,7 @@ providers:
     folder: Weather
     folderUid: weather
     type: file
-    disableDeletion: true
+    disableDeletion: false
     allowUiUpdates: false
     updateIntervalSeconds: 60
     options:

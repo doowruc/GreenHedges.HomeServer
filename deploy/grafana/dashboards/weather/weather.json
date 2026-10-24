@@ -1,0 +1,1185 @@
+{
+  "uid": "weather-overview",
+  "title": "Weather",
+  "description": "The station now, and the last day: temperature, humidity, wind and rain, from the minute summaries.",
+  "tags": [
+    "weather"
+  ],
+  "timezone": "browser",
+  "editable": false,
+  "graphTooltip": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "schemaVersion": 41,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Temperature",
+      "description": "The latest minute's average (within the last 30 minutes of the range).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 TemperatureAvgC AS [Temperature] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -30, @to) AND TemperatureAvgC IS NOT NULL\nORDER BY MinuteUtc DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Today: min / max",
+      "description": "Since midnight (UK time) of the range's last day.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max] FROM dbo.MinuteSummaries\nWHERE MinuteUtc >= @day AND MinuteUtc <= @to"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 2,
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Humidity / dew point",
+      "description": "Relative humidity (%) and dew point (\u00b0C).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT TOP 1 HumidityAvg AS [Humidity], (243.12 * (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)) / (17.62 - (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)))) AS [Dew point] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -30, @to) AND HumidityAvg > 0 AND TemperatureAvgC IS NOT NULL\nORDER BY MinuteUtc DESC"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dew point"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 3,
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Wind / gust",
+      "description": "Average wind and strongest gust over the last 10 minutes of the range.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust] FROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -10, @to)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "velocitymph",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 4,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Direction",
+      "description": "Where the wind is coming from: the speed-weighted mean over the last 10 minutes of the range.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nSELECT CASE WHEN d < 0 THEN d + 360 ELSE d END AS [From]\nFROM (\n  SELECT DEGREES(ATN2(SUM(WindAvgMs * SIN(RADIANS(WindDirDeg))), SUM(WindAvgMs * COS(RADIANS(WindDirDeg))))) AS d\n  FROM dbo.MinuteSummaries\n  WHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(MINUTE, -10, @to) AND WindDirDeg IS NOT NULL\n  HAVING SUM(WindAvgMs) > 0) AS w"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "degree",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": 348.75,
+                "to": 360,
+                "result": {
+                  "text": "N"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 11.25,
+                "to": 33.75,
+                "result": {
+                  "text": "NNE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 33.75,
+                "to": 56.25,
+                "result": {
+                  "text": "NE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 56.25,
+                "to": 78.75,
+                "result": {
+                  "text": "ENE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 78.75,
+                "to": 101.25,
+                "result": {
+                  "text": "E"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 101.25,
+                "to": 123.75,
+                "result": {
+                  "text": "ESE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 123.75,
+                "to": 146.25,
+                "result": {
+                  "text": "SE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 146.25,
+                "to": 168.75,
+                "result": {
+                  "text": "SSE"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 168.75,
+                "to": 191.25,
+                "result": {
+                  "text": "S"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 191.25,
+                "to": 213.75,
+                "result": {
+                  "text": "SSW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 213.75,
+                "to": 236.25,
+                "result": {
+                  "text": "SW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 236.25,
+                "to": 258.75,
+                "result": {
+                  "text": "WSW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 258.75,
+                "to": 281.25,
+                "result": {
+                  "text": "W"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 281.25,
+                "to": 303.75,
+                "result": {
+                  "text": "WNW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 303.75,
+                "to": 326.25,
+                "result": {
+                  "text": "NW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 326.25,
+                "to": 348.75,
+                "result": {
+                  "text": "NNW"
+                }
+              }
+            },
+            {
+              "type": "range",
+              "options": {
+                "from": 0,
+                "to": 11.25,
+                "result": {
+                  "text": "N"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "Calm"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 5,
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Rain: today / 24 h",
+      "description": "Since midnight (UK time), and over the last 24 hours of the range.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @day datetime2 = CAST(CAST(CAST(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time' AS date) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(CASE WHEN MinuteUtc >= @day THEN RainMm END), 1), 0) AS [Today],\n       ISNULL(ROUND(SUM(RainMm), 1), 0) AS [24 hours]\nFROM dbo.MinuteSummaries\nWHERE MinuteUtc <= @to AND MinuteUtc > DATEADD(HOUR, -24, @to)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
+      "id": 6,
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature",
+      "description": "Average per interval, with the range between the lowest and highest minute shaded, and the dew point.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), MIN(TemperatureMinC) AS [Min], MAX(TemperatureMaxC) AS [Max], AVG(TemperatureAvgC) AS [Temperature], AVG(CASE WHEN HumidityAvg > 0 THEN (243.12 * (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)) / (17.62 - (LOG(HumidityAvg / 100.0) + 17.62 * TemperatureAvgC / (243.12 + TemperatureAvgC)))) END) AS [Dew point]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "decimals": 1,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Min"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 0
+              },
+              {
+                "id": "custom.fillBelowTo",
+                "value": "Min"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 20
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Min"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Max"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Temperature"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Dew point"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Humidity",
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), AVG(HumidityAvg) AS [Humidity]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 100
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Humidity"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind",
+      "description": "Average wind, and the strongest gust in each interval.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), AVG(WindAvgMs) * 2.23694 AS [Wind], MAX(GustMaxMs) * 2.23694 AS [Gust]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "velocitymph",
+          "decimals": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Wind"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gust"
+            },
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    4,
+                    4
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Gust"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Wind direction",
+      "description": "Where the wind came from, minute by minute (calm minutes left out). 0/360 = north, 90 = east, 180 = south, 270 = west.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT MinuteUtc AS time, WindDirDeg AS [From]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "degree",
+          "decimals": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "showPoints": "always",
+            "spanNulls": false,
+            "axisSoftMin": null,
+            "drawStyle": "points",
+            "pointSize": 3,
+            "axisCenteredZero": false
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 360
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "From"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Rain per hour",
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, '1h', 0), ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, '1h', 0)\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 1,
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisSoftMin": null,
+            "drawStyle": "bars",
+            "barAlignment": 1
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rain"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "type": "barchart",
+      "title": "Wind directions",
+      "description": "How often the wind came from each direction over the range: minutes with wind (calm left out), as a share of them.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "WITH points AS (SELECT * FROM (VALUES (0, 'N'), (1, 'NNE'), (2, 'NE'), (3, 'ENE'), (4, 'E'), (5, 'ESE'), (6, 'SE'), (7, 'SSE'), (8, 'S'), (9, 'SSW'), (10, 'SW'), (11, 'WSW'), (12, 'W'), (13, 'WNW'), (14, 'NW'), (15, 'NNW')) AS p (n, name)),\ncounts AS (\n  SELECT CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16 AS n, COUNT(*) AS minutes\n  FROM dbo.MinuteSummaries\n  WHERE $__timeFilter(MinuteUtc) AND WindDirDeg IS NOT NULL AND WindAvgMs >= 0.5\n  GROUP BY CAST(ROUND(WindDirDeg / 22.5, 0) AS int) % 16)\nSELECT p.name AS [From], ISNULL(100.0 * c.minutes / NULLIF(SUM(c.minutes) OVER (), 0), 0) AS [Share]\nFROM points p LEFT JOIN counts c ON c.n = p.n\nORDER BY p.n"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "vertical",
+        "xField": "From",
+        "showValue": "never",
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    }
+  ],
+  "links": [
+    {
+      "type": "dashboards",
+      "tags": [
+        "weather"
+      ],
+      "asDropdown": false,
+      "title": "Weather",
+      "includeVars": false,
+      "keepTime": true
+    }
+  ]
+}

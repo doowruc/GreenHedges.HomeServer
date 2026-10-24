@@ -59,7 +59,7 @@ curl -s -u admin http://127.0.0.1:3000/api/datasources/uid/weather/health; echo
 It asks for the admin password, then shows `Database Connection OK`.
 
 **On the Mac and the iPhone** (Tailscale on): open `https://grafana.<home domain>` → **Dashboards** →
-**Weather** → **Temperature**. No sign-in is needed to view. To edit, sign in as `admin`. The provisioned dashboards
+**Weather** → **Weather**, **Rain** and **Station**. No sign-in is needed to view. To edit, sign in as `admin`. The provisioned dashboards
 can't be saved in Grafana: change them in the repository.
 
 ## Updating

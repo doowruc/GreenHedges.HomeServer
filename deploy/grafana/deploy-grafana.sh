@@ -42,7 +42,7 @@ ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
   sudo docker compose -f /opt/grafana/compose.yaml ps
   echo
   curl -fsS http://127.0.0.1:3000/api/health; echo
-  sudo docker compose -f /opt/grafana/compose.yaml logs --no-log-prefix --since 2m grafana | grep -iE "level=(error|warn)" | grep -v "migrator" | tail -10 || true'
+  sudo docker compose -f /opt/grafana/compose.yaml logs --no-log-prefix --since 2m grafana | grep -iE "level=(error|warn)" | grep -vE "migrator|dual writing" | tail -10 || true'
 
 exit
 }
