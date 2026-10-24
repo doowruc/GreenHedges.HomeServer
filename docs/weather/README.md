@@ -15,7 +15,7 @@ Once it's running there's nothing to do. You'll hear from it only when something
 
 **Dashboards:** `https://grafana.<home domain>` → **Weather** (Grafana, [deploy/grafana/](../../deploy/grafana/HOST-SETUP.md)), from the minute summaries:
 
-- **Weather:** now (temperature, today's min/max, humidity and dew point, wind and gust, direction, rain today and over 24 hours), then the last day's temperature with dew point, humidity, wind, direction, rain per hour, and how often the wind came from each of 16 directions.
+- **Weather:** now (temperature, today's min/max, humidity and dew point, wind and gust, direction, rain today and over 24 hours); over the selected range (temperature and humidity min/max, total rain, strongest wind and gust); then the last day's temperature with dew point, humidity, wind, direction, rain per hour, and how often the wind came from each of 16 directions.
 - **Rain:** totals for the range, month and year; rain per UK day and per month; the running total; the wettest days and hours.
 - **Station:** reception (messages received, per hour), signal (SNR, RSSI), battery, the last message, and gaps.
 
