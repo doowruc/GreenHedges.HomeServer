@@ -147,16 +147,39 @@ Shared with the Libre collector through `Common`: nightly SQLite backup API → 
 | Station id changed | The station's ids silent for 5 minutes while an id of the same model is heard that was first heard after them (so a neighbour heard all along doesn't count) |
 | Sensor battery low | `battery_ok` = 0 for an hour (only the temperature messages carry it) |
 | Summaries for Grafana stalled | Publishing minute summaries to SQL Server failing for 30 minutes |
+| Weather Underground history failing | Weather Underground history runs failing for 6 hours (retried hourly) |
 | Backups failing / off-site failing | No good copy for 36 hours |
 
-Thresholds are `Alerts:StationSilentAfter`, `Alerts:ReceiverEndsPerHour`, `Alerts:BatteryLowAfter` and `Alerts:PublishStalledAfter`. An alert resolves only on positive evidence since startup: a station message from a configured id, rtl_433 writing lines with no missing dongle and fewer restarts, `battery_ok` = 1. While a receiver or station-id alert is open, "No station messages" isn't raised as well.
+Thresholds are `Alerts:StationSilentAfter`, `Alerts:ReceiverEndsPerHour`, `Alerts:BatteryLowAfter`, `Alerts:PublishStalledAfter` and `Alerts:WundergroundFailingAfter`. An alert resolves only on positive evidence since startup: a station message from a configured id, rtl_433 writing lines with no missing dongle and fewer restarts, `battery_ok` = 1. While a receiver or station-id alert is open, "No station messages" isn't raised as well.
 
 ## History import
 
-From the private 2021 WeatherLogger project, both as one-off CLI modes, idempotent, into separate tables (they're processed summaries, not raw readings):
+The station's own uploads, from before the collector existed (and, for pressure, from now on), decided 2026-10-24.
+Both sources go into the **SQLite archive** first, as received, so they're backed up and copied off-site with the radio
+data (once the services stop holding them, ours is the only copy); from there they're published to SQL Server's
+`HistoryObservations` (one shape for both; each row an interval ending at `TimeUtc`, with pressure and, from
+Weathercloud, the indoor readings the radio never carries). The dashboards merge it with the minute summaries: the radio
+first, then Weather Underground, then Weathercloud.
 
-- **Weather Underground** PWS history API (`api.weather.com/v2/pws/history/all`, one day per call, the station owner's API key): per-interval high/low/average for temperature, humidity, wind, gust, dew point, pressure, rain rate/total, keyed by epoch. Includes **pressure** from the console. Check the API key and rate limits still work.
-- **Weathercloud** CSV export: `;`-separated, **UTF-16**, local time (the header names the zone, e.g. `Date (<zone>)`), so the autumn repeated hour needs the same care as the Libre collector's LibreView import.
+- **Weather Underground** (PWS history API, `api.weather.com/v2/pws/history/all`, one local day per call, the station
+  owner's API key, metric units): 5-minute intervals with high/low/average temperature, humidity, wind, gust, dew point,
+  pressure range and the day's running rain total. History from 2021-11-08. Archive schema v2: `wunderground_days` (each
+  day's response as received, and when it was fetched) and `wunderground_observations` (typed, rebuildable from them).
+  - **Fetched by the worker itself**, not a one-off: a run a few minutes after startup and every night at 04:30, of
+    every day from `Wunderground:From` to yesterday not yet fetched in full, newest first. A day is fetched again until
+    a fetch happens 24 hours after it ended (so late uploads are caught: yesterday is fetched twice). The first runs
+    fill the backlog (about 1,800 days) within two nights.
+  - **Rate limits** (owner keys: 1,500 calls a day, 30 a minute): at most `MaxCallsPerDay` (1,000), counting the days
+    already fetched in the last 24 hours, so restarts can't exceed it; 2.5 s between calls; a 429 stops the run.
+  - Publishing: each day whole (a re-fetched day replaces its rows), km/h to m/s, pressure as the middle of the
+    interval's range, rain per interval from the day's running total (which restarts at local midnight).
+  - `--fetch-wunderground [yyyy-MM-dd]` fetches one day and prints it without storing: a check of the id and key.
+  - Alert "Weather Underground history failing" after 6 hours of failed runs (retried hourly).
+- **Weathercloud** CSV exports (Phase 3b): one file per month (a year comes as a zip of months), UTF-16LE without a
+  byte-order mark, `;`-separated, local time `dd/MM/yyyy HH:mm:ss` (the header names the zone), 10-minute rows,
+  pressure with a thousands comma, rain as the local day's running total. The 2021 files have short headers
+  (`temp (°C)`), 2026's long ones (`Temperature (°C)`), same columns in the same order. First reading 2021-11-07 13:20.
+  The autumn repeated hour needs the same care as the Libre collector's LibreView import.
 
 ## Host setup (summary)
 
@@ -169,10 +192,10 @@ From the private 2021 WeatherLogger project, both as one-off CLI modes, idempote
 0. **Reception test** ✅: protocol 172 confirmed on the host, strong signal.
    Then the move into GreenHedges.Collectors (since renamed GreenHedges.HomeServer) ✅: shared host setup, alerts, heartbeat, backups and off-site copies in `Common`.
 1. **Archive:** projects `GreenHedges.HomeServer.Collectors.Weather.Rtl433` (process + parsing), `.Storage` and `.Worker`, with tests; collection and supervision, archive schema, deploy script and host setup, systemd unit (first deploy here, to be running before the sensor's battery change); then backups, off-site copies, alerts and heartbeat from `Common`. Deploy and leave running.
-2. **Dashboards**, in three PRs: (a) minute summaries published to SQL Server, with the `Weather` database's setup; (b) Grafana: compose, provisioning (data source, dashboard folder), a Caddy name; (c) the dashboards.
-3. **History import:** Weather Underground, then Weathercloud.
+2. **Dashboards** ✅ (2026-10-24), in three PRs: (a) minute summaries published to SQL Server, with the `Weather` database's setup; (b) Grafana: compose, provisioning (data source, dashboard folder), a Caddy name; (c) the dashboards.
+3. **History import:** (a) Weather Underground, nightly, with the backlog, published to SQL Server; (b) Weathercloud exports; (c) dashboards merging the history with the minute summaries, with pressure and indoor charts.
 
 ## Open questions
 
-- **Pressure and indoor readings** aren't on the radio. Options: do without; poll the station's own Weather Underground current observations for pressure only; or add a sensor of our own (e.g. a Bresser 868 MHz indoor sensor that rtl_433 decodes, or an I²C pressure sensor). Decide after Phase 2.
+- **Pressure and indoor readings** aren't on the radio. Decided 2026-10-24: pressure comes from Weather Underground's history, fetched nightly (History import); indoor readings from Weathercloud's exports. A sensor of our own (e.g. a Bresser 868 MHz indoor sensor that rtl_433 decodes, or an I²C pressure sensor) stays an option for live values.
 - What `startup` means, whether the id changes on a battery change, and whether the rain total resets: observe at the next battery change and update this document. (Rain doesn't wrap at 999.9: answered 2026-10-18.)

@@ -4,8 +4,9 @@ using Microsoft.Data.SqlClient;
 namespace GreenHedges.HomeServer.Collectors.Weather.Summaries;
 
 /// <summary>
-/// The summaries' database on SQL Server, which Grafana reads: <c>MinuteSummaries</c>, and in <c>PublishState</c>
-/// how far through the archive they are. Derived data only: drop the database (or empty the tables) and the
+/// The summaries' database on SQL Server, which Grafana reads: <c>MinuteSummaries</c> from the radio,
+/// <c>HistoryObservations</c> from the station's uploads (Weather Underground, Weathercloud), and in <c>PublishState</c>
+/// how far through the archive each is. Derived data only: drop the database (or empty the tables) and the
 /// publisher rebuilds it all from the archive. The database itself is created by the host setup; this creates and
 /// migrates the tables in it.
 /// </summary>
@@ -36,6 +37,29 @@ public sealed class SummaryStore(string connectionString)
             LastMessageId   bigint       NOT NULL,
             UpdatedUtc      datetime2(0) NOT NULL
         );
+        """,
+        // v2: the station's own history, as uploaded to Weather Underground and Weathercloud, in one shape. Each row is
+        // an interval ending at TimeUtc. Pressure and the indoor readings come only from here (the radio doesn't carry them).
+        """
+        CREATE TABLE dbo.HistoryObservations (
+            Source             varchar(20)  NOT NULL,
+            TimeUtc            datetime2(0) NOT NULL,
+            IntervalMinutes    int          NOT NULL,
+            TemperatureAvgC    float        NULL,
+            TemperatureMinC    float        NULL,
+            TemperatureMaxC    float        NULL,
+            HumidityAvg        float        NULL,
+            DewPointC          float        NULL,
+            WindAvgMs          float        NULL,
+            GustMaxMs          float        NULL,
+            WindDirDeg         float        NULL,
+            RainMm             float        NULL,
+            PressureHpa        float        NULL,
+            IndoorTemperatureC float        NULL,
+            IndoorHumidity     float        NULL,
+            CONSTRAINT PK_HistoryObservations PRIMARY KEY (Source, TimeUtc)
+        );
+        CREATE INDEX IX_HistoryObservations_Time ON dbo.HistoryObservations (TimeUtc) INCLUDE (Source);
         """,
     ];
 
@@ -73,7 +97,10 @@ public sealed class SummaryStore(string connectionString)
         }
     }
 
-    /// <summary>The last archive message id published for <paramref name="target"/>; 0 if none yet.</summary>
+    /// <summary>
+    /// How far <paramref name="target"/> has published (its watermark, stored in <c>PublishState.LastMessageId</c>: an
+    /// archive message id for the summaries, a fetch time in Unix milliseconds for history); 0 if nothing yet.
+    /// </summary>
     public async Task<long> GetPublishedIdAsync(string target, CancellationToken cancellationToken)
     {
         await using var connection = await OpenAsync(cancellationToken);
@@ -129,7 +156,14 @@ public sealed class SummaryStore(string connectionString)
                 cancellationToken);
         }
 
-        await using (var command = new SqlCommand(
+        await SetPositionAsync(connection, transaction, target, lastMessageId, now, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    private static async Task SetPositionAsync(
+        SqlConnection connection, SqlTransaction transaction, string target, long position, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        await using var command = new SqlCommand(
             """
             MERGE dbo.PublishState WITH (HOLDLOCK) AS target
             USING (SELECT @target AS Target) AS source ON target.Target = source.Target
@@ -137,15 +171,71 @@ public sealed class SummaryStore(string connectionString)
             WHEN NOT MATCHED THEN INSERT (Target, LastMessageId, UpdatedUtc) VALUES (@target, @id, @now);
             """,
             connection,
-            transaction))
+            transaction);
+        command.Parameters.Add("@target", SqlDbType.NVarChar, 50).Value = target;
+        command.Parameters.Add("@id", SqlDbType.BigInt).Value = position;
+        command.Parameters.Add("@now", SqlDbType.DateTime2).Value = now.UtcDateTime;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Replaces <paramref name="source"/>'s observations from <paramref name="fromUtc"/> (inclusive) to
+    /// <paramref name="toUtc"/> (exclusive) with <paramref name="observations"/>, and moves <paramref name="target"/>'s
+    /// watermark to <paramref name="position"/>, in one transaction.
+    /// </summary>
+    public async Task ReplaceHistoryAsync(
+        string source, DateTime fromUtc, DateTime toUtc, IReadOnlyList<HistoryObservation> observations,
+        string target, long position, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+        await using (var delete = new SqlCommand(
+            "DELETE dbo.HistoryObservations WHERE Source = @source AND TimeUtc >= @from AND TimeUtc < @to;", connection, transaction))
         {
-            command.Parameters.Add("@target", SqlDbType.NVarChar, 50).Value = target;
-            command.Parameters.Add("@id", SqlDbType.BigInt).Value = lastMessageId;
-            command.Parameters.Add("@now", SqlDbType.DateTime2).Value = now.UtcDateTime;
-            await command.ExecuteNonQueryAsync(cancellationToken);
+            delete.Parameters.Add("@source", SqlDbType.VarChar, 20).Value = source;
+            delete.Parameters.Add("@from", SqlDbType.DateTime2).Value = fromUtc;
+            delete.Parameters.Add("@to", SqlDbType.DateTime2).Value = toUtc;
+            await delete.ExecuteNonQueryAsync(cancellationToken);
         }
 
+        if (observations.Count > 0)
+        {
+            using var bulk = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction) { DestinationTableName = "dbo.HistoryObservations" };
+            await bulk.WriteToServerAsync(ToTable(source, observations), cancellationToken);
+        }
+
+        await SetPositionAsync(connection, transaction, target, position, now, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <summary><paramref name="source"/>'s observations from <paramref name="fromUtc"/> (inclusive) to <paramref name="toUtc"/> (exclusive).</summary>
+    public async Task<IReadOnlyList<HistoryObservation>> ReadHistoryAsync(
+        string source, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(
+            """
+            SELECT TimeUtc, IntervalMinutes, TemperatureAvgC, TemperatureMinC, TemperatureMaxC, HumidityAvg, DewPointC,
+                   WindAvgMs, GustMaxMs, WindDirDeg, RainMm, PressureHpa, IndoorTemperatureC, IndoorHumidity
+            FROM dbo.HistoryObservations WHERE Source = @source AND TimeUtc >= @from AND TimeUtc < @to ORDER BY TimeUtc;
+            """,
+            connection);
+        command.Parameters.Add("@source", SqlDbType.VarChar, 20).Value = source;
+        command.Parameters.Add("@from", SqlDbType.DateTime2).Value = fromUtc;
+        command.Parameters.Add("@to", SqlDbType.DateTime2).Value = toUtc;
+
+        var rows = new List<HistoryObservation>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            rows.Add(new HistoryObservation(
+                DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Utc), reader.GetInt32(1),
+                Real(reader, 2), Real(reader, 3), Real(reader, 4), Real(reader, 5), Real(reader, 6), Real(reader, 7),
+                Real(reader, 8), Real(reader, 9), Real(reader, 10), Real(reader, 11), Real(reader, 12), Real(reader, 13)));
+        }
+
+        return rows;
     }
 
     /// <summary>The minutes from <paramref name="fromUtc"/> (inclusive) to <paramref name="toUtc"/> (exclusive), in time order.</summary>
@@ -213,6 +303,29 @@ public sealed class SummaryStore(string connectionString)
                 m.MinuteUtc, m.Messages, Db(m.TemperatureAvgC), Db(m.TemperatureMinC), Db(m.TemperatureMaxC),
                 Db(m.HumidityAvg), Db(m.WindAvgMs), Db(m.GustMaxMs), Db(m.WindDirDeg), Db(m.RainMm), Db(m.BatteryOk),
                 Db(m.RssiAvgDb), Db(m.SnrAvgDb));
+        }
+
+        return table;
+    }
+
+    private static DataTable ToTable(string source, IReadOnlyList<HistoryObservation> rows)
+    {
+        // Columns in the table's order, for SqlBulkCopy's default (ordinal) mapping.
+        var table = new DataTable();
+        table.Columns.Add("Source", typeof(string));
+        table.Columns.Add("TimeUtc", typeof(DateTime));
+        table.Columns.Add("IntervalMinutes", typeof(int));
+        foreach (var name in new[] { "TemperatureAvgC", "TemperatureMinC", "TemperatureMaxC", "HumidityAvg", "DewPointC", "WindAvgMs", "GustMaxMs", "WindDirDeg", "RainMm", "PressureHpa", "IndoorTemperatureC", "IndoorHumidity" })
+        {
+            table.Columns.Add(name, typeof(double));
+        }
+
+        foreach (var o in rows)
+        {
+            table.Rows.Add(
+                source, o.TimeUtc, o.IntervalMinutes, Db(o.TemperatureAvgC), Db(o.TemperatureMinC), Db(o.TemperatureMaxC),
+                Db(o.HumidityAvg), Db(o.DewPointC), Db(o.WindAvgMs), Db(o.GustMaxMs), Db(o.WindDirDeg), Db(o.RainMm),
+                Db(o.PressureHpa), Db(o.IndoorTemperatureC), Db(o.IndoorHumidity));
         }
 
         return table;

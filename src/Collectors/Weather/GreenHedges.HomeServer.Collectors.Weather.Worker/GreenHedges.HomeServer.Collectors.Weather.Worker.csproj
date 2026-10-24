@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\..\Common\GreenHedges.HomeServer.Common\GreenHedges.HomeServer.Common.csproj" />
     <ProjectReference Include="..\GreenHedges.HomeServer.Collectors.Weather.Rtl433\GreenHedges.HomeServer.Collectors.Weather.Rtl433.csproj" />
     <ProjectReference Include="..\GreenHedges.HomeServer.Collectors.Weather.Storage\GreenHedges.HomeServer.Collectors.Weather.Storage.csproj" />
+    <ProjectReference Include="..\GreenHedges.HomeServer.Collectors.Weather.History\GreenHedges.HomeServer.Collectors.Weather.History.csproj" />
     <ProjectReference Include="..\GreenHedges.HomeServer.Collectors.Weather.Summaries\GreenHedges.HomeServer.Collectors.Weather.Summaries.csproj" />
   </ItemGroup>
 

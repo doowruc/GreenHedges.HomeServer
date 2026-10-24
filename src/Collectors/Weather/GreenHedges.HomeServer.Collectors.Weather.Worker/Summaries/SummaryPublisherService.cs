@@ -4,8 +4,8 @@ using Microsoft.Extensions.Options;
 namespace GreenHedges.HomeServer.Collectors.Weather.Worker.Summaries;
 
 /// <summary>
-/// Publishes minute summaries to SQL Server (for Grafana) every <see cref="SummaryOptions.Interval"/>, starting
-/// with any backlog. If SQL Server is down it backs off and tries again; collection and the archive are unaffected,
+/// Publishes minute summaries, and the station's history from Weather Underground, to SQL Server (for Grafana)
+/// every <see cref="SummaryOptions.Interval"/>, starting with any backlog. If SQL Server is down it backs off and tries again; collection and the archive are unaffected,
 /// and nothing is lost: the watermark only moves with a successful write. Off when
 /// <c>ConnectionStrings:Weather</c> isn't set.
 /// </summary>
@@ -38,6 +38,7 @@ public sealed class SummaryPublisherService(
         // Resolved only when enabled: the store needs the connection string.
         var store = services.GetRequiredService<SummaryStore>();
         var publisher = services.GetRequiredService<SummaryPublisher>();
+        var history = services.GetRequiredService<HistoryPublisher>();
         var initialised = false;
         var failures = 0;
 
@@ -53,10 +54,16 @@ public sealed class SummaryPublisherService(
                 }
 
                 var written = await publisher.PublishPendingAsync(stoppingToken);
+                var days = await history.PublishPendingAsync(stoppingToken);
                 health.RecordPublishSuccess();
                 if (failures > 0 || written > 60)
                 {
                     logger.LogInformation("Published {Minutes:N0} minute summaries", written);
+                }
+
+                if (days > 0)
+                {
+                    logger.LogInformation("Published {Days:N0} days of Weather Underground history", days);
                 }
 
                 failures = 0;
