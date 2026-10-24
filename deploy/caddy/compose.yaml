@@ -1,0 +1,38 @@
+# Caddy: the front door for the home server's web apps, at https://<app>.<home domain> on the tailnet.
+# Installed on the host in /opt/caddy, with the Dockerfile, and the Caddyfile in /opt/caddy/etc; settings in
+# /etc/caddy/caddy.env.
+# See deploy/caddy/HOST-SETUP.md. Install or update with deploy/caddy/deploy-caddy.sh.
+#
+# Tailscale Service svc:home passes TCP 443 to 127.0.0.1:8443, where Caddy terminates HTTPS and proxies each name to
+# its app on 127.0.0.1. Host networking so Caddy reaches the apps on the host's loopback; the Caddyfile binds everything
+# to 127.0.0.1, so nothing is reachable from the LAN (Docker's published ports would bypass ufw; host networking
+# publishes none).
+
+name: caddy
+
+services:
+  caddy:
+    build: .
+    image: local/caddy-cloudflare:2.11.7
+    restart: unless-stopped
+    network_mode: host
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - /etc/caddy/caddy.env           # HOME_DOMAIN, CLOUDFLARE_API_TOKEN, ACME_EMAIL
+    volumes:
+      - /opt/caddy/etc:/etc/caddy:ro    # the Caddyfile (a folder, so a new copy is seen without recreating)
+      - /var/lib/caddy/data:/data       # certificates and the ACME account: keep, so a restart doesn't re-issue
+      - /var/lib/caddy/config:/config
+    healthcheck:
+      # The admin API (127.0.0.1:2019) answers once the config is loaded.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

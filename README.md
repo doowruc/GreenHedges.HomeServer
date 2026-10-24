@@ -23,7 +23,8 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `compose.yaml`, `.env.example` | SQL Server in Docker for local development and Vehicle Manager's tests |
 | `deploy/sqlserver/` | SQL Server in Docker on the home server, for its web apps: compose file, deploy script, host setup |
 | `deploy/vehicle-manager/` | Vehicle Manager's systemd unit, deploy script, database setup and host setup |
-| `deploy/TAILSCALE-SERVICES.md` | One-off Tailscale setup that gives each web app its own `https://<name>.<tailnet>.ts.net` |
+| `deploy/TAILSCALE-SERVICES.md` | One-off Tailscale setup: the server's tag and access to `svc:home`, the tailnet address of the web apps |
+| `deploy/caddy/` | Caddy, the web apps' front door: `https://<app>.<home domain>` on the tailnet, one wildcard certificate |
 | `deploy/deploy.sh` | Publishes a service and installs it on the host (`deploy/<service>/deploy.sh` for short) |
 | `deploy/libre/` | The Libre collector's systemd unit, deploy script, host setup and Nightscout stack |
 | `docs/libre/` | Its README (setup and use) and design notes |

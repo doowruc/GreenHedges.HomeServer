@@ -23,7 +23,7 @@ LibreLinkUp (follower) ──► Collector ──► SQLite archive (source of t
           Nightscout publisher         Nightly backups          Alerts + heartbeat
           (same process)               (+ off-machine pull)     (Resend email, healthchecks.io)
                     │
-          Nightscout + MongoDB (Docker, localhost only) ◄── tailscale serve (tailnet HTTPS)
+          Nightscout + MongoDB (Docker, localhost only) ◄── Caddy (tailnet HTTPS)
                     │
           Nightguard (iPhone) ──► Apple Health
 ```

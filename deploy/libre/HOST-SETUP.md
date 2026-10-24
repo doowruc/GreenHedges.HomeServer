@@ -357,7 +357,7 @@ Don't add your user to the `docker` group unless you want to: membership is effe
 
 ## 10. Nightscout (Phase 2)
 
-Needs Docker (§9). Nightscout and MongoDB run from [`deploy/libre/nightscout/compose.yaml`](nightscout/compose.yaml): pinned images, MongoDB on an internal-only Docker network, and Nightscout listening on **`127.0.0.1:1337` only**. It's reached from other devices through `tailscale serve` (HTTPS, tailnet only).
+Needs Docker (§9). Nightscout and MongoDB run from [`deploy/libre/nightscout/compose.yaml`](nightscout/compose.yaml): pinned images, MongoDB on an internal-only Docker network, and Nightscout listening on **`127.0.0.1:1337` only**. It's reached from other devices through Caddy, at `https://nightscout.<home domain>` (HTTPS, tailnet only).
 
 **On the server**, create the folders and the secret. `API_SECRET` is Nightscout's admin password; the publisher will use it too.
 
@@ -385,18 +385,7 @@ It should end with `Nightscout is up:` and a JSON status that includes `"version
 
 ### HTTPS over the tailnet
 
-1. In the Tailscale admin console, **DNS** page (<https://login.tailscale.com/admin/dns>): make sure **MagicDNS** is on, and turn on **HTTPS Certificates**.
-2. On the server:
-
-```bash
-sudo tailscale serve --bg 1337
-```
-
-```bash
-tailscale serve status
-```
-
-It shows the address, `https://librecollector.<your-tailnet>.ts.net`. The `--bg` setting persists across reboots.
+Set up Caddy ([deploy/caddy/HOST-SETUP.md](../caddy/HOST-SETUP.md)); its Caddyfile already has the `nightscout` name.
 
 ### Devices that view Nightscout
 
@@ -405,7 +394,7 @@ Each needs **Tailscale installed and signed in to the same account** (the laptop
 - **Your computer:** Tailscale from <https://tailscale.com/download> (or the Mac App Store).
 - **iPhone:** Tailscale from the App Store. Allow the VPN configuration when asked.
 
-Then open the `https://…ts.net` address in a browser. Until the publisher is running (below), the chart is empty; that's expected.
+Then open `https://nightscout.<home domain>` in a browser. Until the publisher is running (below), the chart is empty; that's expected.
 
 ### Publishing from the collector
 
@@ -424,7 +413,7 @@ Then deploy the collector from your computer (`deploy/libre/deploy.sh <your-user
 
 **Rebuilding Nightscout from the archive** (e.g. after wiping MongoDB): stop the collector, run `sudo -u librecollector sqlite3 /var/lib/librecollector/librecollector.db "DELETE FROM publish_state WHERE target LIKE 'nightscout%';"`, then start it again. Re-sending is safe: Nightscout upserts on timestamp + type.
 
-**No firewall changes are needed:** Nightscout is bound to localhost, and `tailscale serve` connects to it locally.
+**No firewall changes are needed:** Nightscout is bound to localhost, and Caddy connects to it locally.
 
 ## 11. Importing LibreView history (optional, re-runnable)
 
@@ -470,5 +459,5 @@ sudo rm /var/lib/librecollector/libreview-import.csv
 - [ ] Off-site copies: age key in password manager, bucket (versioning + lifecycle), write-only IAM key, `Offsite__*` in env, first upload logged, restore test passed
 - [ ] Docker installed (Phase 2)
 - [ ] Nightscout: `/etc/nightscout/nightscout.env` created (secret saved), stack started with `deploy-nightscout.sh`, answers on `127.0.0.1:1337`
-- [ ] `tailscale serve` HTTPS on; Tailscale on your computer and phone; Nightscout opens at the `…ts.net` address
+- [ ] Caddy set up; Tailscale on your computer and phone; Nightscout opens at `https://nightscout.<home domain>`
 - [ ] `Nightscout__BaseUrl` / `Nightscout__ApiSecret` in `/etc/librecollector/env`; collector redeployed; archive visible in Nightscout

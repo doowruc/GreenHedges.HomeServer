@@ -227,9 +227,9 @@ GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with t
   which answers only for registrations added with `FakeVehicleApis.Add(FakeVehicleApis.NewRegistration(), …)`.
   Each pass it sends has an advisory, plus a failed test (01/01/2020, as "OLD 1") with `FakeVehicleApis.FailedTestDefect`.
 
-**Hosting behind `tailscale serve`** (`Program.cs`)
+**Hosting behind Caddy** (`Program.cs`)
 - `UseForwardedHeaders` runs first: `X-Forwarded-Proto` and `-For` are trusted from loopback proxies only (ASP.NET's
-  default `KnownProxies`/`KnownIPNetworks`); never widen that. `tailscale serve` keeps the `Host` header, so
+  default `KnownProxies`/`KnownIPNetworks`); never widen that. Caddy keeps the `Host` header, so
   `X-Forwarded-Host` isn't used.
 - On the server the unit sets `ASPNETCORE_CONTENTROOT=/opt/vehiclemanager` (where `appsettings.json` is) while the
   working directory is the data folder; relative data paths (keys, backups, alert state) go through `Path.GetFullPath`,

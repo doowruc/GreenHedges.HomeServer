@@ -65,9 +65,9 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy(AllowedUsers.PolicyName, allowedUserPolicy)
     .SetFallbackPolicy(allowedUserPolicy);
 
-// On the server the app sits behind `tailscale serve`, which terminates HTTPS and passes requests on from 127.0.0.1
+// On the server the app sits behind Caddy, which terminates HTTPS and passes requests on from 127.0.0.1
 // with X-Forwarded-Proto and X-Forwarded-For (the Host header comes through as it was). Trusting them, from loopback
-// proxies only (ASP.NET's default), gives Auth0 the https://…ts.net callback and keeps HTTPS redirection quiet.
+// proxies only (ASP.NET's default), gives Auth0 the https:// callback and keeps HTTPS redirection quiet.
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
 

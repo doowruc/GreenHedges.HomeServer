@@ -1,0 +1,55 @@
+# The home server's web apps behind one wildcard certificate, *.{$HOME_DOMAIN}.
+# {$…} come from /etc/caddy/caddy.env. To add an app: a host matcher and handle block below, then re-run
+# deploy-caddy.sh. Nothing else changes: the wildcard DNS record, certificate and Tailscale Service already cover it.
+{
+	email {$ACME_EMAIL}
+
+	# Reached only through Tailscale: svc:home forwards TCP 443 to 127.0.0.1:8443. No plain-HTTP listener at all.
+	default_bind 127.0.0.1
+	https_port 8443
+	auto_https disable_redirects
+	admin 127.0.0.1:2019
+
+	servers {
+		# Tailscale sends a PROXY protocol header (serve --proxy-protocol=2) with the visitor's tailnet address, so
+		# logs and the apps' X-Forwarded-For show the device, not 127.0.0.1.
+		listener_wrappers {
+			proxy_protocol {
+				timeout 5s
+				allow 127.0.0.1/32
+			}
+			tls
+		}
+	}
+}
+
+*.{$HOME_DOMAIN} {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+		# Check the challenge record on public resolvers, not the host's (which may cache the old answer).
+		resolvers 1.1.1.1 8.8.8.8
+	}
+
+	log {
+		output stdout
+		format console
+	}
+
+	# Vehicle Manager (deploy/vehicle-manager). Caddy keeps the Host header and adds X-Forwarded-For and -Proto,
+	# which the app trusts from loopback.
+	@vehicles host vehicles.{$HOME_DOMAIN}
+	handle @vehicles {
+		reverse_proxy 127.0.0.1:5080
+	}
+
+	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
+	@nightscout host nightscout.{$HOME_DOMAIN}
+	handle @nightscout {
+		reverse_proxy 127.0.0.1:1337
+	}
+
+	# Any other name under the wildcard: no such app.
+	handle {
+		respond "Not found" 404
+	}
+}

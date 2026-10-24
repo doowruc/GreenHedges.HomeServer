@@ -23,7 +23,7 @@ public class HostingTests(AppFactory app) : IClassFixture<AppFactory>
     }
 
     [Theory]
-    [InlineData("127.0.0.1", "https")] // tailscale serve, on the same machine
+    [InlineData("127.0.0.1", "https")] // Caddy, on the same machine
     [InlineData("::1", "https")]
     [InlineData("192.0.2.10", "http")] // anyone else's X-Forwarded-Proto is ignored
     public async Task Forwarded_headers_are_trusted_only_from_the_local_proxy(string proxy, string scheme)
