@@ -111,6 +111,20 @@ public sealed class SchemaV2Tests : IDisposable
     }
 
     [Fact]
+    public async Task Recent_sensors_are_most_recently_seen_first()
+    {
+        await _archive.InitialiseAsync(CancellationToken.None);
+        var activated = new DateTimeOffset(2026, 10, 10, 8, 0, 0, TimeSpan.Zero);
+        await _archive.RecordSensorAsync("SN1", activated, 60, 3, "{}", T0, CancellationToken.None);
+        await _archive.RecordSensorAsync("SN2", activated.AddDays(15), 60, 3, "{}", T0.AddMinutes(1), CancellationToken.None);
+        await _archive.RecordSensorAsync("SN3", activated.AddDays(30), 60, 3, "{}", T0.AddMinutes(2), CancellationToken.None);
+
+        var recent = await _archive.GetRecentSensorsAsync(2, CancellationToken.None);
+
+        Assert.Equal(["SN3", "SN2"], recent.Select(s => s.Serial));
+    }
+
+    [Fact]
     public async Task Readings_keep_their_sensor_serial()
     {
         await _archive.InitialiseAsync(CancellationToken.None);

@@ -31,7 +31,10 @@ public sealed class LibreAlertMonitor(
         /// <summary>LibreLinkUp needs the user to act (credentials, terms, app version, sharing).</summary>
         UserAction,
 
-        /// <summary>No new current reading for longer than <see cref="LibreAlertOptions.StaleAfter"/>.</summary>
+        /// <summary>
+        /// No new current reading for longer than <see cref="LibreAlertOptions.StaleAfter"/>, or for that
+        /// long after a new sensor's warm-up was due to end.
+        /// </summary>
         Stale,
 
         /// <summary>No good backup for longer than <see cref="BackupOptions.AlertAfter"/> (checked by <see cref="BackupMonitor"/>).</summary>
@@ -74,9 +77,14 @@ public sealed class LibreAlertMonitor(
         var latest = snapshot.LatestReadingAt is { } readingAt && readingAt > snapshot.StartedAt
             ? readingAt
             : snapshot.StartedAt;
-        var age = now - latest;
 
-        if (age > _options.StaleAfter)
+        // A sensor activated after the newest reading is warming up: no readings are due until it's ready.
+        var warmingUp = snapshot.Sensor is { ActivatedAt: { } activated, ReadyAt: { } readyAt }
+                        && (snapshot.LatestReadingAt is not { } newest || activated > newest)
+                        && readyAt > latest;
+        var expectedFrom = warmingUp ? snapshot.Sensor!.ReadyAt!.Value : latest;
+
+        if (now - expectedFrom > _options.StaleAfter)
         {
             // While a user-action alert is open it already explains the missing data.
             if (!Alerts.IsOpen(nameof(AlertKind.UserAction)))
@@ -85,7 +93,7 @@ public sealed class LibreAlertMonitor(
                     AlertKind.Stale,
                     "No new glucose readings",
                     $"""
-                    No new glucose reading for {FormatDuration(age)}.
+                    No new glucose reading for {FormatDuration(now - latest)}.{DescribeSensorState(snapshot.Sensor, warmingUp, now)}
 
                     {Describe(snapshot, now)}
                     """,
@@ -127,6 +135,23 @@ public sealed class LibreAlertMonitor(
     private Task ResolveAsync(AlertKind kind, CancellationToken cancellationToken) =>
         Alerts.ResolveAsync(kind.ToString(), cancellationToken);
 
+    /// <summary>Why the sensor might explain the missing readings: each line preceded by a newline, or empty.</summary>
+    private static string DescribeSensorState(SensorStatus? sensor, bool warmingUp, DateTimeOffset now)
+    {
+        var text = new StringBuilder();
+        if (warmingUp && sensor is { ActivatedAt: { } activated, ReadyAt: { } readyAt })
+        {
+            text.Append($"\nNew sensor {sensor.Serial} was activated {activated:u}; its readings were expected from {readyAt:u}.");
+        }
+
+        if (sensor is { ExpectedEnd: { } end } && now >= end)
+        {
+            text.Append($"\nSensor {sensor.Serial} reached its expected end at {end:u}; it has probably expired.");
+        }
+
+        return text.ToString();
+    }
+
     private static string Describe(CollectorHealthSnapshot snapshot, DateTimeOffset now)
     {
         var text = new StringBuilder();
@@ -135,6 +160,12 @@ public sealed class LibreAlertMonitor(
         text.AppendLine($"Collector started: {snapshot.StartedAt:u}");
         text.AppendLine($"Newest reading (sensor time): {(snapshot.LatestReadingAt is { } r ? $"{r:u}" : "none since startup")}");
         text.AppendLine($"Last successful poll: {(snapshot.LastSuccessAt is { } s ? $"{s:u}" : "none since startup")}");
+        if (snapshot.Sensor is { } sensor)
+        {
+            text.AppendLine(
+                $"Sensor: {sensor.Serial}, activated {(sensor.ActivatedAt is { } a ? $"{a:u}" : "unknown")}, expected end {(sensor.ExpectedEnd is { } e ? $"{e:u}" : "unknown")}");
+        }
+
         if (snapshot.LastError is { } error)
         {
             text.AppendLine($"Last error ({snapshot.LastErrorAt:u}): {error.GetType().Name}: {error.Message}");

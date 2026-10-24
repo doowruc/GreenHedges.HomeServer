@@ -127,7 +127,7 @@ Once it's running, there's nothing to do. You'll hear from it only when somethin
 
 | Subject | Meaning | What to do |
 |---|---|---|
-| **No new glucose readings** | No new reading for 20 minutes | Usually phone or sensor: phone offline, LibreLink closed, Bluetooth, or **sensor warm-up after a change** (expected for about an hour). A RESOLVED email follows when readings return. |
+| **No new glucose readings** | No new reading for 20 minutes (after a sensor change, for 20 minutes after its warm-up was due to end) | Usually phone or sensor: phone offline, LibreLink closed, Bluetooth, a warm-up that overran, or an **expired sensor** (the email says so). A RESOLVED email follows when readings return. |
 | **LibreLinkUp needs attention** | Wrong password, terms to re-accept, app version retired, or no connection | Read the email. For terms, sign in to the LibreLinkUp app with the follower account once. For a version error, raise `LibreLinkUp:Version`. Collection retries every 30 minutes. |
 | **Backups failing** | No good backup for 36 hours | Check disk space and the log. |
 | **Off-site backup failing** | No successful off-site copy for 36 hours | Check the log (`Off-site copy … failed`): AWS key, bucket policy, or `age` missing. Local backups are unaffected. |
@@ -157,7 +157,7 @@ Database migrations run automatically at startup, and a backup is taken at start
 
 ### Sensor changes
 
-Nothing to do. The collector logs `Sensor changed: old -> new … readings expected from …`, and polling adjusts to the new sensor's timing automatically. Expect a "No new glucose readings" email during warm-up.
+Nothing to do. The collector logs `Sensor changed: old -> new … readings expected from …`, holds the "No new glucose readings" alert until 20 minutes after warm-up is due to end, and adjusts polling to the new sensor's timing automatically. A normal swap sends no email.
 
 ---
 
@@ -183,7 +183,8 @@ Settings come from `appsettings.json` (defaults, shipped with the build), overri
 | `Collector:CurrentInterval` | `00:01:00` | |
 | `Collector:PollOffset` | `00:00:35` | Poll this long after each reading's sensor time. |
 | `Collector:GraphInterval` | `00:30:00` | 15-minute history backfill. |
-| `Collector:SensorLifetime` | `15.00:00:00` | For the "expected end" log line. |
+| `Collector:SensorLifetime` | `15.00:00:00` | For the "expected end" log line and the "probably expired" alert wording. |
+| `Collector:SensorWarmup` | `01:00:00` | Used only if LibreLinkUp doesn't report a sensor's warm-up. |
 | `Collector:UserActionPause` | `00:30:00` | Wait after errors that need you to act (avoids account lockout). |
 | `Archive:DatabasePath` | `librecollector.db` | Relative to the working directory (`/var/lib/librecollector` on the host). |
 

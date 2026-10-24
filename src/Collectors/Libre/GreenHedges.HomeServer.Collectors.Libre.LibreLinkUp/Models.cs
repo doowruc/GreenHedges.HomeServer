@@ -17,7 +17,7 @@ public sealed record GlucoseReading(
 /// <summary>The sensor currently attached to a connection.</summary>
 /// <param name="Serial">Sensor serial number (<c>sn</c>).</param>
 /// <param name="ActivatedAt">Activation time (<c>a</c>, Unix seconds).</param>
-/// <param name="WarmupMinutes">Believed to be the warm-up length (<c>w</c>); confirm against a real sensor change.</param>
+/// <param name="WarmupMinutes">Warm-up length in minutes (<c>w</c>; 60 on a Libre 2 Plus, confirmed on a real sensor change).</param>
 /// <param name="ProductType">Sensor product type (<c>pt</c>).</param>
 /// <param name="RawJson">The original <c>sensor</c> object.</param>
 public sealed record SensorInfo(

@@ -420,29 +420,36 @@ public sealed class GlucoseArchive
     }
 
     /// <summary>The most recently seen sensor, if any.</summary>
-    public async Task<ArchivedSensor?> GetLatestSensorAsync(CancellationToken cancellationToken)
+    public async Task<ArchivedSensor?> GetLatestSensorAsync(CancellationToken cancellationToken) =>
+        (await GetRecentSensorsAsync(1, cancellationToken)).FirstOrDefault();
+
+    /// <summary>Up to <paramref name="count"/> sensors, most recently seen first.</summary>
+    public async Task<IReadOnlyList<ArchivedSensor>> GetRecentSensorsAsync(int count, CancellationToken cancellationToken)
     {
         await using var connection = await OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText =
             """
             SELECT serial, activated_at_utc, warmup_minutes, product_type, first_seen_utc, last_seen_utc, raw_json
-            FROM sensors ORDER BY last_seen_utc DESC, first_seen_utc DESC LIMIT 1;
+            FROM sensors ORDER BY last_seen_utc DESC, first_seen_utc DESC LIMIT $count;
             """;
+        command.Parameters.AddWithValue("$count", count);
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
+
+        var sensors = new List<ArchivedSensor>();
+        while (await reader.ReadAsync(cancellationToken))
         {
-            return null;
+            sensors.Add(new ArchivedSensor(
+                reader.GetString(0),
+                reader.IsDBNull(1) ? null : ParseTimestamp(reader.GetString(1)),
+                reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                ParseTimestamp(reader.GetString(4)),
+                ParseTimestamp(reader.GetString(5)),
+                reader.GetString(6)));
         }
 
-        return new ArchivedSensor(
-            reader.GetString(0),
-            reader.IsDBNull(1) ? null : ParseTimestamp(reader.GetString(1)),
-            reader.IsDBNull(2) ? null : reader.GetInt32(2),
-            reader.IsDBNull(3) ? null : reader.GetInt32(3),
-            ParseTimestamp(reader.GetString(4)),
-            ParseTimestamp(reader.GetString(5)),
-            reader.GetString(6));
+        return sensors;
     }
 
     private Task<SqliteConnection> OpenAsync(CancellationToken cancellationToken) => _database.OpenAsync(cancellationToken);

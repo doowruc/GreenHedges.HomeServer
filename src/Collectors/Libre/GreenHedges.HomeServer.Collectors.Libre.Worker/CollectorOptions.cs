@@ -19,8 +19,11 @@ public sealed class CollectorOptions
     /// </summary>
     public TimeSpan PollOffset { get; set; } = TimeSpan.FromSeconds(35);
 
-    /// <summary>Sensor wear time, used to log a sensor's expected end (Libre 2 Plus: 15 days).</summary>
+    /// <summary>Sensor wear time, for a sensor's expected end in logs and alerts (Libre 2 Plus: 15 days).</summary>
     public TimeSpan SensorLifetime { get; set; } = TimeSpan.FromDays(15);
+
+    /// <summary>Sensor warm-up, used when LibreLinkUp doesn't report one (<c>w</c>). Libre 2 Plus: 60 minutes.</summary>
+    public TimeSpan SensorWarmup { get; set; } = TimeSpan.FromMinutes(60);
 
     /// <summary>How often to poll <c>/graph</c> to fill gaps (about 12 hours at 15-minute resolution).</summary>
     public TimeSpan GraphInterval { get; set; } = TimeSpan.FromMinutes(30);

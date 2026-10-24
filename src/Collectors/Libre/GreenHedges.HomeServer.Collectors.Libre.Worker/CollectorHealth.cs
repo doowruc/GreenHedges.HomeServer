@@ -16,6 +16,7 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
     private DateTimeOffset? _publishFailingSince;
     private DateTimeOffset? _lastPublishSuccessAt;
     private Exception? _lastPublishError;
+    private SensorStatus? _sensor;
 
     public DateTimeOffset StartedAt { get; } = time.GetUtcNow();
 
@@ -28,6 +29,15 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
             {
                 _latestReadingAt = sensorTimestamp;
             }
+        }
+    }
+
+    /// <summary>Records the sensor in use, as last reported by LibreLinkUp (or loaded from the archive at startup).</summary>
+    public void RecordSensor(SensorStatus sensor)
+    {
+        lock (_lock)
+        {
+            _sensor = sensor;
         }
     }
 
@@ -85,7 +95,7 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
         {
             return new CollectorHealthSnapshot(
                 StartedAt, _latestReadingAt, _lastSuccessAt, _lastError, _lastErrorAt,
-                _publishFailingSince, _lastPublishError, _lastPublishSuccessAt);
+                _publishFailingSince, _lastPublishError, _lastPublishSuccessAt, _sensor);
         }
     }
 }
@@ -93,6 +103,7 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
 /// <param name="LatestReadingAt">Sensor time of the newest current reading seen since startup.</param>
 /// <param name="LastError">The most recent failure, cleared by the next successful poll.</param>
 /// <param name="PublishFailingSince">When Nightscout publishing started failing; null while it's healthy.</param>
+/// <param name="Sensor">The sensor in use, if known.</param>
 public sealed record CollectorHealthSnapshot(
     DateTimeOffset StartedAt,
     DateTimeOffset? LatestReadingAt,
@@ -101,4 +112,13 @@ public sealed record CollectorHealthSnapshot(
     DateTimeOffset? LastErrorAt,
     DateTimeOffset? PublishFailingSince = null,
     Exception? LastPublishError = null,
-    DateTimeOffset? LastPublishSuccessAt = null);
+    DateTimeOffset? LastPublishSuccessAt = null,
+    SensorStatus? Sensor = null);
+
+/// <param name="ReadyAt">When warm-up ends and readings are expected: activation plus warm-up.</param>
+/// <param name="ExpectedEnd">Activation plus <see cref="CollectorOptions.SensorLifetime"/>.</param>
+public sealed record SensorStatus(
+    string Serial,
+    DateTimeOffset? ActivatedAt,
+    DateTimeOffset? ReadyAt,
+    DateTimeOffset? ExpectedEnd);
