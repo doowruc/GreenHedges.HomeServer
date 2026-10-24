@@ -149,6 +149,28 @@ public sealed class WeatherArchiveTests : IDisposable
         Assert.NotNull(await copy.GetLatestStationReadingAsync(CancellationToken.None));
     }
 
+    [Fact]
+    public async Task Station_readings_are_read_by_id_and_by_time_and_the_neighbours_are_not()
+    {
+        await _archive.InitialiseAsync(CancellationToken.None);
+        var t1 = await _archive.AppendAsync(Rtl433Message.Parse(StationTemperature), T0, true, CancellationToken.None);
+        await _archive.AppendAsync(Rtl433Message.Parse(Neighbour), T0.AddSeconds(5), false, CancellationToken.None);
+        var r1 = await _archive.AppendAsync(Rtl433Message.Parse(StationRain), T0.AddSeconds(12), true, CancellationToken.None);
+        var t2 = await _archive.AppendAsync(Rtl433Message.Parse(StationTemperature), T0.AddSeconds(24), true, CancellationToken.None);
+
+        Assert.Equal([t1, r1, t2], (await _archive.ReadStationReadingsAfterAsync(0, 10, CancellationToken.None)).Select(r => r.MessageId));
+        Assert.Equal([r1], (await _archive.ReadStationReadingsAfterAsync(t1, 1, CancellationToken.None)).Select(r => r.MessageId));
+        Assert.Equal(
+            [r1],
+            (await _archive.ReadStationReadingsFromAsync(T0.AddSeconds(12), r1, CancellationToken.None)).Select(r => r.MessageId));
+
+        var before = await _archive.GetLatestStationReadingBeforeAsync(T0.AddSeconds(24), withRain: false, CancellationToken.None);
+        var rainBefore = await _archive.GetLatestStationReadingBeforeAsync(T0.AddSeconds(30), withRain: true, CancellationToken.None);
+        Assert.Equal(r1, before?.MessageId);
+        Assert.Equal((r1, 998.4), (rainBefore?.MessageId, rainBefore?.Weather.RainMm));
+        Assert.Null(await _archive.GetLatestStationReadingBeforeAsync(T0, withRain: false, CancellationToken.None));
+    }
+
     private async Task<object?> ScalarAsync(string sql)
     {
         await using var connection = new SqliteConnection($"Data Source={Path.Combine(_dir, "weather.db")}");

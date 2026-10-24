@@ -24,10 +24,11 @@ Subjects start `[WeatherCollector]`. Every PROBLEM email is followed by one RESO
 | **Station id changed** | The station's ids are silent and a new sensor of the same model is being heard, first heard after the station went quiet (a neighbour's sensor heard all along doesn't count) | After a battery change the sensor may pick a new id; the email names it. See [Battery changes](#battery-changes). |
 | **Sensor battery low** | The sensor has reported `battery_ok` = 0 for an hour | Change its batteries. |
 | **Backups failing** | No good backup for 36 hours | Check disk space and the log. |
+| **Summaries for Grafana stalled** | Publishing minute summaries to SQL Server has failed for 30 minutes | Check SQL Server (`sudo docker compose -f /opt/sqlserver/compose.yaml ps`) and the log (`Publishing minute summaries failed`). Collection is unaffected, and the summaries catch up by themselves. |
 | **Off-site backup failing** | No off-site copy for 36 hours, or straight away if the off-site settings are wrong | Check the log (`Off-site copy … failed` or `Off-site backup is misconfigured`): AWS key, bucket, or `age` missing. Fix the env file and restart. Collection and local backups are unaffected. |
 | healthchecks.io "down" | No ping for 5 minutes plus grace | The collector pings only while the station is being heard, so: host off or offline, collector stopped, or no reception. |
 
-Thresholds are in the `Alerts` section of [`appsettings.json`](../../src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/appsettings.json) (`StationSilentAfter`, `ReceiverEndsPerHour`, `BatteryLowAfter`) and can be overridden in the env file. Without `Station:DeviceIds` the station alerts are off and the heartbeat stays silent.
+Thresholds are in the `Alerts` section of [`appsettings.json`](../../src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/appsettings.json) (`StationSilentAfter`, `ReceiverEndsPerHour`, `BatteryLowAfter`, `PublishStalledAfter`) and can be overridden in the env file. Without `Station:DeviceIds` the station alerts are off and the heartbeat stays silent. Without `ConnectionStrings:Weather` the summaries (and their alert) are off.
 
 ### Useful commands (on the host)
 
@@ -47,6 +48,16 @@ deploy/weather/deploy.sh
 ```
 
 Migrations run at startup, and a backup is taken at startup if none exists from the last day. Messages that arrive while the service restarts are lost (the sensor doesn't repeat them), so a deploy costs a message or two.
+
+### Rebuilding the summaries
+
+The `Weather` database on SQL Server holds only minute summaries derived from the archive. To rebuild them (e.g. after
+a change to how they're calculated, which also bumps `SummaryPublisher.Target` so it happens by itself), empty it on
+the server and the collector refills it within a few minutes:
+
+```bash
+sudo docker compose -f /opt/sqlserver/compose.yaml exec -T sqlserver sh -c '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d Weather -Q "DELETE dbo.MinuteSummaries; DELETE dbo.PublishState;"'
+```
 
 ### Battery changes
 
