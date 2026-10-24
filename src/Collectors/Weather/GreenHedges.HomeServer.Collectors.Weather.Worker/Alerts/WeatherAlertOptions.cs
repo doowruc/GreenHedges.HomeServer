@@ -11,4 +11,7 @@ public sealed class WeatherAlertOptions
 
     /// <summary>Alert if the station's <c>battery_ok</c> has been 0 for this long.</summary>
     public TimeSpan BatteryLowAfter { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>Alert if publishing minute summaries (to SQL Server, for Grafana) has been failing for this long.</summary>
+    public TimeSpan PublishStalledAfter { get; set; } = TimeSpan.FromMinutes(30);
 }

@@ -41,7 +41,7 @@ Outdoor sensor ──868 MHz──► Station console ──► Weather Undergro
 | Receiving | `rtl_433` from the Ubuntu package, run by the worker as a **child process** reading JSON lines from stdout. One service and one account; no MQTT broker. (MQTT can be added later, e.g. for Home Assistant.) |
 | What is archived | **Every decoded message from every device**, including neighbours' sensors, with the raw JSON line. "My station" is a configured device id, with a history of id changes. |
 | Archive | **SQLite** (WAL), the single source of truth; insert-only. |
-| Dashboards | **Grafana** in Docker on `127.0.0.1:3000`, published on the tailnet by Caddy as `https://weather.<home domain>`. Reads the derived data from **SQL Server** (the server's, shared with the web apps) through Grafana's built-in Microsoft SQL Server data source; datasource and dashboards provisioned from this repository. |
+| Dashboards | **Grafana** in Docker on `127.0.0.1:3000`, published on the tailnet by Caddy as `https://grafana.<home domain>` (a Weather folder of dashboards; other dashboards may join it). Reads the derived data from **SQL Server** (the server's, shared with the web apps) through Grafana's built-in Microsoft SQL Server data source; datasource and dashboards provisioned from this repository. |
 | Remote access | Nothing exposed to the internet or the LAN; Tailscale only. |
 
 ## The sensor and rtl_433
@@ -119,18 +119,20 @@ Index on `(model, device_id, received_at_utc)`.
 
 ## Derived data
 
-Published to SQL Server (see Grafana), rebuilt by the worker on demand, and refreshed incrementally (watermark by `messages.id`, as the Libre collector's Nightscout publisher does).
+Published by the worker to its own database, `Weather`, on the server's SQL Server (see Grafana), every minute, incrementally: a watermark by `messages.id` (as the Libre collector's Nightscout publisher does), **kept in SQL Server** with the data, so an empty database is refilled from the start of the archive with no separate rebuild step. Each batch re-summarises whole minutes from its first new reading's minute, so a minute still filling at the last run is completed; the minutes and the watermark are written in one transaction. Changing the calculation bumps the watermark's name (`minutes-v1`), which recalculates every minute once. The calculation (`MinuteSummariser`) is pure code, unit-tested; the database needs no backup.
 
-- **`minute_summaries`** per station and UTC minute: temperature avg/min/max, humidity avg, wind average, gust max, vector-mean wind direction, rain increment, message count (completeness).
+- **`MinuteSummaries`** per UTC minute (the station's readings only): message count (5 for a complete minute: completeness), temperature avg/min/max, humidity avg, wind average, gust max, wind direction as the **vector mean weighted by speed** (null when calm), rain increment (null when no rain message in the minute), battery (false if any message in the minute was low), RSSI and SNR averages.
+- **Duplicates:** a message identical to the previous one from the same device within 2 s (signal fields aside) is skipped.
 - **Rain increments:** for consecutive rain totals `prev` → `cur` from the station:
   - `cur ≥ prev`: increment `cur − prev`.
-  - `cur < prev`: a **reset** (battery change): increment `cur`. Recorded as an event. (A rollover would only happen at 99,999.9 mm; see Rain counter.)
+  - `cur < prev`: a **reset** (battery change): increment `cur`. Logged as a warning. (A rollover would only happen at 99,999.9 mm; see Rain counter.)
   - A gap (service down) just puts the whole difference in the first minute after it.
+  - The very first total, with none before it, is only a baseline (0 mm).
 - Higher rollups (hour, day) are Grafana queries over minutes, or views.
 
 ## Grafana
 
-- Docker compose in `/opt/grafana` (pinned version), `127.0.0.1:3000`, published by Caddy as `weather.<home domain>` (a block in `deploy/caddy/Caddyfile`). Anonymous **Viewer** access (the tailnet is the access boundary, as for Nightscout); an admin account for editing.
+- Docker compose in `/opt/grafana` (pinned version), `127.0.0.1:3000`, published by Caddy as `grafana.<home domain>` (a block in `deploy/caddy/Caddyfile`). Anonymous **Viewer** access (the tailnet is the access boundary, as for Nightscout); an admin account for editing.
 - **Data: SQL Server** (decided 2026-10-24). The worker writes the derived tables to its own database on the server's SQL Server (`deploy/sqlserver/`), and Grafana reads them with its built-in Microsoft SQL Server data source and a read-only login. This replaces the original plan of the community SQLite plugin reading the archive directly, which needed a spike on sharing a WAL database with another process. The SQLite archive stays the single source of truth; the SQL Server copy is derived and can be rebuilt from it. About 0.5 million minute rows a year, far inside Express's 10 GB.
 - Dashboards are provisioned from this repository (JSON), so they're versioned. No community dashboard exists for this data; build: current conditions, temperature/humidity, wind (speed, gust, rose), rain (hour/day/month), battery and signal.
 
@@ -144,9 +146,10 @@ Shared with the Libre collector through `Common`: nightly SQLite backup API → 
 | Receiver problem | rtl_433 reports no usable dongle, or 3 rtl_433 runs ended (exit, silence, failed start) in the last hour |
 | Station id changed | The station's ids silent for 5 minutes while an id of the same model is heard that was first heard after them (so a neighbour heard all along doesn't count) |
 | Sensor battery low | `battery_ok` = 0 for an hour (only the temperature messages carry it) |
+| Summaries for Grafana stalled | Publishing minute summaries to SQL Server failing for 30 minutes |
 | Backups failing / off-site failing | No good copy for 36 hours |
 
-Thresholds are `Alerts:StationSilentAfter`, `Alerts:ReceiverEndsPerHour` and `Alerts:BatteryLowAfter`. An alert resolves only on positive evidence since startup: a station message from a configured id, rtl_433 writing lines with no missing dongle and fewer restarts, `battery_ok` = 1. While a receiver or station-id alert is open, "No station messages" isn't raised as well.
+Thresholds are `Alerts:StationSilentAfter`, `Alerts:ReceiverEndsPerHour`, `Alerts:BatteryLowAfter` and `Alerts:PublishStalledAfter`. An alert resolves only on positive evidence since startup: a station message from a configured id, rtl_433 writing lines with no missing dongle and fewer restarts, `battery_ok` = 1. While a receiver or station-id alert is open, "No station messages" isn't raised as well.
 
 ## History import
 
@@ -166,7 +169,7 @@ From the private 2021 WeatherLogger project, both as one-off CLI modes, idempote
 0. **Reception test** ✅: protocol 172 confirmed on the host, strong signal.
    Then the move into GreenHedges.Collectors (since renamed GreenHedges.HomeServer) ✅: shared host setup, alerts, heartbeat, backups and off-site copies in `Common`.
 1. **Archive:** projects `GreenHedges.HomeServer.Collectors.Weather.Rtl433` (process + parsing), `.Storage` and `.Worker`, with tests; collection and supervision, archive schema, deploy script and host setup, systemd unit (first deploy here, to be running before the sensor's battery change); then backups, off-site copies, alerts and heartbeat from `Common`. Deploy and leave running.
-2. **Dashboards:** derived tables (published to SQL Server), Grafana compose + provisioning, dashboards, a Caddy name.
+2. **Dashboards**, in three PRs: (a) minute summaries published to SQL Server, with the `Weather` database's setup; (b) Grafana: compose, provisioning (data source, dashboard folder), a Caddy name; (c) the dashboards.
 3. **History import:** Weather Underground, then Weathercloud.
 
 ## Open questions

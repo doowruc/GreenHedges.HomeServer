@@ -177,3 +177,33 @@ printf '%s\n' 'https://hc-ping.com/<uuid>' > ~/.config/weathercollector/backup-p
 ```bash
 ~/.local/bin/weathercollector-pull-backups
 ```
+
+## 12. Summaries for Grafana (on the Mac, then the server)
+
+Needs SQL Server ([deploy/sqlserver/HOST-SETUP.md](../sqlserver/HOST-SETUP.md)). **On the Mac**, create the `Weather`
+database and the collector's login (it writes the connection string and restarts the collector):
+
+```bash
+deploy/weather/setup-database.sh
+```
+
+If the collector predates the summaries, deploy it too:
+
+```bash
+deploy/weather/deploy.sh
+```
+
+**On the server:**
+
+```bash
+journalctl -u weathercollector -n 30 --no-pager -o cat | grep -iE 'summar|SQL'
+```
+
+Expect `Publishing minute summaries to SQL Server (schema v1)` and, the first time, `Published N minute summaries` for
+the whole archive (about 1,440 a day since the first message). Then:
+
+```bash
+sudo docker compose -f /opt/sqlserver/compose.yaml exec -T sqlserver sh -c '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -d Weather -W -Q "SELECT COUNT(*) AS minutes, MIN(MinuteUtc) AS first, MAX(MinuteUtc) AS last, SUM(RainMm) AS rain_mm FROM dbo.MinuteSummaries"'
+```
+
+`last` is within the last minute or two.

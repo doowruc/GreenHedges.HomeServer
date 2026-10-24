@@ -17,6 +17,9 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
     private DateTimeOffset? _lastArchivedAt;
     private Exception? _lastArchiveError;
     private DateTimeOffset? _lastArchiveErrorAt;
+    private DateTimeOffset? _publishFailingSince;
+    private DateTimeOffset? _lastPublishSuccessAt;
+    private Exception? _lastPublishError;
 
     public DateTimeOffset StartedAt { get; } = time.GetUtcNow();
 
@@ -53,6 +56,26 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
         }
     }
 
+    /// <summary>Records that every pending minute summary was published.</summary>
+    public void RecordPublishSuccess()
+    {
+        lock (_lock)
+        {
+            _publishFailingSince = null;
+            _lastPublishError = null;
+            _lastPublishSuccessAt = time.GetUtcNow();
+        }
+    }
+
+    public void RecordPublishFailure(Exception error)
+    {
+        lock (_lock)
+        {
+            _publishFailingSince ??= time.GetUtcNow();
+            _lastPublishError = error;
+        }
+    }
+
     /// <summary>Healthy for the heartbeat if a station message arrived within the interval.</summary>
     public string? HealthyStatus(DateTimeOffset now, TimeSpan interval)
     {
@@ -68,7 +91,8 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
         {
             return new CollectorHealthSnapshot(
                 StartedAt, _lastStationMessageAt, _lastStationDeviceId, _lastBatteryOk, _batteryLowSince,
-                _lastArchivedAt, _lastArchiveError, _lastArchiveErrorAt);
+                _lastArchivedAt, _lastArchiveError, _lastArchiveErrorAt,
+                _publishFailingSince, _lastPublishError, _lastPublishSuccessAt);
         }
     }
 }
@@ -76,6 +100,7 @@ public sealed class CollectorHealth(TimeProvider time) : IHeartbeatSource
 /// <param name="LastBatteryOk">The station's latest <c>battery_ok</c> (1 OK, 0 low), if seen since startup.</param>
 /// <param name="BatteryLowSince">When the station's <c>battery_ok</c> turned 0, while it stays 0; null once it's 1 (or not seen).</param>
 /// <param name="LastArchiveError">The latest failure to archive a line, cleared by the next success.</param>
+/// <param name="PublishFailingSince">When publishing minute summaries started failing; null while it's healthy.</param>
 public sealed record CollectorHealthSnapshot(
     DateTimeOffset StartedAt,
     DateTimeOffset? LastStationMessageAt,
@@ -84,4 +109,7 @@ public sealed record CollectorHealthSnapshot(
     DateTimeOffset? BatteryLowSince,
     DateTimeOffset? LastArchivedAt,
     Exception? LastArchiveError,
-    DateTimeOffset? LastArchiveErrorAt);
+    DateTimeOffset? LastArchiveErrorAt,
+    DateTimeOffset? PublishFailingSince = null,
+    Exception? LastPublishError = null,
+    DateTimeOffset? LastPublishSuccessAt = null);

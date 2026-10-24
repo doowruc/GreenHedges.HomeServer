@@ -9,7 +9,7 @@ namespace GreenHedges.HomeServer.Collectors.Weather.Worker.Alerts;
 
 /// <summary>
 /// The Weather collector's checks: the station going quiet, the receiver (dongle, rtl_433), the station's
-/// id changing, its battery, and backups. Emails and their persistence are the shared <see cref="AlertBook"/>'s.
+/// id changing, its battery, publishing the minute summaries, and backups. Emails and their persistence are the shared <see cref="AlertBook"/>'s.
 /// </summary>
 public sealed class WeatherAlertMonitor(
     CollectorHealth health,
@@ -19,6 +19,7 @@ public sealed class WeatherAlertMonitor(
     IOptions<AlertOptions> alertOptions,
     IOptions<WeatherAlertOptions> options,
     IOptions<StationOptions> stationOptions,
+    IConfiguration configuration,
     BackupMonitor backups,
     TimeProvider time,
     ILogger<WeatherAlertMonitor> logger) : AlertMonitorService(alerts, alertOptions, time, logger)
@@ -41,6 +42,9 @@ public sealed class WeatherAlertMonitor(
 
         /// <summary><c>battery_ok</c> 0 for <see cref="WeatherAlertOptions.BatteryLowAfter"/>.</summary>
         BatteryLow,
+
+        /// <summary>Publishing minute summaries failing for longer than <see cref="WeatherAlertOptions.PublishStalledAfter"/>.</summary>
+        PublishStalled,
     }
 
     protected override IReadOnlyCollection<string> AlertKeys => Keys;
@@ -62,7 +66,31 @@ public sealed class WeatherAlertMonitor(
             await CheckBatteryAsync(snapshot, now, context, cancellationToken);
         }
 
+        await CheckPublishingAsync(snapshot, now, context, cancellationToken);
         await backups.CheckAsync(Alerts, now, context, cancellationToken);
+    }
+
+    private async Task CheckPublishingAsync(CollectorHealthSnapshot snapshot, DateTimeOffset now, string context, CancellationToken cancellationToken)
+    {
+        if (snapshot.PublishFailingSince is { } failingSince && now - failingSince > _options.PublishStalledAfter)
+        {
+            await RaiseAsync(
+                AlertKind.PublishStalled,
+                "Summaries for Grafana stalled",
+                $"""
+                Publishing minute summaries to SQL Server has been failing for {FormatDuration(now - failingSince)}.
+                Messages are still being collected and archived; the summaries catch up once SQL Server is reachable.
+                Last error: {(snapshot.LastPublishError is { } e ? $"{e.GetType().Name}: {e.Message}" : "none recorded")}
+
+                {context}
+                """,
+                cancellationToken);
+        }
+        else if (!Summaries.SummaryPublisherService.IsEnabled(configuration)
+                 || (snapshot.PublishFailingSince is null && snapshot.LastPublishSuccessAt is not null))
+        {
+            await ResolveAsync(AlertKind.PublishStalled, cancellationToken);
+        }
     }
 
     private async Task CheckReceiverAsync(ReceiverHealthSnapshot radio, DateTimeOffset now, string context, CancellationToken cancellationToken)

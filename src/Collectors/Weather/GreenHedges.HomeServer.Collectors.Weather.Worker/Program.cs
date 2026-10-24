@@ -3,9 +3,11 @@ using GreenHedges.HomeServer.Common.Heartbeat;
 using GreenHedges.HomeServer.Common.Hosting;
 using GreenHedges.HomeServer.Collectors.Weather.Rtl433;
 using GreenHedges.HomeServer.Collectors.Weather.Storage;
+using GreenHedges.HomeServer.Collectors.Weather.Summaries;
 using GreenHedges.HomeServer.Collectors.Weather.Worker;
 using GreenHedges.HomeServer.Collectors.Weather.Worker.Alerts;
 using GreenHedges.HomeServer.Collectors.Weather.Worker.Backups;
+using GreenHedges.HomeServer.Collectors.Weather.Worker.Summaries;
 using Microsoft.Extensions.Options;
 
 var builder = CollectorHost.CreateBuilder(args, "WeatherCollector");
@@ -24,8 +26,9 @@ builder.Services.AddOptions<ArchiveOptions>().BindConfiguration(ArchiveOptions.S
 builder.Services.AddOptions<WeatherAlertOptions>()
     .BindConfiguration(AlertOptions.SectionName)
     .Validate(
-        o => o.StationSilentAfter > TimeSpan.Zero && o.ReceiverEndsPerHour > 0 && o.BatteryLowAfter > TimeSpan.Zero,
-        "Alerts:StationSilentAfter, Alerts:ReceiverEndsPerHour and Alerts:BatteryLowAfter must be positive.")
+        o => o.StationSilentAfter > TimeSpan.Zero && o.ReceiverEndsPerHour > 0 && o.BatteryLowAfter > TimeSpan.Zero
+            && o.PublishStalledAfter > TimeSpan.Zero,
+        "Alerts:StationSilentAfter, Alerts:ReceiverEndsPerHour, Alerts:BatteryLowAfter and Alerts:PublishStalledAfter must be positive.")
     .ValidateOnStart();
 
 builder.Services.AddSingleton(services => services.GetRequiredService<IOptions<Rtl433Options>>().Value);
@@ -38,6 +41,15 @@ builder.Services.AddSingleton<CollectorHealth>();
 builder.Services.AddSingleton<IHeartbeatSource>(services => services.GetRequiredService<CollectorHealth>());
 builder.Services.AddHostedService<CollectorService>();
 builder.Services.AddHostedService<WeatherAlertMonitor>();
+builder.Services.AddOptions<SummaryOptions>()
+    .BindConfiguration(SummaryOptions.SectionName)
+    .Validate(o => o.Interval > TimeSpan.Zero && o.BatchSize > 0, "Summaries:Interval and Summaries:BatchSize must be positive.")
+    .ValidateOnStart();
+builder.Services.AddSingleton(services => new SummaryStore(
+    services.GetRequiredService<IConfiguration>().GetConnectionString(SummaryPublisherService.ConnectionStringName)
+        ?? throw new InvalidOperationException("ConnectionStrings:Weather is not set.")));
+builder.Services.AddSingleton<SummaryPublisher>();
+builder.Services.AddHostedService<SummaryPublisherService>();
 builder.AddBackups<WeatherArchiveBackupSource>();
 
 var host = builder.Build();

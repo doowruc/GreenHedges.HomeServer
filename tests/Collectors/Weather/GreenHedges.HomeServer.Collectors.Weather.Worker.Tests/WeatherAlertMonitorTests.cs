@@ -5,6 +5,7 @@ using GreenHedges.HomeServer.Collectors.Weather.Rtl433;
 using GreenHedges.HomeServer.Collectors.Weather.Storage;
 using GreenHedges.HomeServer.Collectors.Weather.Worker.Alerts;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -21,6 +22,7 @@ public sealed class WeatherAlertMonitorTests : IDisposable
     private readonly WeatherArchive _archive;
     private StationOptions _station = new() { DeviceIds = [StationId] };
     private bool _backupsEnabled;
+    private string _summariesConnectionString = "Server=sql;Database=Weather";
     private CollectorHealth _health = null!;
     private ReceiverHealth _receiver = null!;
     private BackupHealth _backupHealth = null!;
@@ -59,6 +61,9 @@ public sealed class WeatherAlertMonitorTests : IDisposable
             Options.Create(new AlertOptions()),
             Options.Create(new WeatherAlertOptions()),
             Options.Create(_station),
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Weather"] = _summariesConnectionString })
+                .Build(),
             new BackupMonitor(
                 _backupHealth,
                 Options.Create(new BackupOptions { Enabled = _backupsEnabled, AlertAfter = TimeSpan.FromHours(36) }),
@@ -267,6 +272,45 @@ public sealed class WeatherAlertMonitorTests : IDisposable
         await CheckAfter(TimeSpan.FromHours(2));
 
         Assert.Empty(_sender.Sent);
+    }
+
+    [Fact]
+    public async Task Summaries_failing_for_half_an_hour_alert_and_resolve_when_publishing_succeeds()
+    {
+        await HearAsync(StationId, batteryOk: 1);
+        _health.RecordPublishSuccess();
+        _health.RecordPublishFailure(new InvalidOperationException("SQL Server is down"));
+        for (var minute = 0; minute < 30; minute++)
+        {
+            await HearAsync(StationId, batteryOk: 1);
+            await CheckAfter(TimeSpan.FromMinutes(1));
+        }
+
+        Assert.Empty(_sender.Sent);
+
+        await HearAsync(StationId, batteryOk: 1);
+        await CheckAfter(TimeSpan.FromMinutes(1));
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Equal("[WeatherCollector] PROBLEM: Summaries for Grafana stalled", problem.Subject);
+        Assert.Contains("InvalidOperationException: SQL Server is down", problem.Body);
+
+        _health.RecordPublishSuccess();
+        await CheckAfter(TimeSpan.FromSeconds(30));
+        Assert.Equal("[WeatherCollector] RESOLVED: Summaries for Grafana stalled", _sender.Sent[^1].Subject);
+    }
+
+    [Fact]
+    public async Task Turning_summaries_off_resolves_their_alert()
+    {
+        _health.RecordPublishFailure(new InvalidOperationException("SQL Server is down"));
+        await CheckAfter(TimeSpan.FromMinutes(31));
+        Assert.Contains(_sender.Sent, m => m.Subject == "[WeatherCollector] PROBLEM: Summaries for Grafana stalled");
+
+        _summariesConnectionString = "";
+        await RestartAsync();
+        await CheckAfter(TimeSpan.FromSeconds(30));
+
+        Assert.Equal("[WeatherCollector] RESOLVED: Summaries for Grafana stalled", _sender.Sent[^1].Subject);
     }
 
     [Fact]

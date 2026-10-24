@@ -15,6 +15,7 @@
   <Folder Name="/src/Collectors/Weather/">
     <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Rtl433/GreenHedges.HomeServer.Collectors.Weather.Rtl433.csproj" />
     <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Storage/GreenHedges.HomeServer.Collectors.Weather.Storage.csproj" />
+    <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Summaries/GreenHedges.HomeServer.Collectors.Weather.Summaries.csproj" />
     <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/GreenHedges.HomeServer.Collectors.Weather.Worker.csproj" />
   </Folder>
   <Folder Name="/src/VehicleManager/">
@@ -36,6 +37,7 @@
   <Folder Name="/tests/Collectors/Weather/">
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Rtl433.Tests/GreenHedges.HomeServer.Collectors.Weather.Rtl433.Tests.csproj" />
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Storage.Tests/GreenHedges.HomeServer.Collectors.Weather.Storage.Tests.csproj" />
+    <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Summaries.Tests/GreenHedges.HomeServer.Collectors.Weather.Summaries.Tests.csproj" />
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker.Tests/GreenHedges.HomeServer.Collectors.Weather.Worker.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/VehicleManager/">

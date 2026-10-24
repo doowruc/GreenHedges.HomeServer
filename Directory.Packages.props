@@ -2,6 +2,8 @@
   <ItemGroup>
     <PackageVersion Include="AWSSDK.S3" Version="4.0.104.4" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.13" />
+    <!-- The Weather collector's summaries in SQL Server. The version EF Core (Vehicle Manager) brings in, so both match. -->
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="6.1.6" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Systemd" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.13" />
@@ -26,7 +28,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.20.0" />
     <PackageVersion Include="Resend" Version="0.23.0" />
     <!-- Security pins for transitive packages; remove each once its parent depends on a fixed version.
-         Microsoft.Data.SqlClient (via EF Core) brings in 9.0.11, which has denial-of-service advisories
+         Microsoft.Data.SqlClient (via EF Core, and in the Weather collector's summaries) brings in 9.0.11, which has denial-of-service advisories
          (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7); 10.0.13 is fixed. -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <!-- Aspire.Hosting (Vehicle Manager's AppHost) brings in 2.5.302, which has a denial-of-service advisory

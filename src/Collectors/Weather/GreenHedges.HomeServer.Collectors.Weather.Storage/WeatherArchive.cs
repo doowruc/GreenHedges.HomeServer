@@ -193,28 +193,78 @@ public sealed class WeatherArchive
     /// <summary>The newest station reading, if any.</summary>
     public async Task<StationReading?> GetLatestStationReadingAsync(CancellationToken cancellationToken)
     {
+        var readings = await ReadStationReadingsAsync(
+            "ORDER BY message_id DESC LIMIT 1", static _ => { }, cancellationToken);
+        return readings.Count > 0 ? readings[0] : null;
+    }
+
+    /// <summary>Station readings with ids after <paramref name="afterId"/>, in id (arrival) order: at most <paramref name="limit"/>.</summary>
+    public Task<IReadOnlyList<StationReading>> ReadStationReadingsAfterAsync(long afterId, int limit, CancellationToken cancellationToken) =>
+        ReadStationReadingsAsync(
+            "WHERE message_id > $after_id ORDER BY message_id LIMIT $limit",
+            parameters =>
+            {
+                parameters.AddWithValue("$after_id", afterId);
+                parameters.AddWithValue("$limit", limit);
+            },
+            cancellationToken);
+
+    /// <summary>
+    /// Station readings received at or after <paramref name="fromUtc"/> with ids up to <paramref name="throughId"/>,
+    /// in id order.
+    /// </summary>
+    public Task<IReadOnlyList<StationReading>> ReadStationReadingsFromAsync(
+        DateTimeOffset fromUtc, long throughId, CancellationToken cancellationToken) =>
+        ReadStationReadingsAsync(
+            "WHERE received_at_utc >= $from AND message_id <= $through_id ORDER BY message_id",
+            parameters =>
+            {
+                parameters.AddWithValue("$from", Format(fromUtc));
+                parameters.AddWithValue("$through_id", throughId);
+            },
+            cancellationToken);
+
+    /// <summary>
+    /// The latest station reading received before <paramref name="beforeUtc"/>; with <paramref name="withRain"/>, the
+    /// latest that carries a rain total.
+    /// </summary>
+    public async Task<StationReading?> GetLatestStationReadingBeforeAsync(
+        DateTimeOffset beforeUtc, bool withRain, CancellationToken cancellationToken)
+    {
+        var readings = await ReadStationReadingsAsync(
+            $"WHERE received_at_utc < $before{(withRain ? " AND rain_total_mm IS NOT NULL" : "")} ORDER BY received_at_utc DESC, message_id DESC LIMIT 1",
+            parameters => parameters.AddWithValue("$before", Format(beforeUtc)),
+            cancellationToken);
+        return readings.Count > 0 ? readings[0] : null;
+    }
+
+    private async Task<IReadOnlyList<StationReading>> ReadStationReadingsAsync(
+        string clauses, Action<SqliteParameterCollection> addParameters, CancellationToken cancellationToken)
+    {
         await using var connection = await _database.OpenAsync(cancellationToken);
         await using var command = connection.CreateCommand();
         command.CommandText =
-            """
+            $"""
             SELECT message_id, received_at_utc, device_id, temperature_c, humidity, wind_avg_ms, wind_max_ms,
                    wind_dir_deg, rain_total_mm, battery_ok, flags, startup, rssi, snr
-            FROM station_readings ORDER BY message_id DESC LIMIT 1;
+            FROM station_readings {clauses};
             """;
+        addParameters(command.Parameters);
 
+        var readings = new List<StationReading>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
+        while (await reader.ReadAsync(cancellationToken))
         {
-            return null;
+            readings.Add(new StationReading(
+                reader.GetInt64(0),
+                Parse(reader.GetString(1)),
+                reader.GetString(2),
+                new WeatherFields(
+                    Real(reader, 3), Real(reader, 4), Real(reader, 5), Real(reader, 6), Real(reader, 7), Real(reader, 8),
+                    Int(reader, 9), Int(reader, 10), Int(reader, 11), Real(reader, 12), Real(reader, 13))));
         }
 
-        return new StationReading(
-            reader.GetInt64(0),
-            Parse(reader.GetString(1)),
-            reader.GetString(2),
-            new WeatherFields(
-                Real(reader, 3), Real(reader, 4), Real(reader, 5), Real(reader, 6), Real(reader, 7), Real(reader, 8),
-                Int(reader, 9), Int(reader, 10), Int(reader, 11), Real(reader, 12), Real(reader, 13)));
+        return readings;
     }
 
     /// <summary>The number of archived messages.</summary>
