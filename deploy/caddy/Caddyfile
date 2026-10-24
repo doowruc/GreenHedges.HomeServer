@@ -10,6 +10,15 @@
 	auto_https disable_redirects
 	admin 127.0.0.1:2019
 
+	# The health check calls the admin API every 30 s and Caddy logs each request: keep admin.api to warnings and errors.
+	log default {
+		exclude admin.api
+	}
+	log admin {
+		include admin.api
+		level WARN
+	}
+
 	servers {
 		# Tailscale sends a PROXY protocol header (serve --proxy-protocol=2) with the visitor's tailnet address, so
 		# logs and the apps' X-Forwarded-For show the device, not 127.0.0.1.
