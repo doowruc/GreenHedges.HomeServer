@@ -15,9 +15,11 @@ Once it's running there's nothing to do. You'll hear from it only when something
 
 **Dashboards:** `https://grafana.<home domain>` → **Weather** (Grafana, [deploy/grafana/](../../deploy/grafana/HOST-SETUP.md)), from the minute summaries:
 
-- **Weather:** now (temperature, today's min/max, humidity and dew point, wind and gust, direction, rain today and over 24 hours); over the selected range (temperature and humidity min/max, total rain, strongest wind and gust); then the last day's temperature with dew point, humidity, wind, direction, rain per hour, and how often the wind came from each of 16 directions.
-- **Rain:** totals for the range, month and year; rain per UK day and per month; the running total; the wettest days and hours.
-- **Station:** reception (messages received, per hour), signal (SNR, RSSI), battery, the last message, and gaps.
+- **Weather:** now (temperature, today's min/max, humidity and dew point, wind and gust, direction, rain today and over 24 hours); over the selected range (temperature and humidity min/max, total rain, strongest wind and gust, pressure and indoor min/max); then temperature with dew point, humidity, wind, direction, rain per hour, how often the wind came from each of 16 directions, pressure, and indoor temperature and humidity.
+- **Rain:** totals for the range, month and year; rain per UK day, month and year; the running total; the wettest days and hours.
+- **Station:** reception (messages received, per hour), signal (SNR, RSSI), battery, the last message, gaps, and which source covered each day.
+
+The Weather and Rain dashboards reach back to November 2021: each hour comes from the radio if it has any of it, else from the station's uploads (Weather Underground, then Weathercloud). Pressure only reaches the end of yesterday (Weather Underground is fetched nightly), and indoor readings the last Weathercloud export.
 
 "Now" and "today" mean the end of the selected range, so the dashboards also work for past dates. Days are UK days. They're JSON files in `deploy/grafana/dashboards/weather/`: change them in a PR (Grafana won't save edits to them), and re-run `deploy/grafana/deploy-grafana.sh`.
 

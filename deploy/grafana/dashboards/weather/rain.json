@@ -1,7 +1,7 @@
 {
   "uid": "weather-rain",
   "title": "Rain",
-  "description": "Rain by day (UK days), month and year, and the wettest days and hours.",
+  "description": "Rain by day (UK days), month and year, and the wettest days and hours, from November 2021 (each hour from its best source).",
   "tags": [
     "weather"
   ],
@@ -29,7 +29,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc)"
+          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc)"
         }
       ],
       "fieldConfig": {
@@ -93,7 +93,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @month datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE MinuteUtc >= @month AND MinuteUtc <= @to"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @month datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE TimeUtc >= @month AND TimeUtc <= @to"
         }
       ],
       "fieldConfig": {
@@ -146,7 +146,7 @@
     {
       "type": "stat",
       "title": "This year",
-      "description": "Since 1 January of the range's last year (UK time). Only since the collector started.",
+      "description": "Since 1 January of the range's last year (UK time).",
       "targets": [
         {
           "refId": "A",
@@ -157,7 +157,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @year datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1, 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.MinuteSummaries WHERE MinuteUtc >= @year AND MinuteUtc <= @to"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @year datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1, 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE TimeUtc >= @year AND TimeUtc <= @to"
         }
       ],
       "fieldConfig": {
@@ -221,7 +221,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT COUNT(*) AS [Days] FROM (SELECT CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS d FROM dbo.MinuteSummaries WHERE $__timeFilter(MinuteUtc) GROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') HAVING SUM(RainMm) >= 0.2) AS days"
+          "rawSql": "SELECT COUNT(*) AS [Days] FROM (SELECT CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS d FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc) GROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') HAVING SUM(RainMm) >= 0.2) AS days"
         }
       ],
       "fieldConfig": {
@@ -285,7 +285,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT CAST(CAST(CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+          "rawSql": "SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -361,7 +361,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT FORMAT(DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1), 'MMM yyyy') AS [Month], ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)\nORDER BY DATEFROMPARTS(YEAR(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)"
+          "rawSql": "SELECT FORMAT(DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1), 'MMM yyyy') AS [Month], ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)\nORDER BY DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)"
         }
       ],
       "fieldConfig": {
@@ -378,11 +378,25 @@
             "lineWidth": 1
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Month"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "orientation": "vertical",
         "xField": "Month",
+        "xTickLabelSpacing": 60,
         "showValue": "auto",
         "barWidth": 0.6,
         "groupWidth": 0.7,
@@ -408,6 +422,80 @@
       }
     },
     {
+      "type": "barchart",
+      "title": "Rain per year",
+      "description": "Calendar years (UK time) in the range; the first and last may be partial (records start in November 2021).",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "SELECT CAST(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS varchar(4)) AS [Year], ROUND(SUM(RainMm), 0) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mm",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "min": 0,
+          "custom": {
+            "fillOpacity": 80,
+            "lineWidth": 1
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Year"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "vertical",
+        "xField": "Year",
+        "xTickLabelSpacing": 60,
+        "showValue": "auto",
+        "barWidth": 0.6,
+        "groupWidth": 0.7,
+        "legend": {
+          "showLegend": false,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
       "type": "timeseries",
       "title": "Running total",
       "description": "Rain since the start of the range, day by day.",
@@ -421,7 +509,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT time, SUM(rain) OVER (ORDER BY time ROWS UNBOUNDED PRECEDING) AS [Rain]\nFROM (\n  SELECT CAST(CAST(CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS rain\n  FROM dbo.MinuteSummaries\n  WHERE $__timeFilter(MinuteUtc)\n  GROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')) AS days\nORDER BY time"
+          "rawSql": "SELECT time, SUM(rain) OVER (ORDER BY time ROWS UNBOUNDED PRECEDING) AS [Rain]\nFROM (\n  SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS rain\n  FROM dbo.Outdoor\n  WHERE $__timeFilter(TimeUtc)\n  GROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')) AS days\nORDER BY time"
         }
       ],
       "fieldConfig": {
@@ -470,11 +558,11 @@
           "sort": "none"
         }
       },
-      "id": 7,
+      "id": 8,
       "gridPos": {
-        "x": 12,
-        "y": 13,
-        "w": 12,
+        "x": 0,
+        "y": 21,
+        "w": 24,
         "h": 8
       },
       "datasource": {
@@ -496,7 +584,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT TOP 10 CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS [Day], ROUND(SUM(RainMm), 1) AS [Rain (mm)], ROUND(MAX(RainMm), 1) AS [Wettest minute (mm)]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY CONVERT(date, MinuteUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+          "rawSql": "SELECT TOP 10 CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS [Day], ROUND(SUM(RainMm), 1) AS [Rain (mm)], ROUND(MAX(RainMm), 1) AS [Wettest minute (mm)]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
         }
       ],
       "fieldConfig": {
@@ -525,10 +613,10 @@
         "showHeader": true,
         "cellHeight": "sm"
       },
-      "id": 8,
+      "id": 9,
       "gridPos": {
         "x": 0,
-        "y": 21,
+        "y": 29,
         "w": 12,
         "h": 9
       },
@@ -551,7 +639,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT TOP 10 CAST(DATEADD(HOUR, DATEDIFF(HOUR, 0, MinuteUtc), 0) AS datetimeoffset) AS [Hour], ROUND(SUM(RainMm), 1) AS [Rain (mm)]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, MinuteUtc), 0)\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+          "rawSql": "SELECT TOP 10 CAST(DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0) AS datetimeoffset) AS [Hour], ROUND(SUM(RainMm), 1) AS [Rain (mm)]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0)\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
         }
       ],
       "fieldConfig": {
@@ -580,10 +668,10 @@
         "showHeader": true,
         "cellHeight": "sm"
       },
-      "id": 9,
+      "id": 10,
       "gridPos": {
         "x": 12,
-        "y": 21,
+        "y": 29,
         "w": 12,
         "h": 9
       },
