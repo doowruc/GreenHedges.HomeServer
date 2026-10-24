@@ -175,11 +175,19 @@ first, then Weather Underground, then Weathercloud.
     interval's range, rain per interval from the day's running total (which restarts at local midnight).
   - `--fetch-wunderground [yyyy-MM-dd]` fetches one day and prints it without storing: a check of the id and key.
   - Alert "Weather Underground history failing" after 6 hours of failed runs (retried hourly).
-- **Weathercloud** CSV exports (Phase 3b): one file per month (a year comes as a zip of months), UTF-16LE without a
+- **Plausibility:** values a working sensor can't read here (temperature outside −30–45 °C, pressure outside 900–1,090 hPa,
+  humidity 0, …) are left out of what's published; the archive keeps them as received. (The outdoor sensor failed in
+  September 2024, reporting up to 57 °C, then nothing until January 2025; the console's indoor and pressure readings
+  carried on.)
+- **Weathercloud** CSV exports, imported by hand (`--import-weathercloud <files, zips or folders>`): one file per month (a year comes as a zip of months), UTF-16LE without a
   byte-order mark, `;`-separated, local time `dd/MM/yyyy HH:mm:ss` (the header names the zone), 10-minute rows,
   pressure with a thousands comma, rain as the local day's running total. The 2021 files have short headers
   (`temp (°C)`), 2026's long ones (`Temperature (°C)`), same columns in the same order. First reading 2021-11-07 13:20.
-  The autumn repeated hour needs the same care as the Libre collector's LibreView import.
+  The repeated autumn hour is in the file twice, in order (summer time, then winter time), so each local time is
+  read as the first possible instant after the row before; a time in the skipped spring hour is skipped. Archive schema
+  v3: `weathercloud_days` (a version per import, for publishing) and `weathercloud_rows` (each row's line as in the
+  file, and typed values in °C, %, m/s, hPa, mm). Each day in a file replaces that day's earlier import, so re-running,
+  or importing a fuller export of a month, is safe.
 
 ## Host setup (summary)
 

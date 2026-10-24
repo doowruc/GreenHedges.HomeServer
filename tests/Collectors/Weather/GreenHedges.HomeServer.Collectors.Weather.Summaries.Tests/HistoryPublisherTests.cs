@@ -66,6 +66,46 @@ public sealed class HistoryPublisherTests : IAsyncLifetime
         Assert.Equal([0.8, 0.2, 0.2], rows.Select(r => r.RainMm));
     }
 
+    [Fact]
+    public void Weathercloud_rows_get_rain_per_interval_and_keep_the_indoor_readings()
+    {
+        var rows = HistoryPublisher.FromWeathercloud([Row(0, 0.0, 15), Row(10, 0.4, 15), Row(20, 0.4, 57), Row(30, 1.0, 15)]);
+
+        Assert.Equal([0.0, 0.4, 0.0, 0.6], rows.Select(r => r.RainMm));
+        Assert.Equal(10, rows[1].IntervalMinutes);
+        Assert.Equal((22.0, 50.0, 1004.2), (rows[1].IndoorTemperatureC!.Value, rows[1].IndoorHumidity!.Value, rows[1].PressureHpa!.Value));
+        Assert.Null(rows[2].TemperatureAvgC);          // 57 °C: a failing sensor, left out
+        Assert.Equal(22.0, rows[2].IndoorTemperatureC); // the rest of the row stays
+    }
+
+    [Fact]
+    public void Implausible_values_are_left_out_of_both_sources()
+    {
+        var o = HistoryPublisher.Plausible(new HistoryObservation(DateTime.UtcNow, 5, 54.7, -40, 12, 0, 10, 2, 3, 180, 0.4, 500, 22, 50));
+
+        Assert.Equal((null, null, 12.0, null), (o.TemperatureAvgC, o.TemperatureMinC, o.TemperatureMaxC, o.HumidityAvg));
+        Assert.Null(o.PressureHpa);
+        Assert.Equal((2.0, 0.4, 22.0), (o.WindAvgMs!.Value, o.RainMm!.Value, o.IndoorTemperatureC!.Value));
+    }
+
+    [SqlServerFact]
+    public async Task Weathercloud_days_are_published_by_version_and_a_reimport_replaces_a_day()
+    {
+        await _archive.SaveWeathercloudDaysAsync([new WeathercloudDay(Day, [Row(0, 0.0, 15), Row(10, 0.4, 15)])], "a.csv", _time.GetUtcNow(), CancellationToken.None);
+        Assert.Equal(1, await Publisher().PublishPendingAsync(CancellationToken.None));
+
+        await _archive.SaveWeathercloudDaysAsync([new WeathercloudDay(Day, [Row(0, 0.0, 15), Row(10, 0.4, 15), Row(20, 1.4, 15)])], "b.csv", _time.GetUtcNow(), CancellationToken.None);
+        Assert.Equal(1, await Publisher().PublishPendingAsync(CancellationToken.None));
+        Assert.Equal(0, await Publisher().PublishPendingAsync(CancellationToken.None));
+
+        var rows = await _store.ReadHistoryAsync(HistoryPublisher.WeathercloudSource, DayStartUtc.UtcDateTime, DayStartUtc.AddDays(1).UtcDateTime, CancellationToken.None);
+        Assert.Equal([0.0, 0.4, 1.0], rows.Select(r => r.RainMm));
+        Assert.Equal(2, await _store.GetPublishedIdAsync(HistoryPublisher.WeathercloudTarget, CancellationToken.None));
+    }
+
+    private static WeathercloudRow Row(int minutes, double rainDay, double temperature) => new(
+        DayStartUtc.AddMinutes(minutes), "", "", 22, temperature, 10, 50, 80, 3, 2, 180, 1004.2, rainDay, 0);
+
     [SqlServerFact]
     public async Task Each_day_is_published_whole_and_a_later_fetch_replaces_it()
     {

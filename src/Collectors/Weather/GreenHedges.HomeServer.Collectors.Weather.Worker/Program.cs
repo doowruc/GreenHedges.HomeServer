@@ -64,6 +64,7 @@ builder.Services.AddSingleton(services => new WundergroundClient(
     new HttpClient(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }) { Timeout = TimeSpan.FromSeconds(60) },
     services.GetRequiredService<IOptions<WundergroundOptions>>()));
 builder.Services.AddSingleton<WundergroundImporter>();
+builder.Services.AddSingleton<WeathercloudImporter>();
 builder.Services.AddHostedService<WundergroundService>();
 builder.Services.AddHostedService<SummaryPublisherService>();
 builder.AddBackups<WeatherArchiveBackupSource>();
@@ -107,6 +108,35 @@ if (fetchIndex >= 0)
             Temperature {observations.Min(o => o.TempLowC)} to {observations.Max(o => o.TempHighC)} °C, rain {observations[^1].PrecipTotalMm} mm,
             pressure {observations.Min(o => o.PressureMinHpa)} to {observations.Max(o => o.PressureMaxHpa)} hPa, strongest gust {observations.Max(o => o.GustHighKmh)} km/h
           """);
+    return 0;
+}
+
+// `--import-weathercloud <file.csv|file.zip|folder>...` imports Weathercloud exports into the archive and exits. Safe to
+// run while the service is running (which then publishes them), and to re-run: each day replaces its earlier import.
+var weathercloudIndex = Array.IndexOf(args, "--import-weathercloud");
+if (weathercloudIndex >= 0)
+{
+    var paths = args.Skip(weathercloudIndex + 1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal)).ToList();
+    if (paths.Count == 0 || paths.FirstOrDefault(p => !File.Exists(p) && !Directory.Exists(p)) is { } missing)
+    {
+        Console.Error.WriteLine("Usage: GreenHedges.HomeServer.Collectors.Weather.Worker --import-weathercloud <file.csv|file.zip|folder>...");
+        Console.Error.WriteLine(paths.Count == 0 ? "Nothing given." : $"Not found: {paths.First(p => !File.Exists(p) && !Directory.Exists(p))}");
+        return 2;
+    }
+
+    var results = await host.Services.GetRequiredService<WeathercloudImporter>().ImportAsync(paths, CancellationToken.None);
+    foreach (var f in results)
+    {
+        Console.WriteLine(
+            $"{f.File}: {f.RowsImported:N0} rows in {f.Days} days" +
+            (f.FirstUtc is { } first ? $" ({first:u} to {f.LastUtc:u})" : "") +
+            $"; skipped {f.SkippedEmpty:N0} empty, {f.SkippedInvalidTime} invalid time, {f.SkippedUnparseable} unparseable");
+    }
+
+    Console.WriteLine($"""
+        Weathercloud import: {results.Count} files, {results.Sum(f => f.RowsImported):N0} rows in {results.Sum(f => f.Days):N0} days
+        ({results.Sum(f => f.SkippedEmpty):N0} empty rows skipped). The running service publishes them to SQL Server within a minute or two.
+        """);
     return 0;
 }
 

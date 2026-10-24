@@ -95,6 +95,37 @@ public sealed class WeatherArchive
         );
         CREATE INDEX wunderground_observations_by_date ON wunderground_observations (local_date, epoch);
         """,
+        // v3: Weathercloud's exports of the station (10-minute rows, with the console's indoor readings and pressure):
+        // each row's line as it was in the file, and typed values in fixed units (°C, %, m/s, hPa, mm). Stored by local
+        // day; a day's version changes each time it's imported, for publishing.
+        """
+        CREATE TABLE weathercloud_days (
+            local_date      TEXT    PRIMARY KEY,
+            version         INTEGER NOT NULL UNIQUE,
+            imported_at_utc TEXT    NOT NULL,
+            source_file     TEXT    NOT NULL,
+            row_count       INTEGER NOT NULL
+        );
+
+        CREATE TABLE weathercloud_rows (
+            time_utc        TEXT    PRIMARY KEY,
+            local_date      TEXT    NOT NULL REFERENCES weathercloud_days (local_date),
+            local_time      TEXT    NOT NULL,
+            raw_line        TEXT    NOT NULL,
+            temp_in_c       REAL,
+            temp_c          REAL,
+            dew_c           REAL,
+            humidity_in     REAL,
+            humidity        REAL,
+            gust_ms         REAL,
+            wind_avg_ms     REAL,
+            wind_dir_deg    REAL,
+            pressure_hpa    REAL,
+            rain_day_mm     REAL,
+            rain_rate_mmh   REAL
+        );
+        CREATE INDEX weathercloud_rows_by_date ON weathercloud_rows (local_date, time_utc);
+        """,
     ];
 
     private readonly SqliteDatabase _database;
@@ -454,6 +485,132 @@ public sealed class WeatherArchive
         return result;
     }
 
+    /// <summary>
+    /// Stores Weathercloud rows, a local day at a time: each day's rows replace any it had, and the day gets a new
+    /// version (so it's published again). All in one transaction.
+    /// </summary>
+    public async Task SaveWeathercloudDaysAsync(
+        IReadOnlyList<WeathercloudDay> days, string sourceFile, DateTimeOffset importedAtUtc, CancellationToken cancellationToken)
+    {
+        await using var connection = await _database.OpenAsync(cancellationToken);
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
+
+        await using var day = connection.CreateCommand();
+        day.Transaction = transaction;
+        day.CommandText =
+            """
+            DELETE FROM weathercloud_rows WHERE local_date = $date;
+            INSERT INTO weathercloud_days (local_date, version, imported_at_utc, source_file, row_count)
+            VALUES ($date, (SELECT IFNULL(MAX(version), 0) + 1 FROM weathercloud_days), $imported, $file, $count)
+            ON CONFLICT (local_date) DO UPDATE SET
+                version = (SELECT IFNULL(MAX(version), 0) + 1 FROM weathercloud_days),
+                imported_at_utc = excluded.imported_at_utc,
+                source_file = excluded.source_file,
+                row_count = excluded.row_count;
+            """;
+        foreach (var name in new[] { "$date", "$imported", "$file", "$count" })
+        {
+            day.Parameters.Add(new SqliteParameter { ParameterName = name });
+        }
+
+        await using var row = connection.CreateCommand();
+        row.Transaction = transaction;
+        row.CommandText =
+            """
+            INSERT OR REPLACE INTO weathercloud_rows (
+                time_utc, local_date, local_time, raw_line, temp_in_c, temp_c, dew_c, humidity_in, humidity, gust_ms,
+                wind_avg_ms, wind_dir_deg, pressure_hpa, rain_day_mm, rain_rate_mmh)
+            VALUES ($time, $date, $local, $raw, $temp_in, $temp, $dew, $hum_in, $hum, $gust, $wind, $dir, $pressure, $rain, $rate);
+            """;
+        foreach (var name in new[] { "$time", "$date", "$local", "$raw", "$temp_in", "$temp", "$dew", "$hum_in", "$hum", "$gust", "$wind", "$dir", "$pressure", "$rain", "$rate" })
+        {
+            row.Parameters.Add(new SqliteParameter { ParameterName = name });
+        }
+
+        foreach (var d in days)
+        {
+            var date = d.LocalDate.ToString(DateFormat, CultureInfo.InvariantCulture);
+            day.Parameters["$date"].Value = date;
+            day.Parameters["$imported"].Value = Format(importedAtUtc);
+            day.Parameters["$file"].Value = sourceFile;
+            day.Parameters["$count"].Value = d.Rows.Count;
+            await day.ExecuteNonQueryAsync(cancellationToken);
+
+            foreach (var w in d.Rows)
+            {
+                var p = row.Parameters;
+                p["$time"].Value = Format(w.TimeUtc);
+                p["$date"].Value = date;
+                p["$local"].Value = w.LocalTime;
+                p["$raw"].Value = w.RawLine;
+                p["$temp_in"].Value = Db(w.IndoorTemperatureC);
+                p["$temp"].Value = Db(w.TemperatureC);
+                p["$dew"].Value = Db(w.DewPointC);
+                p["$hum_in"].Value = Db(w.IndoorHumidity);
+                p["$hum"].Value = Db(w.Humidity);
+                p["$gust"].Value = Db(w.GustMs);
+                p["$wind"].Value = Db(w.WindAvgMs);
+                p["$dir"].Value = Db(w.WindDirDeg);
+                p["$pressure"].Value = Db(w.PressureHpa);
+                p["$rain"].Value = Db(w.RainDayMm);
+                p["$rate"].Value = Db(w.RainRateMmh);
+                await row.ExecuteNonQueryAsync(cancellationToken);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Weathercloud days with a version after <paramref name="afterVersion"/>, lowest first (at most
+    /// <paramref name="limit"/>), each with its rows in time order: what's new to publish.
+    /// </summary>
+    public async Task<IReadOnlyList<WeathercloudStoredDay>> ReadWeathercloudDaysAfterAsync(
+        long afterVersion, int limit, CancellationToken cancellationToken)
+    {
+        await using var connection = await _database.OpenAsync(cancellationToken);
+        var days = new List<(DateOnly Date, long Version)>();
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "SELECT local_date, version FROM weathercloud_days WHERE version > $after ORDER BY version LIMIT $limit;";
+            command.Parameters.AddWithValue("$after", afterVersion);
+            command.Parameters.AddWithValue("$limit", limit);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                days.Add((DateOnly.ParseExact(reader.GetString(0), DateFormat, CultureInfo.InvariantCulture), reader.GetInt64(1)));
+            }
+        }
+
+        var result = new List<WeathercloudStoredDay>();
+        foreach (var (date, version) in days)
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT time_utc, local_time, raw_line, temp_in_c, temp_c, dew_c, humidity_in, humidity, gust_ms, wind_avg_ms,
+                       wind_dir_deg, pressure_hpa, rain_day_mm, rain_rate_mmh
+                FROM weathercloud_rows WHERE local_date = $date ORDER BY time_utc;
+                """;
+            command.Parameters.AddWithValue("$date", date.ToString(DateFormat, CultureInfo.InvariantCulture));
+            var rows = new List<WeathercloudRow>();
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                while (await reader.ReadAsync(cancellationToken))
+                {
+                    rows.Add(new WeathercloudRow(
+                        Parse(reader.GetString(0)), reader.GetString(1), reader.GetString(2),
+                        Real(reader, 3), Real(reader, 4), Real(reader, 5), Real(reader, 6), Real(reader, 7), Real(reader, 8),
+                        Real(reader, 9), Real(reader, 10), Real(reader, 11), Real(reader, 12), Real(reader, 13)));
+                }
+            }
+
+            result.Add(new WeathercloudStoredDay(date, version, rows));
+        }
+
+        return result;
+    }
+
     /// <summary>The number of archived messages.</summary>
     public async Task<long> CountMessagesAsync(CancellationToken cancellationToken)
     {
@@ -515,3 +672,31 @@ public sealed record WundergroundObservation(
 
 /// <summary>A fetched Weather Underground day (a local date) and its observations, in time order.</summary>
 public sealed record WundergroundDay(DateOnly LocalDate, DateTimeOffset FetchedAtUtc, IReadOnlyList<WundergroundObservation> Observations);
+
+/// <summary>
+/// One Weathercloud row: the 10 minutes ending at <see cref="TimeUtc"/>, as exported, in fixed units (°C, %, m/s, hPa,
+/// mm). <see cref="RainDayMm"/> is the running total for the local day.
+/// </summary>
+/// <param name="LocalTime">The row's time as written in the file (local time).</param>
+/// <param name="RawLine">The row's line as it was in the file.</param>
+public sealed record WeathercloudRow(
+    DateTimeOffset TimeUtc,
+    string LocalTime,
+    string RawLine,
+    double? IndoorTemperatureC,
+    double? TemperatureC,
+    double? DewPointC,
+    double? IndoorHumidity,
+    double? Humidity,
+    double? GustMs,
+    double? WindAvgMs,
+    double? WindDirDeg,
+    double? PressureHpa,
+    double? RainDayMm,
+    double? RainRateMmh);
+
+/// <summary>A local day's Weathercloud rows, to store.</summary>
+public sealed record WeathercloudDay(DateOnly LocalDate, IReadOnlyList<WeathercloudRow> Rows);
+
+/// <summary>A stored Weathercloud day, with the version it was given when imported, and its rows in time order.</summary>
+public sealed record WeathercloudStoredDay(DateOnly LocalDate, long Version, IReadOnlyList<WeathercloudRow> Rows);

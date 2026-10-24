@@ -32,14 +32,14 @@ public sealed class WeatherArchiveTests : IDisposable
     }
 
     [Fact]
-    public async Task Initialise_creates_schema_v2_in_wal_mode_and_is_idempotent()
+    public async Task Initialise_creates_schema_v3_in_wal_mode_and_is_idempotent()
     {
         await _archive.InitialiseAsync(CancellationToken.None);
         await _archive.InitialiseAsync(CancellationToken.None);
 
-        Assert.Equal(2, WeatherArchive.SchemaVersion);
+        Assert.Equal(3, WeatherArchive.SchemaVersion);
         Assert.Equal("wal", await ScalarAsync("PRAGMA journal_mode;"));
-        Assert.Equal(2L, await ScalarAsync("PRAGMA user_version;"));
+        Assert.Equal(3L, await ScalarAsync("PRAGMA user_version;"));
     }
 
     [Fact]

@@ -241,5 +241,33 @@ sudo systemctl restart weathercollector
 journalctl -u weathercollector -f -o cat | grep -i 'weather underground'
 ```
 
-Expect `Weather Underground: … days to fetch`, progress every 100 days, then `Published N days of Weather Underground
-history`. The rest of the backlog comes the next night at 04:30.
+Expect `Weather Underground: … days to fetch`, progress every 100 days, and `Published history for N days`. The
+backlog takes two nights or more: at most 1,000 days a day.
+
+## 14. Weathercloud history (on the Mac, then the server)
+
+**In a browser:** Weathercloud → the device → download each year's data (a zip of monthly CSVs). **On the Mac**, copy
+them to the server:
+
+```bash
+scp ~/Downloads/Weathercloud_*.zip <your-user>@<host>:/tmp/
+```
+
+**On the server**, hand them to the service account and import them (safe while the collector runs, and to re-run):
+
+```bash
+sudo install -d -o weathercollector -g weathercollector -m 0700 /var/lib/weathercollector/import && sudo install -o weathercollector -g weathercollector -m 0600 /tmp/Weathercloud_*.zip /var/lib/weathercollector/import/ && rm /tmp/Weathercloud_*.zip
+```
+
+```bash
+sudo -u weathercollector env Serilog__WriteTo__1__Args__path=logs/import-.log sh -c 'cd /var/lib/weathercollector && /opt/weathercollector/GreenHedges.HomeServer.Collectors.Weather.Worker --import-weathercloud import'
+```
+
+It prints a line per month and a total (about 258,000 rows in 1,800 days for 2021–2026). The collector publishes them
+within a few minutes (`Published history for N days`). Then delete the copies:
+
+```bash
+sudo rm -r /var/lib/weathercollector/import
+```
+
+Later, a newer export (e.g. the rest of a month) is imported the same way; it replaces the days it contains.
