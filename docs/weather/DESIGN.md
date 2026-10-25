@@ -168,8 +168,16 @@ views in the `Weather` database (summaries schema v3), so their queries stay sim
   Weather Underground is fetched nightly.
 - **`dbo.Indoor`**: Weathercloud's indoor temperature and humidity, up to the last export imported.
 
-The Weather and Rain dashboards read `Outdoor` (so a 5-year range shows everything since November 2021, in about a
-second), plus `Pressure` and `Indoor` charts; the Station dashboard shows which source covered each day.
+- **`dbo.Hourly`** (summaries schema v4): the three views by UTC hour (about 44,000 rows for five years instead of a
+  million), with each hour's averages, minima and maxima, rain total, speed-weighted direction sums, pressure and indoor
+  readings. Kept current in the same transaction as every write (minutes, or a history day), so it can't drift; filled
+  from everything when the collector upgrades to v4.
+
+The Weather and Rain dashboards read `Outdoor` for short ranges and `Hourly` once a panel's interval is an hour or more
+(an `IF $__interval_ms >= 3600000` in each query), so five years loads in a fraction of a second per panel; the range
+stats, the Rain dashboard and the Station dashboard's sources always read `Hourly`. Rain bars are at least an hour wide,
+widening to days or weeks on long ranges. Plus `Pressure` and `Indoor` charts; the Station dashboard shows which source
+covered each day.
 
 - **Weather Underground** (PWS history API, `api.weather.com/v2/pws/history/all`, one local day per call, the station
   owner's API key, metric units): 5-minute intervals with high/low/average temperature, humidity, wind, gust, dew point,

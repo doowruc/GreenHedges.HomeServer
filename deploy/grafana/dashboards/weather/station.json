@@ -313,8 +313,8 @@
     },
     {
       "type": "timeseries",
-      "title": "Messages per hour",
-      "description": "Messages each hour as a share of the 300 the sensor sends. Hours with none show as 0.",
+      "title": "Messages received",
+      "description": "Messages in each hour (or day, on long ranges) as a share of one every 12 s. Periods with none show as 0.",
       "targets": [
         {
           "refId": "A",
@@ -325,7 +325,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, '1h', 0), 100.0 * SUM(Messages) / 300 AS [Received]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, '1h', 0)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, 0), 100.0 * SUM(Messages) / ($__interval_ms / 12000.0) AS [Received]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval, 0)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -386,7 +386,8 @@
       "datasource": {
         "type": "mssql",
         "uid": "weather"
-      }
+      },
+      "interval": "1h"
     },
     {
       "type": "timeseries",
@@ -479,6 +480,7 @@
     {
       "type": "state-timeline",
       "title": "Battery",
+      "interval": "1h",
       "targets": [
         {
           "refId": "A",
@@ -489,7 +491,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, '1h', NULL), MIN(CAST(BatteryOk AS int)) AS [Battery]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, '1h', NULL)\nORDER BY 1"
+          "rawSql": "SELECT $__timeGroupAlias(MinuteUtc, $__interval, NULL), MIN(CAST(BatteryOk AS int)) AS [Battery]\nFROM dbo.MinuteSummaries\nWHERE $__timeFilter(MinuteUtc)\nGROUP BY $__timeGroup(MinuteUtc, $__interval, NULL)\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -580,7 +582,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time,\n       CASE WHEN COUNT(TemperatureAvgC) = 0 THEN 4 ELSE MIN(CASE Source WHEN 'radio' THEN 1 WHEN 'wunderground' THEN 2 ELSE 3 END) END AS [Source]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+          "rawSql": "SELECT CAST(CAST(CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time,\n       CASE WHEN COUNT(TemperatureAvgC) = 0 THEN 4 ELSE MIN(CASE Source WHEN 'radio' THEN 1 WHEN 'wunderground' THEN 2 ELSE 3 END) END AS [Source]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc)\nGROUP BY CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
         }
       ],
       "fieldConfig": {

@@ -29,7 +29,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc)"
+          "rawSql": "SELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Hourly WHERE $__timeFilter(HourUtc)"
         }
       ],
       "fieldConfig": {
@@ -93,7 +93,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @month datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE TimeUtc >= @month AND TimeUtc <= @to"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @month datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Hourly WHERE HourUtc >= @month AND HourUtc <= @to"
         }
       ],
       "fieldConfig": {
@@ -157,7 +157,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @year datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1, 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Outdoor WHERE TimeUtc >= @year AND TimeUtc <= @to"
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @year datetime2 = CAST(CAST(DATEFROMPARTS(YEAR(@to AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1, 1) AS datetime2) AT TIME ZONE 'GMT Standard Time' AT TIME ZONE 'UTC' AS datetime2);\nSELECT ISNULL(ROUND(SUM(RainMm), 1), 0) AS [Rain] FROM dbo.Hourly WHERE HourUtc >= @year AND HourUtc <= @to"
         }
       ],
       "fieldConfig": {
@@ -221,7 +221,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT COUNT(*) AS [Days] FROM (SELECT CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS d FROM dbo.Outdoor WHERE $__timeFilter(TimeUtc) GROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') HAVING SUM(RainMm) >= 0.2) AS days"
+          "rawSql": "SELECT COUNT(*) AS [Days] FROM (SELECT CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS d FROM dbo.Hourly WHERE $__timeFilter(HourUtc) GROUP BY CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') HAVING SUM(RainMm) >= 0.2) AS days"
         }
       ],
       "fieldConfig": {
@@ -285,7 +285,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+          "rawSql": "SELECT CAST(CAST(CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc)\nGROUP BY CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -361,7 +361,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT FORMAT(DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1), 'MMM yyyy') AS [Month], ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)\nORDER BY DATEFROMPARTS(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)"
+          "rawSql": "SELECT FORMAT(DATEFROMPARTS(YEAR(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1), 'MMM yyyy') AS [Month], ROUND(SUM(RainMm), 1) AS [Rain]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc)\nGROUP BY DATEFROMPARTS(YEAR(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)\nORDER BY DATEFROMPARTS(YEAR(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), MONTH(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time'), 1)"
         }
       ],
       "fieldConfig": {
@@ -435,7 +435,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT CAST(YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS varchar(4)) AS [Year], ROUND(SUM(RainMm), 0) AS [Rain]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY YEAR(TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
+          "rawSql": "SELECT CAST(YEAR(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS varchar(4)) AS [Year], ROUND(SUM(RainMm), 0) AS [Rain]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc)\nGROUP BY YEAR(HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nORDER BY 1"
         }
       ],
       "fieldConfig": {
@@ -509,7 +509,7 @@
           "format": "time_series",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT time, SUM(rain) OVER (ORDER BY time ROWS UNBOUNDED PRECEDING) AS [Rain]\nFROM (\n  SELECT CAST(CAST(CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS rain\n  FROM dbo.Outdoor\n  WHERE $__timeFilter(TimeUtc)\n  GROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')) AS days\nORDER BY time"
+          "rawSql": "SELECT time, SUM(rain) OVER (ORDER BY time ROWS UNBOUNDED PRECEDING) AS [Rain]\nFROM (\n  SELECT CAST(CAST(CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS datetime2) AT TIME ZONE 'GMT Standard Time' AS datetimeoffset) AS time, ROUND(SUM(RainMm), 1) AS rain\n  FROM dbo.Hourly\n  WHERE $__timeFilter(HourUtc)\n  GROUP BY CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')) AS days\nORDER BY time"
         }
       ],
       "fieldConfig": {
@@ -584,7 +584,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT TOP 10 CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS [Day], ROUND(SUM(RainMm), 1) AS [Rain (mm)], ROUND(MAX(RainMm), 1) AS [Wettest minute (mm)]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY CONVERT(date, TimeUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+          "rawSql": "SELECT TOP 10 CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time') AS [Day], ROUND(SUM(RainMm), 1) AS [Rain (mm)], ROUND(MAX(RainMm), 1) AS [Wettest hour (mm)]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc)\nGROUP BY CONVERT(date, HourUtc AT TIME ZONE 'UTC' AT TIME ZONE 'GMT Standard Time')\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
         }
       ],
       "fieldConfig": {
@@ -639,7 +639,7 @@
           "format": "table",
           "rawQuery": true,
           "editorMode": "code",
-          "rawSql": "SELECT TOP 10 CAST(DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0) AS datetimeoffset) AS [Hour], ROUND(SUM(RainMm), 1) AS [Rain (mm)]\nFROM dbo.Outdoor\nWHERE $__timeFilter(TimeUtc)\nGROUP BY DATEADD(HOUR, DATEDIFF(HOUR, 0, TimeUtc), 0)\nHAVING SUM(RainMm) > 0\nORDER BY 2 DESC"
+          "rawSql": "SELECT TOP 10 CAST(HourUtc AS datetimeoffset) AS [Hour], ROUND(RainMm, 1) AS [Rain (mm)]\nFROM dbo.Hourly\nWHERE $__timeFilter(HourUtc) AND RainMm > 0\nORDER BY 2 DESC"
         }
       ],
       "fieldConfig": {
