@@ -115,6 +115,41 @@ public sealed class WundergroundImporterTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Today_so_far_is_stored_replacing_the_last_fetch_and_is_still_fetched_whole_after_it_ends()
+    {
+        _api.Day("20261025", FakeWunderground.Json((1792816494, 0.0)));
+        Assert.Equal(1, await Importer().FetchTodayAsync(CancellationToken.None));
+
+        _time.Advance(TimeSpan.FromHours(1));
+        _api.Day("20261025", FakeWunderground.Json((1792816494, 0.0), (1792820094, 0.2)));
+        Assert.Equal(2, await Importer().FetchTodayAsync(CancellationToken.None));
+
+        var days = await _archive.ReadWundergroundDaysFetchedAfterAsync(Now, 10, CancellationToken.None);
+        Assert.Equal(2, Assert.Single(days).Observations.Count);
+
+        // Today isn't part of a run's backlog; the next night it's yesterday, fetched in full (and again the night after).
+        Assert.DoesNotContain("20261025", (await RunDatesAsync()));
+        _time.Advance(TimeSpan.FromDays(1));
+        Assert.Contains("20261025", (await RunDatesAsync()));
+    }
+
+    [Fact]
+    public async Task The_rate_limit_skips_todays_fetch_until_next_time()
+    {
+        _api.Status("20261025", HttpStatusCode.TooManyRequests);
+
+        Assert.Null(await Importer().FetchTodayAsync(CancellationToken.None));
+        Assert.Empty(await _archive.GetWundergroundDaysAsync(CancellationToken.None));
+    }
+
+    private async Task<List<string>> RunDatesAsync()
+    {
+        _api.Dates.Clear();
+        await Importer().RunAsync(CancellationToken.None);
+        return [.. _api.Dates];
+    }
+
+    [Fact]
     public void Local_days_end_at_local_midnight_across_the_clock_change()
     {
         var importer = Importer();

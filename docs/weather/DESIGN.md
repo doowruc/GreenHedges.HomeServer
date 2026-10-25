@@ -164,8 +164,8 @@ views in the `Weather` database (summaries schema v3), so their queries stay sim
 - **`dbo.Outdoor`**: for each UTC hour, the radio's minutes if the radio has any in that hour, else Weather
   Underground's 5-minute rows, else Weathercloud's 10-minute rows (each row with its `Source`; the radio's dew point is
   calculated in the view). A partly covered hour at a source's edge comes from the better source only.
-- **`dbo.Pressure`**: Weather Underground, else Weathercloud (the radio has none). Up to the end of yesterday, since
-  Weather Underground is fetched nightly.
+- **`dbo.Pressure`**: Weather Underground, else Weathercloud (the radio has none). Up to the last hour, since today
+  is fetched from Weather Underground hourly.
 - **`dbo.Indoor`**: Weathercloud's indoor temperature and humidity, up to the last export imported.
 
 - **`dbo.Hourly`** (summaries schema v4): the three views by UTC hour (about 44,000 rows for five years instead of a
@@ -189,6 +189,9 @@ covered each day.
     fill the backlog (about 1,800 days) within two nights.
   - **Rate limits** (owner keys: 1,500 calls a day, 30 a minute): at most `MaxCallsPerDay` (1,000), counting the days
     already fetched in the last 24 hours, so restarts can't exceed it; 2.5 s between calls; a 429 stops the run.
+  - **Today, hourly** (`TodayInterval`, 1 hour; 0 turns it off): today so far is fetched every hour and replaces the
+    previous fetch, so pressure (which the radio doesn't have) is live to within the hour. 24 calls a day on top of
+    `MaxCallsPerDay` (well inside the 1,500 limit); a 429 skips that hour's fetch.
   - Publishing: each day whole (a re-fetched day replaces its rows), km/h to m/s, pressure as the middle of the
     interval's range, rain per interval from the day's running total (which restarts at local midnight).
   - `--fetch-wunderground [yyyy-MM-dd]` fetches one day and prints it without storing: a check of the id and key.

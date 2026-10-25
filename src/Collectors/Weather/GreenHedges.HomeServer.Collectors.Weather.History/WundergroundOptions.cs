@@ -26,6 +26,12 @@ public sealed class WundergroundOptions
     public TimeSpan RunAt { get; set; } = new(4, 30, 0);
 
     /// <summary>
+    /// How often today is fetched so far, for live pressure (the radio has none); zero turns it off. Today's rows
+    /// replace the previous fetch's. 24 calls a day at the default, on top of <see cref="MaxCallsPerDay"/>.
+    /// </summary>
+    public TimeSpan TodayInterval { get; set; } = TimeSpan.FromHours(1);
+
+    /// <summary>
     /// The most calls in any 24 hours, counting the days already fetched in that time, so restarts can't exceed it.
     /// Below Weather Underground's limit for owner keys (1,500 a day).
     /// </summary>
