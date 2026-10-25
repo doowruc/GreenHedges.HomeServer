@@ -309,7 +309,7 @@
       "gridPos": {
         "x": 12,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -543,9 +543,9 @@
       },
       "id": 6,
       "gridPos": {
-        "x": 16,
+        "x": 15,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -607,9 +607,9 @@
       },
       "id": 7,
       "gridPos": {
-        "x": 20,
+        "x": 18,
         "y": 1,
-        "w": 4,
+        "w": 3,
         "h": 4
       },
       "datasource": {
@@ -618,7 +618,84 @@
       }
     },
     {
+      "type": "stat",
+      "title": "Pressure",
+      "description": "The latest pressure (fetched from Weather Underground hourly, so up to an hour old) and how much it changed over the 3 hours before: falling pressure usually means unsettled weather is coming.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "mssql",
+            "uid": "weather"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "rawSql": "DECLARE @to datetime2 = $__timeTo();\nDECLARE @p float, @t datetime2;\nSELECT TOP 1 @p = PressureHpa, @t = TimeUtc FROM dbo.Pressure WHERE TimeUtc <= @to AND TimeUtc > DATEADD(HOUR, -3, @to) ORDER BY TimeUtc DESC;\nSELECT @p AS [Pressure], @p - (SELECT TOP 1 PressureHpa FROM dbo.Pressure WHERE TimeUtc <= DATEADD(HOUR, -3, @t) AND TimeUtc > DATEADD(HOUR, -4, @t) ORDER BY TimeUtc DESC) AS [3 h change]\nWHERE @p IS NOT NULL"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "pressurehpa",
+          "decimals": 0,
+          "mappings": [],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "3 h change"
+            },
+            "properties": [
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "graphMode": "none",
+        "colorMode": "none",
+        "textMode": "auto",
+        "justifyMode": "center",
+        "wideLayout": true,
+        "showPercentChange": false
+      },
       "id": 8,
+      "gridPos": {
+        "x": 21,
+        "y": 1,
+        "w": 3,
+        "h": 4
+      },
+      "datasource": {
+        "type": "mssql",
+        "uid": "weather"
+      }
+    },
+    {
+      "id": 9,
       "type": "row",
       "title": "Over the selected range",
       "collapsed": false,
@@ -682,7 +759,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 9,
+      "id": 10,
       "gridPos": {
         "x": 0,
         "y": 6,
@@ -746,7 +823,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 10,
+      "id": 11,
       "gridPos": {
         "x": 4,
         "y": 6,
@@ -810,7 +887,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 11,
+      "id": 12,
       "gridPos": {
         "x": 8,
         "y": 6,
@@ -874,7 +951,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 12,
+      "id": 13,
       "gridPos": {
         "x": 12,
         "y": 6,
@@ -889,7 +966,7 @@
     {
       "type": "stat",
       "title": "Pressure",
-      "description": "The lowest and highest pressure in the range, from the console (via Weather Underground, else Weathercloud). Up to the end of yesterday: Weather Underground is fetched nightly.",
+      "description": "The lowest and highest pressure in the range, from the console (via Weather Underground, else Weathercloud). Up to the last hour: today is fetched from Weather Underground hourly.",
       "targets": [
         {
           "refId": "A",
@@ -938,7 +1015,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 13,
+      "id": 14,
       "gridPos": {
         "x": 16,
         "y": 6,
@@ -1002,7 +1079,7 @@
         "wideLayout": true,
         "showPercentChange": false
       },
-      "id": 14,
+      "id": 15,
       "gridPos": {
         "x": 20,
         "y": 6,
@@ -1015,7 +1092,7 @@
       }
     },
     {
-      "id": 15,
+      "id": 16,
       "type": "row",
       "title": "Over time",
       "collapsed": false,
@@ -1181,7 +1258,7 @@
           "sort": "none"
         }
       },
-      "id": 16,
+      "id": 17,
       "gridPos": {
         "x": 0,
         "y": 11,
@@ -1256,7 +1333,7 @@
           "sort": "none"
         }
       },
-      "id": 17,
+      "id": 18,
       "gridPos": {
         "x": 12,
         "y": 11,
@@ -1367,7 +1444,7 @@
           "sort": "none"
         }
       },
-      "id": 18,
+      "id": 19,
       "gridPos": {
         "x": 0,
         "y": 20,
@@ -1445,7 +1522,7 @@
           "sort": "none"
         }
       },
-      "id": 19,
+      "id": 20,
       "gridPos": {
         "x": 12,
         "y": 20,
@@ -1521,7 +1598,7 @@
           "sort": "none"
         }
       },
-      "id": 20,
+      "id": 21,
       "gridPos": {
         "x": 0,
         "y": 29,
@@ -1581,7 +1658,7 @@
           "mode": "single"
         }
       },
-      "id": 21,
+      "id": 22,
       "gridPos": {
         "x": 12,
         "y": 29,
@@ -1596,7 +1673,7 @@
     {
       "type": "timeseries",
       "title": "Pressure",
-      "description": "Sea-level pressure from the console, via Weather Underground (else Weathercloud). Up to the end of yesterday: Weather Underground is fetched nightly.",
+      "description": "Sea-level pressure from the console, via Weather Underground (else Weathercloud). Up to the last hour: today is fetched from Weather Underground hourly.",
       "targets": [
         {
           "refId": "A",
@@ -1654,7 +1731,7 @@
           "sort": "none"
         }
       },
-      "id": 22,
+      "id": 23,
       "gridPos": {
         "x": 0,
         "y": 37,
@@ -1762,7 +1839,7 @@
           "sort": "none"
         }
       },
-      "id": 23,
+      "id": 24,
       "gridPos": {
         "x": 12,
         "y": 37,

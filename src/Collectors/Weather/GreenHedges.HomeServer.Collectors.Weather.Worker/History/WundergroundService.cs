@@ -5,8 +5,9 @@ namespace GreenHedges.HomeServer.Collectors.Weather.Worker.History;
 
 /// <summary>
 /// Keeps the archive's copy of Weather Underground's history up to date: a run a few minutes after startup (so a
-/// first deploy starts the backfill at once), then every night at <see cref="WundergroundOptions.RunAt"/>. A failed
-/// run is retried after <see cref="RetryAfter"/>. Off unless the station id and API key are set.
+/// first deploy starts the backfill at once), then every night at <see cref="WundergroundOptions.RunAt"/>; a failed
+/// run is retried after <see cref="RetryAfter"/>. Today so far is fetched every <see cref="WundergroundOptions.TodayInterval"/>,
+/// for live pressure. Off unless the station id and API key are set.
 /// </summary>
 public sealed class WundergroundService(
     IServiceProvider services,
@@ -30,14 +31,22 @@ public sealed class WundergroundService(
 
         var importer = services.GetRequiredService<WundergroundImporter>();
         var zone = TimeZoneInfo.FindSystemTimeZoneById(_options.TimeZone);
-        logger.LogInformation("Weather Underground history from {From:yyyy-MM-dd}, nightly at {RunAt}", _options.From, _options.RunAt);
+        logger.LogInformation(
+            "Weather Underground history from {From:yyyy-MM-dd}, nightly at {RunAt}; today every {TodayInterval}",
+            _options.From, _options.RunAt, _options.TodayInterval);
 
-        var delay = StartupDelay;
+        var nextRun = time.GetUtcNow() + StartupDelay;
+        DateTimeOffset? nextToday = _options.TodayInterval > TimeSpan.Zero ? nextRun : null;
         while (!stoppingToken.IsCancellationRequested)
         {
+            var wake = nextToday is { } t && t < nextRun ? t : nextRun;
             try
             {
-                await Task.Delay(delay, time, stoppingToken);
+                var delay = wake - time.GetUtcNow();
+                if (delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(delay, time, stoppingToken);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -46,12 +55,18 @@ public sealed class WundergroundService(
 
             try
             {
-                var result = await importer.RunAsync(stoppingToken);
-                health.RecordWundergroundSuccess();
-                delay = UntilNext(_options.RunAt, zone);
-                if (result.StoppedByRateLimit)
+                if (time.GetUtcNow() >= nextRun)
                 {
-                    delay = TimeSpan.FromTicks(Math.Min(delay.Ticks, RetryAfter.Ticks));
+                    nextRun = await RunAsync(importer, zone, stoppingToken);
+                }
+
+                if (nextToday is { } today && time.GetUtcNow() >= today)
+                {
+                    nextToday = time.GetUtcNow() + _options.TodayInterval;
+                    if (await importer.FetchTodayAsync(stoppingToken) is not null)
+                    {
+                        health.RecordWundergroundSuccess();
+                    }
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -61,9 +76,26 @@ public sealed class WundergroundService(
             catch (Exception ex)
             {
                 health.RecordWundergroundFailure(ex);
-                logger.LogWarning(ex, "Weather Underground history: the run failed; retrying in {RetryAfter}", RetryAfter);
-                delay = RetryAfter;
+                logger.LogWarning(ex, "Weather Underground: fetching today failed; trying again in {Interval}", _options.TodayInterval);
             }
+        }
+    }
+
+    /// <summary>A full run (the backlog, yesterday's second fetch). Returns when the next one is due.</summary>
+    private async Task<DateTimeOffset> RunAsync(WundergroundImporter importer, TimeZoneInfo zone, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await importer.RunAsync(cancellationToken);
+            health.RecordWundergroundSuccess();
+            var delay = UntilNext(_options.RunAt, zone);
+            return time.GetUtcNow() + (result.StoppedByRateLimit ? TimeSpan.FromTicks(Math.Min(delay.Ticks, RetryAfter.Ticks)) : delay);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            health.RecordWundergroundFailure(ex);
+            logger.LogWarning(ex, "Weather Underground history: the run failed; retrying in {RetryAfter}", RetryAfter);
+            return time.GetUtcNow() + RetryAfter;
         }
     }
 

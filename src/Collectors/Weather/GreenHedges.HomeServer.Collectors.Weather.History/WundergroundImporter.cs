@@ -93,6 +93,29 @@ public sealed class WundergroundImporter(
         return new WundergroundRunResult(days, observations, due.Count - days, false);
     }
 
+    /// <summary>
+    /// Fetches today so far and stores it, replacing the previous fetch of today. Returns the number of observations,
+    /// or null when the rate limit stopped it (it's tried again at the next interval).
+    /// </summary>
+    public async Task<int?> FetchTodayAsync(CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), _zone).DateTime);
+        WundergroundResponse response;
+        try
+        {
+            response = await client.FetchDayAsync(today, cancellationToken);
+        }
+        catch (WundergroundRateLimitException)
+        {
+            logger.LogWarning("Weather Underground's rate limit was reached fetching today; trying again later");
+            return null;
+        }
+
+        await archive.SaveWundergroundDayAsync(today, time.GetUtcNow(), response.RawJson, response.Observations, cancellationToken);
+        logger.LogDebug("Weather Underground: today so far, {Observations} observations", response.Observations.Count);
+        return response.Observations.Count;
+    }
+
     /// <summary>The days to fetch, newest first: yesterday's and recent gaps come before the backlog.</summary>
     internal List<DateOnly> DueDays(IReadOnlyDictionary<DateOnly, DateTimeOffset> fetched, DateTimeOffset now)
     {

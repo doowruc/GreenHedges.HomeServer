@@ -56,8 +56,9 @@ builder.Services.AddOptions<WundergroundOptions>()
     .BindConfiguration(WundergroundOptions.SectionName)
     .Validate(
         o => o.MaxCallsPerDay > 0 && o.CallInterval >= TimeSpan.Zero && o.RunAt >= TimeSpan.Zero && o.RunAt < TimeSpan.FromDays(1)
+            && (o.TodayInterval == TimeSpan.Zero || o.TodayInterval >= TimeSpan.FromMinutes(5))
             && TimeZoneInfo.TryFindSystemTimeZoneById(o.TimeZone, out _),
-        "Wunderground: MaxCallsPerDay must be positive, RunAt a time of day, and TimeZone a known time zone.")
+        "Wunderground: MaxCallsPerDay must be positive, RunAt a time of day, TodayInterval 0 or at least 5 minutes, and TimeZone a known time zone.")
     .ValidateOnStart();
 // A long-lived HttpClient; PooledConnectionLifetime picks up DNS changes without IHttpClientFactory.
 builder.Services.AddSingleton(services => new WundergroundClient(
