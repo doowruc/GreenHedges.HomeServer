@@ -26,7 +26,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/TAILSCALE-SERVICES.md` | One-off Tailscale setup: the server's tag and access to `svc:home`, the tailnet address of the web apps |
 | `deploy/caddy/` | Caddy, the web apps' front door: `https://<app>.<home domain>` on the tailnet, one wildcard certificate |
 | `deploy/grafana/` | Grafana: dashboards (so far the Weather collector's), its data sources and dashboards as files, deploy and database scripts |
-| `deploy/deploy.sh` | Publishes a service and installs it on the host (`deploy/<service>/deploy.sh` for short). Services run on the host's .NET runtime (Ubuntu's package); `--self-contained` bundles the SDK's runtime instead, for a security fix Ubuntu hasn't shipped yet |
+| `deploy/deploy.sh` | Publishes services and installs them on the host: `deploy/deploy.sh all`, or name them (`deploy/deploy.sh libre weather`; `deploy/<service>/deploy.sh` for one). Services run on the host's .NET runtime (Ubuntu's package); `--self-contained` bundles the SDK's runtime instead, for a security fix Ubuntu hasn't shipped yet |
 | `deploy/libre/` | The Libre collector's systemd unit, deploy script, host setup and Nightscout stack |
 | `docs/libre/` | Its README (setup and use) and design notes |
 | `deploy/weather/` | The Weather collector's systemd unit, deploy script and host setup |
