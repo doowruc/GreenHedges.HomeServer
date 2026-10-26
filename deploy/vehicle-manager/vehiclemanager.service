@@ -1,8 +1,8 @@
 # systemd unit for Vehicle Manager. Installed by deploy/vehicle-manager/deploy.sh into /etc/systemd/system/.
-# The self-contained build goes in /opt/vehiclemanager (read-only); data-protection keys, backups and alert state in
-# /var/lib/vehiclemanager. Its database is on the SQL Server container (deploy/sqlserver/). Settings that stay off the
-# repo (connection string, Auth0, Resend, DVSA, alert, heartbeat and off-site keys) go in /etc/vehiclemanager/env
-# (root:root, 0600); see deploy/vehicle-manager/HOST-SETUP.md.
+# The build goes in /opt/vehiclemanager (read-only), run by Ubuntu's .NET runtime; data-protection keys, backups and
+# alert state in /var/lib/vehiclemanager. Its database is on the SQL Server container (deploy/sqlserver/). Settings that
+# stay off the repo (connection string, Auth0, Resend, DVSA, alert, heartbeat and off-site keys) go in
+# /etc/vehiclemanager/env (root:root, 0600); see deploy/vehicle-manager/HOST-SETUP.md.
 [Unit]
 Description=Vehicle Manager (vehicles, fuel and MOT web app)
 Wants=network-online.target docker.service

@@ -1,5 +1,6 @@
 # systemd unit for LibreCollector. Installed by deploy/libre/deploy.sh into /etc/systemd/system/.
-# The self-contained build goes in /opt/librecollector (read-only); data and logs in /var/lib/librecollector.
+# The build goes in /opt/librecollector (read-only), run by Ubuntu's .NET runtime; data and logs in
+# /var/lib/librecollector.
 # Secrets go in /etc/librecollector/env (root:root, 0600); see deploy/libre/HOST-SETUP.md.
 [Unit]
 Description=LibreCollector (LibreLinkUp glucose archive)

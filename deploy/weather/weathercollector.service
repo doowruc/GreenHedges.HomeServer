@@ -1,5 +1,6 @@
 # systemd unit for the Weather collector. Installed by deploy/weather/deploy.sh into /etc/systemd/system/.
-# The self-contained build goes in /opt/weathercollector (read-only); data and logs in /var/lib/weathercollector.
+# The build goes in /opt/weathercollector (read-only), run by Ubuntu's .NET runtime; data and logs in
+# /var/lib/weathercollector.
 # Settings that stay off the repo (the station's id, alert, heartbeat and off-site keys) go in /etc/weathercollector/env
 # (root:root, 0600); see deploy/weather/HOST-SETUP.md.
 [Unit]
