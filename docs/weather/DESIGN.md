@@ -37,7 +37,7 @@ Outdoor sensor ──868 MHz──► Station console ──► Weather Undergro
 
 | Topic | Decision |
 |---|---|
-| Runtime | .NET 10 Worker Service, self-contained `linux-x64` publish; systemd `Type=notify`; Serilog to the journal. |
+| Runtime | .NET 10 Worker Service, `linux-x64` publish for the host's shared .NET runtime (Ubuntu's package); systemd `Type=notify`; Serilog to the journal. |
 | Receiving | `rtl_433` from the Ubuntu package, run by the worker as a **child process** reading JSON lines from stdout. One service and one account; no MQTT broker. (MQTT can be added later, e.g. for Home Assistant.) |
 | What is archived | **Every decoded message from every device**, including neighbours' sensors, with the raw JSON line. "My station" is a configured device id, with a history of id changes. |
 | Archive | **SQLite** (WAL), the single source of truth; insert-only. |

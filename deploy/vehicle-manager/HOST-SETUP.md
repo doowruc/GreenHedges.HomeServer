@@ -4,7 +4,7 @@ Runs Vehicle Manager on the home server, on its SQL Server, at `https://vehicles
 its settings: [docs/vehicle-manager/README.md](../../docs/vehicle-manager/README.md). `<your-user>@<host>` is your
 login on the server; the deploy scripts default to `COLLECTORS_SSH` from `deploy/local.env`.
 
-**First:** SQL Server ([deploy/sqlserver/HOST-SETUP.md](../sqlserver/HOST-SETUP.md)) and Caddy
+**First:** the .NET runtime ([section 1 of the Libre collector's HOST-SETUP](../libre/HOST-SETUP.md#1-update-and-basic-tools)), SQL Server ([deploy/sqlserver/HOST-SETUP.md](../sqlserver/HOST-SETUP.md)) and Caddy
 ([deploy/caddy/HOST-SETUP.md](../caddy/HOST-SETUP.md)), whose Caddyfile already has the `vehicles` name.
 
 ## 1. Service account and folders (on the server)

@@ -82,7 +82,7 @@ Defaults for everything else (frequency, rtl_433 arguments, database path, loggi
 deploy/weather/deploy.sh
 ```
 
-The host defaults to `COLLECTORS_SSH` (or `LIBRECOLLECTOR_SSH`) in `deploy/local.env`; otherwise pass `<your-user>@<host>`. It publishes a self-contained build, installs it in `/opt/weathercollector` with the systemd unit, starts the service and shows its status and recent log.
+The host defaults to `COLLECTORS_SSH` (or `LIBRECOLLECTOR_SSH`) in `deploy/local.env`; otherwise pass `<your-user>@<host>`. It publishes a build for the host's .NET runtime, installs it in `/opt/weathercollector` with the systemd unit, starts the service and shows its status and recent log.
 
 ## 7. Check it's archiving
 

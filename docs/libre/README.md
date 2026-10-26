@@ -39,7 +39,7 @@ Libre sensor ──► LibreLink app (phone) ──► Abbott LibreView (unchang
 | A FreeStyle Libre sensor with the **LibreLink** app and a **LibreView** account | Yes | Developed and tested with a Libre 2 Plus in the UK. Other sensors that share via LibreLinkUp should work but are untested. |
 | A **LibreLinkUp follower account**, used only by this service | Yes | Free; set up in step 1 below. |
 | An **always-on Linux machine** | Yes | Tested on Ubuntu Server 26.04 on an old x86-64 laptop. A Raspberry Pi 5 or mini PC also suits. The collector uses about 40 MB of RAM. MongoDB (for Nightscout) needs a CPU with AVX (x86) or ARMv8.2 (e.g. Pi 5, not Pi 4). |
-| A Mac or Linux machine with the **.NET 10 SDK**, `ssh` and `rsync` | Yes | To build and deploy. Builds are self-contained, so the host needs no .NET. |
+| A Mac or Linux machine with the **.NET 10 SDK**, `ssh` and `rsync` | Yes | To build and deploy. The host runs them on Ubuntu's .NET runtime (`aspnetcore-runtime-10.0`). |
 | A [Resend](https://resend.com) account with a verified sending domain | Recommended | Email alerts. Without it, alerts are only logged. |
 | A [healthchecks.io](https://healthchecks.io) account | Recommended | Tells you when the host itself goes silent. Free plan is plenty. |
 | [Tailscale](https://tailscale.com) | For Nightscout | Private remote access; nothing is exposed to the internet. |
@@ -99,7 +99,7 @@ deploy/libre/deploy.sh you@your-host
 
 To avoid typing the host every time, copy [`deploy/local.env.example`](../../deploy/local.env.example) to `deploy/local.env` (git-ignored) and set `COLLECTORS_SSH`; then `deploy/libre/deploy.sh` needs no argument.
 
-It publishes a self-contained Linux build, installs it to `/opt/librecollector` with the systemd unit, and restarts the service (data lives in `/var/lib/librecollector`). The output ends with the service status and recent log lines. Then send yourself a test email from the host:
+It publishes a Linux build for the host's .NET runtime, installs it to `/opt/librecollector` with the systemd unit, and restarts the service (data lives in `/var/lib/librecollector`). The output ends with the service status and recent log lines. Then send yourself a test email from the host:
 
 ```bash
 sudo systemd-run --quiet --wait --pipe --uid=librecollector -p EnvironmentFile=/etc/librecollector/env -p WorkingDirectory=/var/lib/librecollector /opt/librecollector/GreenHedges.HomeServer.Collectors.Libre.Worker --test-alert

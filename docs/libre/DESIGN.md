@@ -30,7 +30,7 @@ LibreLinkUp (follower) ──► Collector ──► SQLite archive (source of t
 
 | Topic | Decision |
 |---|---|
-| Runtime | .NET 10 Worker Service, self-contained publish (no .NET on the host); systemd (`Type=notify`). Windows Service support is kept in the host builder. |
+| Runtime | .NET 10 Worker Service on the host's shared .NET runtime (Ubuntu's package, patched by unattended upgrades; `--self-contained` deploys bundle it instead); systemd (`Type=notify`). Windows Service support is kept in the host builder. |
 | Projects | `LibreLinkUp` (API client), `Storage` (SQLite), `Nightscout` (publisher), `LibreView` (CSV import), `Worker` (host, polling, alerts, backups, CLI modes), each with tests. |
 | Archive | **SQLite**, the single source of truth; everything downstream is derived from it and can be rebuilt. Kept forever (about 500k rows a year). |
 | Account | A **dedicated LibreLinkUp follower**, used only by the service. |

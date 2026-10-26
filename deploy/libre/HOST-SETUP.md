@@ -6,7 +6,7 @@ Steps to prepare a fresh Ubuntu Server host for LibreCollector. Tested on an old
 
 Run everything on the server (over SSH or at its console) unless a step says **on the Mac**.
 
-The collector is published **self-contained**, so the host needs **no .NET runtime**. Docker is only needed from Phase 2 (Nightscout).
+The services run on the host's **shared .NET runtime** from Ubuntu's own packages (installed in section 1), so unattended upgrades keep it patched. Docker is only needed from Phase 2 (Nightscout).
 
 ---
 
@@ -34,6 +34,12 @@ sudo apt update && sudo apt full-upgrade -y
 
 ```bash
 sudo apt install -y smartmontools sqlite3
+```
+
+The .NET runtime for every service on the host (ASP.NET Core's includes the base runtime). Ubuntu's security updates carry its patches, and `needrestart` (run after each upgrade) restarts the services onto them; after a .NET patch, check with `systemctl status <service>` that they restarted.
+
+```bash
+sudo apt install -y aspnetcore-runtime-10.0
 ```
 
 ```bash
