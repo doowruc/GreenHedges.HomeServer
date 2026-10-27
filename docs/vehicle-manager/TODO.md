@@ -10,7 +10,7 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
 
 - [x] **Move an unrelated, untracked DNS export file out of the repository folder** (untracked, not part of the
       app), so it can't be committed or copied across. Gone by 2026-10-23.
-- [ ] **Local SQL Server for development and tests** (in this repo first):
+- [x] **Local SQL Server for development and tests** (in this repo first):
   - [x] A `compose.yaml` for SQL Server on the Mac (`mcr.microsoft.com/mssql/server` 2025, Developer edition, named
         volume, `127.0.0.1:1433`, sa password in a git-ignored `.env`), run with OrbStack; documented, with LocalDB for
         Windows, in the README's Local database.
@@ -18,8 +18,8 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
         server in `ConnectionStrings:VehicleManagerTests`, refuses Azure SQL; older ones dropped by the next run)
         instead of the real Azure database; the app under test can't reach its own database (`AppFactoryTests`).
         `[DatabaseFact]` still skips without a test SQL Server. CLAUDE.md's Tests section updated. All 272 tests run.
-  - [ ] Point local development at the local database; copy data in with backup and restore when needed.
-        (Documented in the README; switching `ConnectionStrings:VehicleManager` is my call.)
+- [ ] **Point local development at the local database** (from the item above); copy data in with backup and restore
+      when needed. Documented in the README; switching `ConnectionStrings:VehicleManager` is my call.
 - [x] **Import into GreenHedges.HomeServer** (one PR there, 2026-10-23):
   - [x] Import this repo with its history (rewritten into `src/VehicleManager/`, `tests/VehicleManager/` and
         `docs/vehicle-manager/`), merged with `--allow-unrelated-histories`.
@@ -36,7 +36,7 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
         one moves to `src/VehicleManager/CLAUDE.md` without its Git section.
   - [x] Ignore `*.xlsx`, `*.json.gz` and `*.bak` under `src/VehicleManager/`, so a spreadsheet or backup can't be
         committed.
-- [ ] **Ready to run on the server:**
+- [x] **Ready to run on the server:**
   - [x] Persist ASP.NET data-protection keys under the data folder (else each restart signs everyone out):
         `DataProtection:KeysFolder`.
   - [x] Forwarded headers from `tailscale serve`, so Auth0 gets `https://vehicles.<tailnet>.ts.net/callback` (from
@@ -83,7 +83,7 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
 - [x] **Switch over** (done 2026-10-23; the steps are §3 of `deploy/vehicle-manager/HOST-SETUP.md`, done before the first start): a `.bacpac` export from Azure SQL imported into the server's container (every table, including
       `UserSettings` and `SentReminder`); compare with the app's backup and the dashboard figures; then use only the
       server, and stop running a local copy against real data (Coravel jobs would send twice).
-- [ ] **Tidy up:** after a couple of weeks, keep the `.bacpac` with the Mac's backups and delete the Azure SQL database
+- [ ] **Tidy up:** after a couple of weeks (from about 2026-11-07), keep the `.bacpac` with the Mac's backups and delete the Azure SQL database
       and server; bundle this repository to `~/Backups/OldRepos` and delete it on GitHub.
 
 ## New features
