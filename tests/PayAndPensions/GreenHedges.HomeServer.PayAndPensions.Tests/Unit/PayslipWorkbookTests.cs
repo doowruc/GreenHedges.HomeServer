@@ -61,6 +61,8 @@ public class PayslipWorkbookTests
     [Fact]
     public void A_date_outside_its_tax_year_is_skipped_with_the_reason()
     {
+        // In UK form whatever the machine's culture (CI's is US English).
+        using var _ = new CultureScope("en-US");
         var contents = PayslipWorkbook.Read(new TestWorkbook(["Salary"], ["Tax"])
             .Row(2018, 2, new DateOnly(2017, 5, 25), 3000, 500)
             .Row(2018, 3, new DateOnly(2003, 6, 27), 3000, 500)   // a typed-in year that's wrong
@@ -137,4 +139,14 @@ public class PayslipWorkbookTests
     [InlineData("ER Pension", PayElementKind.EmployerContribution, PayCategory.Pension)]
     public void Categories_are_guessed_from_headings(string heading, PayElementKind kind, PayCategory category) =>
         Assert.Equal(category, PayslipWorkbook.GuessCategory(heading, kind));
+}
+
+/// <summary>Runs a test in another culture, putting the old one back afterwards.</summary>
+internal sealed class CultureScope : IDisposable
+{
+    private readonly System.Globalization.CultureInfo _culture = System.Globalization.CultureInfo.CurrentCulture;
+
+    public CultureScope(string name) => System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(name);
+
+    public void Dispose() => System.Globalization.CultureInfo.CurrentCulture = _culture;
 }

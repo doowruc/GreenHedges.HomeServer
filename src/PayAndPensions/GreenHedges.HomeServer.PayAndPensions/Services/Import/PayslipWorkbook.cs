@@ -127,7 +127,7 @@ public static partial class PayslipWorkbook
             var (taxYear, taxMonth) = ((int)yearEnd - 1, (int)period);
             if (payDate < TaxYears.Start(taxYear) || payDate > TaxYears.End(taxYear))
             {
-                skipped.Add((r, $"the date {payDate:d} isn't in {TaxYears.Label(taxYear)}"));
+                skipped.Add((r, $"the date {payDate.ToString("dd/MM/yyyy", UkCulture)} isn't in {TaxYears.Label(taxYear)}"));
                 continue;
             }
 

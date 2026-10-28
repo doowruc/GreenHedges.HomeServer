@@ -30,6 +30,9 @@ public sealed record ImportResult(int Payslips, int NewPayElements, bool NewEmpl
 /// </summary>
 public sealed class PayslipImporter(AppDbContext db, ILogger<PayslipImporter> logger)
 {
+    /// <summary>The messages are UK English whatever the machine's culture.</summary>
+    private static readonly System.Globalization.CultureInfo UkCulture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+
     /// <summary>What importing <paramref name="contents"/> would do with <paramref name="choices"/> (the workbook's own
     /// suggestions if null), checked against the sheet's own totals. Saves nothing.</summary>
     public async Task<ImportPlan> PlanAsync(int personId, WorkbookContents contents, IReadOnlyList<ColumnChoice>? choices = null)
@@ -130,9 +133,9 @@ public sealed class PayslipImporter(AppDbContext db, ILogger<PayslipImporter> lo
             var gross = row.Amounts.Where(a => kinds[a.Key] == PayElementKind.Earning).Sum(a => a.Value);
             var net = gross - row.Amounts.Where(a => kinds[a.Key] == PayElementKind.Deduction).Sum(a => a.Value);
             if (row.SheetGross is { } g && Math.Abs(g - gross) > 0.005m)
-                differences.Add((row, $"gross {gross:N2}, the sheet's {g:N2}"));
+                differences.Add((row, string.Create(UkCulture, $"gross {gross:N2}, the sheet's {g:N2}")));
             else if (row.SheetNet is { } n && Math.Abs(n - net) > 0.005m)
-                differences.Add((row, $"net {net:N2}, the sheet's {n:N2}"));
+                differences.Add((row, string.Create(UkCulture, $"net {net:N2}, the sheet's {n:N2}")));
         }
         return differences;
     }
