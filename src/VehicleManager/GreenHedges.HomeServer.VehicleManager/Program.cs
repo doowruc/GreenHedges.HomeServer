@@ -1,20 +1,17 @@
 using System.Globalization;
-using Auth0.AspNetCore.Authentication;
 using Coravel;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Resend;
 using GreenHedges.HomeServer.Common.Alerts;
 using CommonBackupOptions = GreenHedges.HomeServer.Common.Backups.BackupOptions;
 using GreenHedges.HomeServer.Common.Heartbeat;
 using GreenHedges.HomeServer.Common.Hosting;
-using GreenHedges.HomeServer.VehicleManager.Backups;
+using GreenHedges.HomeServer.Common.Web.Auth;
+using GreenHedges.HomeServer.Common.Web.Backups;
+using GreenHedges.HomeServer.Common.Web.Data;
+using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.VehicleManager.Data;
 using GreenHedges.HomeServer.VehicleManager.Monitoring;
 using GreenHedges.HomeServer.VehicleManager.Pages.FuelBrands;
@@ -29,65 +26,26 @@ builder.Services.AddSystemd();
 // Logs, traces and metrics over OTLP when an endpoint is set, e.g. to the Aspire dashboard by `aspire run` (see README).
 builder.AddTelemetry();
 
-// Auth0 sign-in. The settings live in user secrets in development (see README), environment
-// variables elsewhere, e.g. Auth0__Domain.
-string RequiredSetting(string key) =>
-    builder.Configuration[key] is { Length: > 0 } value
-        ? value
-        : throw new InvalidOperationException(
-            $"{key} is not configured. Set it with: dotnet user-secrets set \"{key}\" \"<value>\"");
+// Settings live in user secrets in development (see README), environment variables elsewhere, e.g. Auth0__Domain.
+string RequiredSetting(string key) => builder.Configuration.RequiredSetting(key);
 
-builder.Services.AddAuth0WebAppAuthentication(options =>
-{
-    options.Domain = RequiredSetting("Auth0:Domain");
-    options.ClientId = RequiredSetting("Auth0:ClientId");
-    options.ClientSecret = RequiredSetting("Auth0:ClientSecret");
-    options.ResponseType = OpenIdConnectResponseType.Code;
-    options.Scope = "openid profile email";
-    options.OpenIdConnectEvents = new OpenIdConnectEvents
-    {
-        // On sign-in, hand any data from before per-user data to the ExistingDataOwner (see README).
-        OnTokenValidated = context => context.HttpContext.RequestServices
-            .GetRequiredService<ExistingDataClaim>()
-            .ClaimIfOwnerAsync(context.Principal!)
-    };
-});
+// Auth0 sign-in, and every page requires a signed-in user whose verified email is on the allow-list (AllowedEmails),
+// unless it opts out with [AllowAnonymous]. Signed-in users who aren't allowed are sent to Account/AccessDenied.
+builder.AddAllowedUserSignIn(
+    // On sign-in, hand any data from before per-user data to the ExistingDataOwner (see README).
+    context => context.HttpContext.RequestServices
+        .GetRequiredService<ExistingDataClaim>()
+        .ClaimIfOwnerAsync(context.Principal!));
 
-// Every page requires a signed-in user whose verified email is on the allow-list, unless it opts
-// out with [AllowAnonymous]. Signed-in users who aren't allowed are sent to Account/AccessDenied.
-var allowedUsers = AllowedUsers.FromSetting(RequiredSetting("AllowedEmails"));
-builder.Services.AddSingleton(allowedUsers);
-var allowedUserPolicy = new AuthorizationPolicyBuilder()
-    .RequireAuthenticatedUser()
-    .RequireAssertion(context => allowedUsers.IsAllowed(context.User))
-    .Build();
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(AllowedUsers.PolicyName, allowedUserPolicy)
-    .SetFallbackPolicy(allowedUserPolicy);
-
-// On the server the app sits behind Caddy, which terminates HTTPS and passes requests on from 127.0.0.1
-// with X-Forwarded-Proto and X-Forwarded-For (the Host header comes through as it was). Trusting them, from loopback
-// proxies only (ASP.NET's default), gives Auth0 the https:// callback and keeps HTTPS redirection quiet.
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
-
-// Data-protection keys protect the sign-in cookie and antiforgery tokens, so they must outlive restarts and deploys.
-// On the server they go in the data folder (DataProtection:KeysFolder; a relative path is under the working
-// directory); otherwise ASP.NET's default (the user profile) applies.
-if (builder.Configuration["DataProtection:KeysFolder"] is { Length: > 0 } keysFolder)
-{
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(Path.GetFullPath(keysFolder)))
-        .SetApplicationName("VehicleManager");
-}
+// Behind Caddy on the server, with sign-in cookies that outlive restarts and deploys (Common.Web's WebAppHosting).
+builder.AddForwardedHeaders();
+builder.AddLastingDataProtection("VehicleManager");
 
 // /health: "Healthy" (200) when the database answers, else "Unhealthy" (503). For the heartbeat and for checking by hand.
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database", timeout: TimeSpan.FromSeconds(10));
+    .AddCheck<DatabaseHealthCheck<AppDbContext>>("database", timeout: TimeSpan.FromSeconds(10));
 
 builder.Services.AddRazorPages();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddScoped<ExistingDataClaim>();
 builder.Services.AddScoped<FuelStops>();
 builder.Services.AddScoped<FuelBrandList>();

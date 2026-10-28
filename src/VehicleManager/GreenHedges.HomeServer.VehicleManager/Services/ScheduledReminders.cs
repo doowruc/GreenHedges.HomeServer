@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Coravel.Invocable;
 using Microsoft.EntityFrameworkCore;
+using GreenHedges.HomeServer.Common.Web.Auth;
 using GreenHedges.HomeServer.VehicleManager.Data;
 using GreenHedges.HomeServer.VehicleManager.Monitoring;
 

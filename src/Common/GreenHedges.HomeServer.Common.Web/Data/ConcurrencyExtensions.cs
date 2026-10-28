@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using GreenHedges.HomeServer.VehicleManager.Models;
-
-namespace GreenHedges.HomeServer.VehicleManager.Data;
+namespace GreenHedges.HomeServer.Common.Web.Data;
 
 public static class ConcurrencyExtensions
 {
@@ -13,7 +11,7 @@ public static class ConcurrencyExtensions
     /// False if someone else changed or deleted the row in the meantime. Nothing is saved, and
     /// <paramref name="entity"/> is reloaded with the latest values (or detached if it was deleted).
     /// </returns>
-    public static async Task<bool> TrySaveEditAsync<T>(this AppDbContext db, T entity, byte[] loadedRowVersion)
+    public static async Task<bool> TrySaveEditAsync<T>(this DbContext db, T entity, byte[] loadedRowVersion)
         where T : AuditedEntity
     {
         db.Entry(entity).Property(e => e.RowVersion).OriginalValue = loadedRowVersion;

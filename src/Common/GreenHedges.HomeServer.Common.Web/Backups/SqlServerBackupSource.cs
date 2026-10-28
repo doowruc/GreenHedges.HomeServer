@@ -1,13 +1,16 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using GreenHedges.HomeServer.Common.Backups;
+using GreenHedges.HomeServer.Common.Hosting;
 
-namespace GreenHedges.HomeServer.VehicleManager.Backups;
+namespace GreenHedges.HomeServer.Common.Web.Backups;
 
 /// <summary>
 /// The nightly backup for <c>Common</c>'s <c>BackupService</c>: SQL Server writes a full backup of the app's database
 /// (<c>BACKUP DATABASE … WITH CHECKSUM, COPY_ONLY</c>, so every page's checksum is checked as it's read, and the
-/// database's own backup chain is untouched) into a folder it shares with this app, which copies it out.
+/// database's own backup chain is untouched) into a folder it shares with this app, which copies it out. The database
+/// is the one in connection string <c>ConnectionStrings:&lt;name&gt;</c>, the name being the app's
+/// <see cref="CollectorIdentity"/> (e.g. <c>VehicleManager</c>).
 /// <c>BackupService</c> then gzips it, keeps 7, and the off-site copy and the Mac's pull follow.
 /// </summary>
 /// <remarks>
@@ -18,10 +21,11 @@ namespace GreenHedges.HomeServer.VehicleManager.Backups;
 public sealed class SqlServerBackupSource(
     IConfiguration configuration,
     IOptions<SqlServerBackupOptions> options,
+    CollectorIdentity identity,
     ILogger<SqlServerBackupSource> logger) : IBackupSource
 {
-    /// <summary>The file in the shared folder, overwritten by each backup.</summary>
-    public const string FileName = "vehiclemanager-latest.bak";
+    /// <summary>The file in the shared folder, overwritten by each backup, e.g. <c>vehiclemanager-latest.bak</c>.</summary>
+    public string FileName { get; } = $"{identity.Name.ToLowerInvariant()}-latest.bak";
 
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromMinutes(10);
 
@@ -38,8 +42,8 @@ public sealed class SqlServerBackupSource(
         var serverPath = serverFolder.TrimEnd('/') + "/" + FileName;
         var hostPath = Path.Combine(_options.FolderOnHost!, FileName);
 
-        var connectionString = configuration.GetConnectionString("VehicleManager")
-            ?? throw new InvalidOperationException("ConnectionStrings:VehicleManager is not set.");
+        var connectionString = configuration.GetConnectionString(identity.Name)
+            ?? throw new InvalidOperationException($"ConnectionStrings:{identity.Name} is not set.");
         var database = new SqlConnectionStringBuilder(connectionString).InitialCatalog;
 
         await using (var connection = new SqlConnection(connectionString))
@@ -51,7 +55,7 @@ public sealed class SqlServerBackupSource(
                 "BACKUP DATABASE @database TO DISK = @path WITH CHECKSUM, COPY_ONLY, INIT, FORMAT, NAME = @name";
             command.Parameters.AddWithValue("@database", database);
             command.Parameters.AddWithValue("@path", serverPath);
-            command.Parameters.AddWithValue("@name", $"Vehicle Manager nightly backup {DateTime.UtcNow:u}");
+            command.Parameters.AddWithValue("@name", $"{identity.Name} nightly backup {DateTime.UtcNow:u}");
             await command.ExecuteNonQueryAsync(cancellationToken);
         }
 

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.VehicleManager.Data;
 using GreenHedges.HomeServer.VehicleManager.Services;
 using GreenHedges.HomeServer.VehicleManager.ViewModels;

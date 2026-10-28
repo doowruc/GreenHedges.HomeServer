@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace GreenHedges.HomeServer.VehicleManager.Services;
+namespace GreenHedges.HomeServer.Common.Web.Auth;
 
 /// <summary>
 /// The email addresses allowed to use the app. Signing in to Auth0 isn't enough on its own:

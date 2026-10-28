@@ -387,19 +387,20 @@ src/VehicleManager/GreenHedges.HomeServer.VehicleManager/
   Models/        EF Core entities: Owner, Vehicle, FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, UserSettings, SentReminder,
                  MotTest + MotDefect
   ViewModels/    View (output) and input models used by the pages, with the calculated figures
-  Data/          AppDbContext (EF Core + SQL Server), DatabaseMigrator, Migrations/
+  Data/          AppDbContext (EF Core + SQL Server), Migrations/
   Services/      FuelStatsService, FuelImportService (reads .xlsx via ClosedXML), FuelStops, BackupFile + BackupService,
                  BackupEmailer + ScheduledBackups (nightly emailed backups via Resend, scheduled with Coravel),
                  Reminders + ReminderEmailer + ScheduledReminders (due-date reminders), VehicleLookup + DvlaClient +
                  MotHistoryClient (MOT and tax dates from the DVLA and DVSA), MotTests (stored MOT history),
                  Telemetry (OpenTelemetry setup)
-  Backups/       SqlServerBackupSource (+ options): the nightly database backup, for Common's BackupService
   Monitoring/    AppHealth + VehicleManagerAlertMonitor: database probes, scheduled jobs' runs, alerts and the heartbeat
   Pages/         Dashboard, Owners/*, Vehicles/* (and each vehicle's Services/*), FuelLog/* (log + fill-up pages), Import/*, Backup/* (backup + restore), Settings/*, FuelBrands/* (and each brand's Stations/*),
                  Account/* (sign in/out)
 src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost/   Aspire AppHost: runs the app with the Aspire dashboard (logs, traces, metrics) locally
 tests/VehicleManager/GreenHedges.HomeServer.VehicleManager.Tests/
   Unit/, Data/, Pages/   unit, database and in-memory page tests; Infrastructure/ holds the helpers
+src/Common/GreenHedges.HomeServer.Common.Web/   shared with the other web apps: Auth0 sign-in for allowed emails, audit
+                 columns and per-user saving, optimistic concurrency, migrations, /health, the nightly SQL Server backup
 ```
 
 Bootstrap, Bootstrap Icons and Chart.js are loaded from the jsDelivr CDN.

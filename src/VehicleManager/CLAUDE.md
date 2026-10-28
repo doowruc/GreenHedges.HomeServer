@@ -79,12 +79,11 @@ so test pages through the in-memory host rather than relying on the browser.
 ```
 GreenHedges.HomeServer.VehicleManager/
   Models/      EF Core entities: Owner, Vehicle, FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, UserSettings (storage only),
-               SentReminder (+ DueDateKind), MotTest (+ MotDefect), AuditedEntity, IUserOwned, IFuelPlace
+               SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
-  Data/        AppDbContext (per-user query filters, audit stamping), DatabaseMigrator, ConcurrencyExtensions,
-               DesignTimeDbContextFactory, Migrations/
+  Data/        AppDbContext (per-user query filters), DesignTimeDbContextFactory, Migrations/
   Services/    FuelStatsService (summaries), SpendStats (dashboard spend by month/year and vehicle, year on year), FuelImportService (ClosedXML .xlsx import), FuelCalculations,
-               CurrentUser, AllowedUsers, ExistingDataClaim, FuelStops (typed names → stops),
+               ExistingDataClaim, FuelStops (typed names → stops),
                BackupFile (backup JSON format: read/validate/write) + BackupService (create, restore, record),
                BackupEmailer (emails a backup via Resend), ScheduledBackups (Coravel invocable, nightly),
                Reminders (when to remind; pure) + ReminderEmailer + ScheduledReminders (Coravel, each morning),
@@ -97,24 +96,33 @@ GreenHedges.HomeServer.VehicleManager/
                js/price-chart.js (station price charts), js/mileage-chart.js (mileage over time: vehicle Services and MOT tabs),
                js/spend-chart.js (dashboard fuel spending charts), favicon.svg/.ico + icons/ + site.webmanifest (made by
                ../make-icons.py: Bootstrap Icons' car on the navbar's dark grey; re-run it to change them)
-  Backups/     SqlServerBackupSource + SqlServerBackupOptions: the nightly SQL Server backup for Common's BackupService
   Monitoring/  AppHealth (database probes and job runs; the heartbeat source), VehicleManagerAlertMonitor (the alert rules),
                DatabaseProbe/IDatabaseProbe, VehicleManagerAlertOptions, ScheduledJob, JobRun
 GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with the Aspire dashboard, for local development only
+```
+
+Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web/` (tests in `tests/Common/`):
+
+```
+  Auth/        AllowedUsers, CurrentUser, SignIn (AddAllowedUserSignIn: Auth0 + the AllowedUser policy)
+  Data/        AuditedEntity, IUserOwned, AuditedDbContext (audit stamping; AppDbContext's base), ConcurrencyExtensions,
+               DatabaseMigrator, DatabaseHealthCheck<TContext>
+  Backups/     SqlServerBackupSource + SqlServerBackupOptions: the nightly SQL Server backup for Common's BackupService
+  Hosting/     WebAppHosting: RequiredSetting, AddForwardedHeaders (behind Caddy), AddLastingDataProtection
 ```
 
 ## Conventions and how things work
 
 **Database / migrations**
 - Schema changes go through EF Core migrations; never use `EnsureCreated()`.
-- `Data/DatabaseMigrator.cs` runs at startup (`db.MigrateDatabase(logger)` in `Program.cs`) and applies pending migrations. The migrations were restarted for SQL Server (`InitialCreate`); the SQLite-era ones are gone.
+- `DatabaseMigrator` (Common.Web) runs at startup (`db.MigrateDatabase(logger)` in `Program.cs`) and applies pending migrations. The migrations were restarted for SQL Server (`InitialCreate`); the SQLite-era ones are gone.
 - My real data lives in the Azure SQL database: never drop, recreate or bulk-change it. Tests use their own throwaway database (`TestDatabase`), never it.
 - `EnableRetryOnFailure` is on, so explicit transactions must run inside `db.Database.CreateExecutionStrategy().ExecuteAsync(...)` (see `ExistingDataClaim`).
 
-**Audit columns** (every table, via `Models/AuditedEntity.cs`)
+**Audit columns** (every table, via Common.Web's `AuditedEntity` and `AuditedDbContext`)
 - `AddedDate`, `AddedBy`, `ModifiedDate`, `ModifiedBy` are set in `AppDbContext.SaveChanges` (UTC; user = Auth0 id). Added values can't be changed after insert. Bulk `ExecuteUpdate` bypasses `SaveChanges`, so set `ModifiedDate`/`ModifiedBy` explicitly there.
 - `RowVersion` is a SQL Server `rowversion` (`[Timestamp]`), maintained by the database.
-- Edits use optimistic concurrency: `*Input` classes carry `RowVersion` (a hidden field in the form, base64), and edit pages save with `db.TrySaveEditAsync(entity, input.RowVersion)` (`Data/ConcurrencyExtensions.cs`). On a conflict, show the error and put the latest `RowVersion` back in the form.
+- Edits use optimistic concurrency: `*Input` classes carry `RowVersion` (a hidden field in the form, base64), and edit pages save with `db.TrySaveEditAsync(entity, input.RowVersion)` (Common.Web's `ConcurrencyExtensions`). On a conflict, show the error and put the latest `RowVersion` back in the form.
 - A new table should inherit `AuditedEntity`.
 
 **Pages never use entity classes** (to limit what's read from the database and prevent overposting)
@@ -127,7 +135,7 @@ GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with t
   (`UserSettings` deliberately isn't: restoring shouldn't change where backups go).
 
 **Per-user data**
-- Owners and vehicles implement `IUserOwned` (`UserId` = Auth0 `sub`, via `Services/CurrentUser.cs`). Fill-ups belong to the user who owns their vehicle.
+- Owners and vehicles implement `IUserOwned` (`UserId` = Auth0 `sub`, via Common.Web's `CurrentUser`). Fill-ups belong to the user who owns their vehicle.
 - `AppDbContext` query filters limit every query to the current user, including `ExecuteUpdate`/`ExecuteDelete`. `SaveChanges` stamps new owners/vehicles with the user's id and throws if nobody is signed in. Pages don't filter by user themselves.
 - With no signed-in user, queries return nothing (fail closed). Only use `IgnoreQueryFilters()` for deliberate cross-user work, as `ExistingDataClaim` does.
 - Use `FirstOrDefaultAsync(x => x.Id == id)` rather than `FindAsync`, so the filters always apply.
@@ -236,12 +244,13 @@ GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with t
   so they resolve against the working directory, not the content root. Keep it that way.
 - `DataProtection:KeysFolder` (on the server) persists data-protection keys there, with the application name
   `VehicleManager`; unset, ASP.NET's default applies (development, tests).
-- `/health` (anonymous, `Services/DatabaseHealthCheck`, 10 s timeout): `Healthy`/`Unhealthy` text only, never details.
+- `/health` (anonymous, Common.Web's `DatabaseHealthCheck<AppDbContext>`, 10 s timeout): `Healthy`/`Unhealthy` text only, never details.
 - `HostingTests` cover all three.
 
-**Database backups** (`Backups/`, through `GreenHedges.HomeServer.Common`'s `AddBackups`, as the collectors)
+**Database backups** (Common.Web's `Backups/`, through `GreenHedges.HomeServer.Common`'s `AddBackups`, as the collectors)
 - `SqlServerBackupSource` is `Common`'s `IBackupSource` (`FileExtension` `.bak`): `BACKUP DATABASE … WITH CHECKSUM,
-  COPY_ONLY, INIT, FORMAT` to `Backup:SqlServerFolder/vehiclemanager-latest.bak` (SQL Server's path, in its container),
+  COPY_ONLY, INIT, FORMAT` of `ConnectionStrings:VehicleManager` (named by the `CollectorIdentity`) to
+  `Backup:SqlServerFolder/vehiclemanager-latest.bak` (SQL Server's path, in its container),
   then copies it from `Backup:SqlServerFolderOnHost` (the app's path to the same folder). `BackupService` gzips it as
   `backups/vehiclemanager-<UTC>.bak.gz`, keeps 7; off-site copies go to `Offsite:*` (prefix `vehiclemanager`).
 - Off by default (`Backup:Enabled`): only the server takes them. `Backup:SqlServerFolder` is required when on.
@@ -283,7 +292,7 @@ GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with t
 **Authentication (Auth0)**
 - `Auth0:Domain`, `Auth0:ClientId`, `Auth0:ClientSecret`, `AllowedEmails`, `Resend:ApiKey`, `Resend:From` and optional `ExistingDataOwner`, `Dvla:*`, `MotHistory:*` come from user secrets (env vars outside Development). Never put them in `appsettings*.json` or commit them. The app throws at startup if any required ones are missing.
 - Authorization code flow, scopes `openid profile email`.
-- Allow-list: `AllowedEmails` (user secrets, `;`/`,` separated) via `Services/AllowedUsers.cs`. The `AllowedUser` policy (also the fallback policy, so it covers every endpoint) requires a signed-in user whose `email_verified` email is on the list. Signed-in users who fail it are forbidden → `Account/AccessDenied`. The app throws at startup if the list is missing (fail closed).
+- Allow-list: `AllowedEmails` (user secrets, `;`/`,` separated) via Common.Web's `AllowedUsers` (set up by `AddAllowedUserSignIn`). The `AllowedUser` policy (also the fallback policy, so it covers every endpoint) requires a signed-in user whose `email_verified` email is on the list. Signed-in users who fail it are forbidden → `Account/AccessDenied`. The app throws at startup if the list is missing (fail closed).
 - `[AllowAnonymous]` only on `Account/Login`, `Account/Logout`, `Account/SignedOut`, `Account/AccessDenied`, `Error`, `/health` and static assets. New pages are protected automatically. The layout shows the nav only when the user passes the `AllowedUser` policy.
 - `Account/Login` challenges Auth0 and only accepts local return URLs. `Account/Logout` is POST-only and anonymous (so a denied user can switch account). It signs out of both the cookie and Auth0, returning to `Account/SignedOut`.
 - To test locally without real credentials, set `AllowedEmails` and the `Auth0__*` env vars to dummy values (e.g. `samples.auth0.com`). Pages then redirect to Auth0 but you can't get past sign-in. Don't sign in with a real account from automated tests.

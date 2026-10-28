@@ -6,12 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Alerts, the heartbeat and (later) backups, shared with the collectors. -->
-    <ProjectReference Include="..\..\Common\GreenHedges.HomeServer.Common\GreenHedges.HomeServer.Common.csproj" />
+    <!-- Alerts, the heartbeat and backups, shared with the collectors; sign-in, audited per-user data and SQL Server
+         backups, shared with the other web apps. -->
+    <ProjectReference Include="..\..\Common\GreenHedges.HomeServer.Common.Web\GreenHedges.HomeServer.Common.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Auth0.AspNetCore.Authentication" />
     <PackageReference Include="ClosedXML" />
     <PackageReference Include="Coravel" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
@@ -27,8 +27,6 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
     <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
     <PackageReference Include="Resend" />
-    <!-- A security pin for a transitive package: see Directory.Packages.props. -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
 
 </Project>
