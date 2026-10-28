@@ -29,6 +29,9 @@ Environment=DataProtection__KeysFolder=keys
 Environment=Backup__Enabled=true
 Environment=Backup__SqlServerFolder=/var/opt/mssql/backups
 Environment=Backup__SqlServerFolderOnHost=/var/lib/sqlserver/backups
+# Logs, traces and metrics over OTLP to the telemetry stack (deploy/telemetry/), shown in Grafana. If it's down, the app
+# carries on and the telemetry is dropped.
+Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
 Restart=always
 RestartSec=30
 

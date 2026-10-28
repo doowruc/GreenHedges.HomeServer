@@ -31,9 +31,6 @@
          Microsoft.Data.SqlClient (via EF Core, and in the Weather collector's summaries) brings in 9.0.11, which has denial-of-service advisories
          (GHSA-846f-f764-76mx, GHSA-2fmv-rv2c-59x7); 10.0.13 is fixed. -->
     <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
-    <!-- Aspire.Hosting (Vehicle Manager's AppHost) brings in 2.5.302, which has a denial-of-service advisory
-         (GHSA-qhrr-8q5h-9q3h); 2.5.303 is fixed. -->
-    <PackageVersion Include="MessagePack" Version="2.5.303" />
     <!-- Tests -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />

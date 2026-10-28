@@ -20,25 +20,15 @@ Auth0 sign-in, so set both up first (see below). Then open
 http://localhost:5080. The tables are created on first run, and any pending schema migrations are
 applied each time the app starts.
 
-### Logs and traces (Aspire dashboard)
+### Logs and traces (Grafana)
 
-To see the app's logs, traces and metrics, run it through the Aspire AppHost instead, from the repo root, with the
-[Aspire CLI](https://aspire.dev):
-
-```bash
-aspire run
-```
-
-It starts the app (still on http://localhost:5080, with the same user secrets) and the
-[Aspire dashboard](https://aspire.dev) at https://localhost:17080. Open the dashboard with the login link printed in
-the console. No Docker is needed. The CLI must be at least the AppHost's Aspire version (13.6): an older one hangs at
-"Connecting to apphost", so update it with `aspire update --self`. Without the CLI,
-`dotnet run --project src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost` does the same.
-
-The app sends telemetry over OpenTelemetry (OTLP) only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set, as the AppHost does
-for the dashboard. Plain `dotnet run`/`dotnet watch` and the tests log to the console only. Each nightly job run is a
-trace with a span per user, with the database, email and DVLA/DVSA calls under it. Logs carry Auth0 user ids rather
-than emails or registrations, and registrations are taken out of the DVSA request URLs in traces.
+The app sends telemetry over OpenTelemetry (OTLP) only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set. On the server, its
+systemd unit points it at the telemetry stack ([deploy/telemetry/](../../deploy/telemetry/HOST-SETUP.md)), so its logs,
+traces and metrics are in Grafana (**Explore** → **Logs**, **Traces** or **Metrics**, `service_name` =
+`VehicleManager`). Plain `dotnet run`/`dotnet watch` and the tests log to the console only; to see telemetry locally,
+run the stack on the Mac as in that page's "Updating" section and set the endpoint. Each nightly job run is a trace
+with a span per user, with the database, email and DVLA/DVSA calls under it. Logs carry Auth0 user ids rather than
+emails or registrations, and registrations are taken out of the DVSA request URLs in traces.
 
 ## Database (Azure SQL)
 
@@ -396,11 +386,11 @@ src/VehicleManager/GreenHedges.HomeServer.VehicleManager/
   Monitoring/    AppHealth + VehicleManagerAlertMonitor: database probes, scheduled jobs' runs, alerts and the heartbeat
   Pages/         Dashboard, Owners/*, Vehicles/* (and each vehicle's Services/*), FuelLog/* (log + fill-up pages), Import/*, Backup/* (backup + restore), Settings/*, FuelBrands/* (and each brand's Stations/*),
                  Account/* (sign in/out)
-src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost/   Aspire AppHost: runs the app with the Aspire dashboard (logs, traces, metrics) locally
 tests/VehicleManager/GreenHedges.HomeServer.VehicleManager.Tests/
   Unit/, Data/, Pages/   unit, database and in-memory page tests; Infrastructure/ holds the helpers
 src/Common/GreenHedges.HomeServer.Common.Web/   shared with the other web apps: Auth0 sign-in for allowed emails, audit
-                 columns and per-user saving, optimistic concurrency, migrations, /health, the nightly SQL Server backup
+                 columns and per-user saving, optimistic concurrency, migrations, /health, the nightly SQL Server backup,
+                 OpenTelemetry
 ```
 
 Bootstrap, Bootstrap Icons and Chart.js are loaded from the jsDelivr CDN.

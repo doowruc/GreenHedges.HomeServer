@@ -1,0 +1,15 @@
+# Prometheus keeps the apps' metrics, which arrive from Alloy over OTLP (--web.enable-otlp-receiver); it scrapes
+# nothing. Retention (30 days) is set on the command line in compose.yaml.
+global:
+  evaluation_interval: 1m
+
+otlp:
+  # Copied from each metric's OpenTelemetry resource onto its series, so dashboards can pick an app.
+  promote_resource_attributes:
+    - service.name
+    - service.instance.id
+
+storage:
+  tsdb:
+    # The apps batch their metrics, so samples can arrive a little late.
+    out_of_order_time_window: 30m

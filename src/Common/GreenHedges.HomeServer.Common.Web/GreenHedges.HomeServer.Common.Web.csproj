@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- What the web apps (Vehicle Manager, Pay & Pensions) share: Auth0 sign-in for allowed emails, per-user data with
-       audit columns on SQL Server, and the nightly SQL Server backup for Common's BackupService. -->
+       audit columns on SQL Server, the nightly SQL Server backup for Common's BackupService, and OpenTelemetry. -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -13,6 +13,12 @@
   <ItemGroup>
     <PackageReference Include="Auth0.AspNetCore.Authentication" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" />
     <!-- A security pin for a transitive package: see Directory.Packages.props. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
   </ItemGroup>
