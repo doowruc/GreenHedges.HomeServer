@@ -27,6 +27,7 @@ else
                     <td class="text-end"><a asp-page="/PayElements/Index" asp-route-personId="@p.Id" title="Pay elements">@p.PayElements</a></td>
                     <td class="text-end"><a asp-page="/Payslips/Index" asp-route-personId="@p.Id" title="Payslips">@p.Payslips</a></td>
                     <td class="text-end text-nowrap">
+                        <a asp-page="/Import/Index" asp-route-personId="@p.Id" class="btn btn-sm btn-outline-secondary" title="Import payslips"><i class="bi bi-file-earmark-arrow-up"></i></a>
                         <a asp-page="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
                         <a asp-page="Delete" asp-route-id="@p.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
                     </td>

@@ -5,6 +5,7 @@ using GreenHedges.HomeServer.Common.Web.Auth;
 using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.PayAndPensions.Data;
+using GreenHedges.HomeServer.PayAndPensions.Services.Import;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +34,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.RequiredSetting("ConnectionStrings:PayAndPensions"),
         sql => sql.EnableRetryOnFailure()));
+builder.Services.AddScoped<PayslipImporter>();
 
 var app = builder.Build();
 

@@ -1,0 +1,122 @@
+@page "/People/{personId:int}/Import"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Import.IndexModel
+@using GreenHedges.HomeServer.PayAndPensions.Services
+@{
+    ViewData["Title"] = $"Import {Model.PersonName}'s payslips";
+    var plan = Model.Plan;
+}
+
+<h1 class="h3 mb-3">Import @Model.PersonName's payslips</h1>
+<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+@if (plan is null || Model.Workbook is null)
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <p>
+            Upload the spreadsheet @Model.PersonName's payslips have been kept in (.xlsx). Its first sheet needs a heading row
+            with <strong>Year</strong> (the year the tax year ends), <strong>Period</strong> (the tax month) and
+            <strong>Date</strong>, then a column per kind of pay up to <strong>Gross</strong>. Columns after Gross are
+            worked out again here, except <strong>Notes</strong>; a <strong>Transfer Date</strong> column becomes each
+            payslip's pension received date.
+        </p>
+        <p class="text-body-secondary">Nothing is saved until you've seen what it would import. Months @Model.PersonName
+            already has payslips for are left as they are, so an updated spreadsheet can be imported again.</p>
+        <form method="post" asp-page-handler="Preview" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label for="upload" class="form-label">Spreadsheet</label>
+                    <input id="upload" name="upload" type="file" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Preview</button>
+                    <a asp-page="/Payslips/Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div></div>
+}
+else
+{
+    var contents = Model.Contents!;
+    <form method="post" asp-page-handler="Import">
+        <input type="hidden" asp-for="Workbook" />
+        <input type="hidden" asp-for="FileName" />
+
+        <div class="card shadow-sm mb-3"><div class="card-body">
+            <h2 class="h5">@Model.FileName</h2>
+            <ul class="mb-0">
+                <li><strong>@plan.ToImport.Count</strong> payslips to import@(plan.ToImport.Count > 0 ? $": {IndexModel.Months(plan.ToImport)}" : "").</li>
+                @if (plan.AlreadyThere.Count > 0)
+                {
+                    <li>@plan.AlreadyThere.Count months @Model.PersonName already has payslips for, which are left as they are.</li>
+                }
+                @foreach (var (row, reason) in contents.SkippedRows)
+                {
+                    <li class="text-warning-emphasis">Row @row is skipped: @reason. Correct it in the spreadsheet and import again, or add that payslip by hand.</li>
+                }
+                @if (plan.Differences.Count == 0)
+                {
+                    <li class="text-success-emphasis"><i class="bi bi-check-circle me-1"></i>Every row's gross@(contents.Rows.Any(r => r.SheetNet is not null) ? " and net" : "") match the spreadsheet's own.</li>
+                }
+                else
+                {
+                    <li class="text-danger-emphasis">
+                        @plan.Differences.Count rows don't match the spreadsheet's own totals with the columns as they are below;
+                        check each column's kind: @string.Join("; ", plan.Differences.Take(5).Select(d => $"row {d.Row.RowNumber}: {d.Difference}"))@(plan.Differences.Count > 5 ? "; …" : "").
+                    </li>
+                }
+                @if (!contents.KindsFromFormulas)
+                {
+                    <li>The spreadsheet's Gross and Deductions aren't formulas, so the columns from Tax on are taken to be deductions. Check them below.</li>
+                }
+            </ul>
+        </div></div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-body pb-0">
+                <h2 class="h5">Columns</h2>
+                <p class="text-body-secondary small">Each becomes one of @Model.PersonName's pay elements. A name they already
+                    have uses that pay element as it is.</p>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-head"><tr><th>Column</th><th>Pay element</th><th>Kind</th><th>Category</th></tr></thead>
+                    <tbody>
+                    @for (var i = 0; i < Model.Columns.Count; i++)
+                    {
+                        var column = plan.Columns[i];
+                        <tr>
+                            <td class="text-nowrap">@column.Column.Letter: @column.Column.Header</td>
+                            <td>
+                                <input type="hidden" asp-for="Columns[i].Index" />
+                                <input asp-for="Columns[i].Name" class="form-control form-control-sm" maxlength="50" aria-label="Pay element for column @column.Column.Letter" />
+                                @if (column.ExistingId is not null) { <div class="form-text">Already one of @Model.PersonName's: its kind and category are kept.</div> }
+                            </td>
+                            <td><select asp-for="Columns[i].Kind" asp-items="Html.GetEnumSelectList<PayElementKind>()" class="form-select form-select-sm" aria-label="Kind"></select></td>
+                            <td><select asp-for="Columns[i].Category" asp-items="Html.GetEnumSelectList<PayCategory>()" class="form-select form-select-sm" aria-label="Category"></select></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3"><div class="card-body">
+            <h2 class="h5">Employer</h2>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label asp-for="EmployerId" class="form-label">The payslips are from</label>
+                    <select asp-for="EmployerId" asp-items="Model.EmployerOptions" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="NewEmployerName" class="form-label">New employer's name</label>
+                    <input asp-for="NewEmployerName" class="form-control" maxlength="100" />
+                    <div class="form-text">If they're from a new employer. Split by employer later if they changed jobs.</div>
+                </div>
+            </div>
+        </div></div>
+
+        <button type="submit" class="btn btn-primary">Import @plan.ToImport.Count payslips</button>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Start again</a>
+    </form>
+}
