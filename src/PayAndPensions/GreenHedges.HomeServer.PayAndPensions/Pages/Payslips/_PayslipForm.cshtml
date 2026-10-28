@@ -1,0 +1,79 @@
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Payslips.PayslipFormModel
+@{
+    var kinds = new[]
+    {
+        (Kind: PayElementKind.Earning, Title: "Earnings"),
+        (Kind: PayElementKind.Deduction, Title: "Deductions"),
+        (Kind: PayElementKind.EmployerContribution, Title: "Employer contributions")
+    };
+}
+<input type="hidden" asp-for="Payslip.RowVersion" />
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="Payslip.EmployerId" class="form-label"></label>
+        <select asp-for="Payslip.EmployerId" asp-items="Model.EmployerOptions" class="form-select"></select>
+        <span asp-validation-for="Payslip.EmployerId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-2">
+        <label asp-for="Payslip.TaxYear" class="form-label"></label>
+        <select asp-for="Payslip.TaxYear" asp-items="Model.TaxYearOptions" class="form-select"></select>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Payslip.TaxMonth" class="form-label"></label>
+        <select asp-for="Payslip.TaxMonth" asp-items="PayslipFormModel.TaxMonthOptions" class="form-select"></select>
+        <span asp-validation-for="Payslip.TaxMonth" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Payslip.PayDate" class="form-label"></label>
+        <input asp-for="Payslip.PayDate" type="date" class="form-control" />
+        <span asp-validation-for="Payslip.PayDate" class="text-danger small"></span>
+    </div>
+</div>
+
+<div class="row g-3 mt-1" data-payslip-totals>
+    @foreach (var group in kinds)
+    {
+        <div class="col-lg-4">
+            <h2 class="h6 mt-2">@group.Title</h2>
+            @for (var i = 0; i < Model.Payslip.Lines.Count; i++)
+            {
+                var element = Model.ElementFor(Model.Payslip.Lines[i]);
+                if (element.Kind != group.Kind) continue;
+                <div class="row g-2 align-items-center mb-2">
+                    <input type="hidden" asp-for="Payslip.Lines[i].PayElementId" />
+                    <label asp-for="Payslip.Lines[i].Amount" class="col-6 col-form-label col-form-label-sm">
+                        @element.Name@if (element.Hidden) {<span class="badge text-bg-secondary ms-1">Hidden</span>}
+                    </label>
+                    <div class="col-6">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">£</span>
+                            <input asp-for="Payslip.Lines[i].Amount" type="number" step="0.01" class="form-control amount text-end"
+                                   data-kind="@element.Kind" />
+                        </div>
+                        <span asp-validation-for="Payslip.Lines[i].Amount" class="text-danger small"></span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    <div class="col-12">
+        <p class="mb-0 amount">
+            Gross <strong>£<span data-total="gross">–</span></strong>
+            · Deductions <strong>£<span data-total="deductions">–</span></strong>
+            · Net <strong>£<span data-total="net">–</span></strong>
+        </p>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-md-3">
+        <label asp-for="Payslip.PensionReceivedDate" class="form-label"></label>
+        <input asp-for="Payslip.PensionReceivedDate" type="date" class="form-control" />
+        <div class="form-text">When the month's pension contributions reached the pension, if they're paid in separately.</div>
+    </div>
+    <div class="col-md-9">
+        <label asp-for="Payslip.Notes" class="form-label"></label>
+        <textarea asp-for="Payslip.Notes" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Payslip.Notes" class="text-danger small"></span>
+    </div>
+</div>

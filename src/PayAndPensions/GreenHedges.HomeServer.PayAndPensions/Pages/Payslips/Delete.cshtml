@@ -1,0 +1,12 @@
+@page "/People/{personId:int}/Payslips/Delete/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Payslips.DeleteModel
+@{ ViewData["Title"] = "Delete payslip"; }
+
+<h1 class="h3 mb-3">Delete @Model.PersonName's payslip</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Are you sure you want to delete the payslip for <strong>@Model.Description</strong>, with all its amounts?</p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-year="@Model.TaxYear" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

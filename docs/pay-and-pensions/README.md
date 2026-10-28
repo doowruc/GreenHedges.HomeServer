@@ -3,9 +3,10 @@
 A web app for my household's payslip history, and later our pension pots. Part of
 [GreenHedges.HomeServer](../../README.md); the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 2): people, each person's employers, and the pay elements on their payslips (the lines, e.g.
-Salary, Tax, Employer pension, each with a kind and a category). Payslips, the spreadsheet import, the dashboard,
-backups and deployment follow in the next steps.
+**So far** (build step 3): people, each person's employers, and the pay elements on their payslips (the lines, e.g.
+Salary, Tax, Employer pension, each with a kind and a category); and **payslips**, a table per tax year with the
+figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
+a few amounts change. The spreadsheet import, the dashboard, backups and deployment follow in the next steps.
 
 ## Running it locally
 
