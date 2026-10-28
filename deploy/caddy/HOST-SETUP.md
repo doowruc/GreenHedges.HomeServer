@@ -35,7 +35,7 @@ sudo install -d -m 0755 /opt/caddy && sudo install -d -m 0750 /etc/caddy && sudo
 ```
 
 ```bash
-sudo nano /etc/caddy/caddy.env
+sudoedit /etc/caddy/caddy.env
 ```
 
 Paste the token straight from Cloudflare's page, so the file has ([caddy.env.example](caddy.env.example)):

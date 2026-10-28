@@ -31,6 +31,12 @@ docker compose up -d --wait  # local SQL Server (compose.yaml) for Vehicle Manag
   it commits straight to `main`. Script defaults go in the git-ignored `deploy/local.env`; secrets go in user secrets
   locally and `/etc/<service>/env` on the server, never in the repository.
 
+## Editing files
+
+- When suggesting a command that edits a file, on the Mac or the server, use `ttt` (never `nano`, `vim` or another
+  editor). For root-owned files on the server use `sudoedit <file>` (never `sudo ttt` or `sudo nano`); it opens ttt
+  through `SUDO_EDITOR`. Setup: README.md, "Editing files".
+
 ## The server
 
 - Read `notes/server/SERVER.md` before planning or changing anything that runs on the server, and update it (and push

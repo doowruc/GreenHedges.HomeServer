@@ -181,10 +181,10 @@ sudo useradd --system --home-dir /var/lib/librecollector --create-home --shell /
 sudo install -d -m 0755 /opt/librecollector && sudo install -d -m 0750 /etc/librecollector
 ```
 
-Secrets file, readable by root only. systemd reads it before dropping to the service user.
+Secrets file, readable by root only. systemd reads it before dropping to the service user. (`sudoedit` opens it in ttt: see [Editing files](../../README.md#editing-files).)
 
 ```bash
-sudo install -m 0600 /dev/null /etc/librecollector/env && sudo nano /etc/librecollector/env
+sudo install -m 0600 /dev/null /etc/librecollector/env && sudoedit /etc/librecollector/env
 ```
 
 Contents (environment variable form of the config keys; `__` separates sections):
@@ -235,7 +235,7 @@ It takes your server user and host from `deploy/local.env` (`COLLECTORS_USER` an
 **On the server**, append the printed line to `~/.ssh/authorized_keys` (as one line). It limits that key to **read-only rsync of the backups folder**: no shell, no forwarding, nothing else readable.
 
 ```bash
-nano ~/.ssh/authorized_keys
+ttt ~/.ssh/authorized_keys
 ```
 
 **Heartbeat for the pull:** create a second healthchecks.io check (period **1 day**, grace **1 day**), and save its ping URL on the Mac:
@@ -412,7 +412,7 @@ Nightscout__ApiSecret=<API_SECRET>
 ```
 
 ```bash
-sudo nano /etc/librecollector/env
+sudoedit /etc/librecollector/env
 ```
 
 Then deploy the collector from your computer (`deploy/libre/deploy.sh <your-user>@librecollector.lan`). On first start it migrates the archive to schema v2 and publishes the whole archive to Nightscout; after that it publishes each new reading within seconds. The log shows `Publishing to Nightscout at …` and `Published N entries`. If Nightscout is unreachable, collection carries on, and a "Nightscout publishing stalled" email arrives after 30 minutes.

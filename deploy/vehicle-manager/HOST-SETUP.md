@@ -38,7 +38,7 @@ sudo grep -E '^(Alerts__|Offsite__(Bucket|Region|AgeRecipient)=)' /etc/librecoll
 ```
 
 ```bash
-sudo nano /etc/vehiclemanager/env
+sudoedit /etc/vehiclemanager/env
 ```
 
 Paste the lines printed on the Mac, change the `Alerts__From` name to `VehicleManager`, and add the heartbeat and the
@@ -150,7 +150,7 @@ deploy/mac/install-backup-pull.sh vehicle-manager
 **On the server**, append the line it prints to `~/.ssh/authorized_keys`:
 
 ```bash
-nano ~/.ssh/authorized_keys
+ttt ~/.ssh/authorized_keys
 ```
 
 **In a browser**, create another healthchecks.io check (period **1 day**, grace **1 day**). Then **on the Mac**, save its
