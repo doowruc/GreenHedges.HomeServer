@@ -25,9 +25,6 @@ From the repo root:
 dotnet test tests/VehicleManager/GreenHedges.HomeServer.VehicleManager.Tests   # this app's tests; must all pass
 dotnet test                  # the whole repo's tests (what CI runs)
 docker compose up -d --wait  # local SQL Server (compose.yaml; needs OrbStack or Docker Desktop running)
-aspire run                   # the app plus the Aspire dashboard (logs, traces) → https://localhost:17080
-                             # (CLI must be ≥ the AppHost's Aspire version: `aspire update --self`;
-                             #  or `dotnet run --project src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost`)
 ```
 
 ## Tests
@@ -65,12 +62,9 @@ so test pages through the in-memory host rather than relying on the browser.
   from `compose.yaml`, for the tests and optionally for development). Connection strings are in user secrets:
   `ConnectionStrings:VehicleManager` (the app's) and `ConnectionStrings:VehicleManagerTests` (a server for the tests'
   throwaway databases). The local `sa` password is in the git-ignored `.env`.
-- Packages: `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.EntityFrameworkCore.Design` (PrivateAssets=all), `ClosedXML`, `Auth0.AspNetCore.Authentication`, `Coravel` (scheduler), `Resend` (email), `OpenTelemetry.*` (keep them on one version). Keep EF packages and `dotnet-ef` on the same version.
+- Packages: `Microsoft.EntityFrameworkCore.SqlServer`, `Microsoft.EntityFrameworkCore.Design` (PrivateAssets=all), `ClosedXML`, `Auth0.AspNetCore.Authentication`, `Coravel` (scheduler), `Resend` (email); `OpenTelemetry.*` through Common.Web (keep them on one version). Keep EF packages and `dotnet-ef` on the same version.
 - Pinned only to fix vulnerability advisories in transitive packages (remove when the parent package catches up; each has
-  a comment): `System.Security.Cryptography.Pkcs` (app, via SqlClient) and `MessagePack` (AppHost, via Aspire).
-- `GreenHedges.HomeServer.VehicleManager.AppHost` uses `Aspire.AppHost.Sdk` (13.6) for local development only; it suppresses ASPIRE010 (no
-  Aspire CLI bundle), so `dotnet run` works whatever CLI version is installed; `aspire run` needs a CLI at least as new
-  as the AppHost's Aspire version.
+  a comment): `System.Security.Cryptography.Pkcs` (via SqlClient).
 - Front end: Bootstrap 5.3, Bootstrap Icons, Chart.js 4 and DataTables 3 (Bootstrap 5 styling, no jQuery; fuel log tables) from the jsDelivr CDN (no npm/bundler). Pages add CSS via the layout's `Styles` section. Small vanilla JS files in `wwwroot/js`.
 - en-GB culture throughout (dd/MM/yyyy, £). MPG uses UK gallons (4.54609 L).
 
@@ -98,7 +92,6 @@ GreenHedges.HomeServer.VehicleManager/
                ../make-icons.py: Bootstrap Icons' car on the navbar's dark grey; re-run it to change them)
   Monitoring/  AppHealth (database probes and job runs; the heartbeat source), VehicleManagerAlertMonitor (the alert rules),
                DatabaseProbe/IDatabaseProbe, VehicleManagerAlertOptions, ScheduledJob, JobRun
-GreenHedges.HomeServer.VehicleManager.AppHost/   AppHost.cs: runs the app with the Aspire dashboard, for local development only
 ```
 
 Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web/` (tests in `tests/Common/`):
@@ -108,7 +101,8 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   Data/        AuditedEntity, IUserOwned, AuditedDbContext (audit stamping; AppDbContext's base), ConcurrencyExtensions,
                DatabaseMigrator, DatabaseHealthCheck<TContext>
   Backups/     SqlServerBackupSource + SqlServerBackupOptions: the nightly SQL Server backup for Common's BackupService
-  Hosting/     WebAppHosting: RequiredSetting, AddForwardedHeaders (behind Caddy), AddLastingDataProtection
+  Hosting/     WebAppHosting: RequiredSetting, AddForwardedHeaders (behind Caddy), AddLastingDataProtection;
+               WebAppTelemetry: OpenTelemetry over OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set
 ```
 
 ## Conventions and how things work
@@ -279,10 +273,10 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 - Tests: `AppFactory` keeps the alert state file in the temp folder; neither email nor pings are configured.
   `VehicleManagerAlertMonitorTests` cover the rules with a fake clock and probe.
 
-**Telemetry and logging** (`Services/Telemetry.cs`)
+**Telemetry and logging** (`Services/Telemetry.cs`, over Common.Web's `WebAppTelemetry`)
 - OpenTelemetry logs (through `ILogger`), traces and metrics go over OTLP only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set:
-  by `GreenHedges.HomeServer.VehicleManager.AppHost` (the Aspire dashboard) locally, or the standard `OTEL_*` settings for another destination
-  (Grafana Cloud is a TODO). Otherwise nothing is set up: `dotnet watch` and the tests log to the console only.
+  on the server by `vehiclemanager.service`, to the telemetry stack and Grafana (`deploy/telemetry/`). Otherwise nothing
+  is set up: `dotnet watch` and the tests log to the console only.
 - Logs and traces may leave the app, so never log or tag emails, registrations, tokens or connection strings; use the
   Auth0 user id (`enduser.id` on spans). `Telemetry.RedactUrl` takes registrations out of the DVSA's request URLs in
   traces, and `System.Net.Http.HttpClient` logging is at Warning (it would log every request URL).

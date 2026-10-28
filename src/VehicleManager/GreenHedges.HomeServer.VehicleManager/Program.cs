@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 // nothing elsewhere.
 builder.Services.AddSystemd();
 
-// Logs, traces and metrics over OTLP when an endpoint is set, e.g. to the Aspire dashboard by `aspire run` (see README).
+// Logs, traces and metrics over OTLP when an endpoint is set: on the server, to Grafana (deploy/telemetry/).
 builder.AddTelemetry();
 
 // Settings live in user secrets in development (see README), environment variables elsewhere, e.g. Auth0__Domain.

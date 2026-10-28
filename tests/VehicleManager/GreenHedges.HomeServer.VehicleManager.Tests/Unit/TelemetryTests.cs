@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Configuration;
 using GreenHedges.HomeServer.VehicleManager.Services;
 
 namespace GreenHedges.HomeServer.VehicleManager.Tests.Unit;
@@ -15,13 +14,4 @@ public class TelemetryTests
     public void Registrations_are_taken_out_of_traced_URLs(string url, string traced) =>
         Assert.Equal(traced, Telemetry.RedactUrl(new Uri(url)));
 
-    [Fact]
-    public void Telemetry_is_only_sent_with_an_endpoint()
-    {
-        static IConfiguration Settings(string? endpoint) => new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint }).Build();
-        Assert.False(Telemetry.IsExporting(Settings(null)));
-        Assert.False(Telemetry.IsExporting(Settings("")));
-        Assert.True(Telemetry.IsExporting(Settings("https://localhost:21080")));
-    }
 }

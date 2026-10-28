@@ -167,7 +167,7 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
     with a `compose.yaml` for the container.
   - Database tests would then run locally too (still as throwaway `test|…` users). Use backup and restore to copy
     real data between the Azure and local databases.
-- [ ] **Persistent logging, with OpenTelemetry.** Logs only went to the console, so a failed nightly job
+- [x] **Persistent logging, with OpenTelemetry.** Logs only went to the console, so a failed nightly job
       (`ScheduledBackups`, `ScheduledReminders`) or a page exception was lost once the terminal closed. OpenTelemetry
       (OTel) logs, traces and metrics are sent over OTLP, so the destination can change without changing code.
   - [x] Locally, with the Aspire dashboard: `VehicleManager.AppHost` runs the app alongside the dashboard (no Docker
@@ -176,14 +176,10 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
         `ILogger` calls are kept; traces cover ASP.NET Core, `HttpClient` (Resend, DVLA, DVSA) and SQL Client; each
         nightly job run is a trace with a span per user. Logs no longer carry registrations or emails, and the DVSA's
         request URLs are redacted in traces.
-  - [ ] Grafana Cloud, for telemetry kept beyond a local session (or, once on the home server, its own Grafana, planned for the Weather collector's dashboards; decide then): [the free tier](https://grafana.com/products/cloud/free-tier)
-        (50 GB each of logs and traces a month, 10k metric series, 14 days' retention, free indefinitely) takes OTLP
-        directly. Set the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` (the stack's token) and
-        `OTEL_SERVICE_NAME` from user secrets or environment variables, as with the other secrets; the endpoint and
-        token are on the stack's OpenTelemetry setup page. No code changes needed. Grafana's alerting could then cover
-        "Alert on failures" below, e.g. a failed nightly job or no successful backup in 48 hours. It sends data to a
-        third party, so check what the logs and traces carry first: user ids are Auth0 ids; Resend errors may quote
-        an email address.
+  - [x] ~~Grafana Cloud~~ The home server's own Grafana instead (no third party): the telemetry stack
+        (`deploy/telemetry/`: Alloy into Loki, Tempo and Prometheus) receives OTLP on the server, and the systemd unit
+        sets `OTEL_EXPORTER_OTLP_ENDPOINT`. The setup moved into Common.Web for both web apps, and the Aspire AppHost
+        went. Grafana's alerting could later cover what `Monitoring/` doesn't.
 - [ ] **Log more of what matters.** Sign-ins and access-denied attempts (`AllowedUsers`), restores and imports
       (counts of rows), merges of brands/stations, concurrency conflicts in `TrySaveEditAsync`, and unhandled
       exceptions via the `/Error` page with its request id.

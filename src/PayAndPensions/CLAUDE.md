@@ -6,7 +6,9 @@ about this app. The plan and build order are in `docs/pay-and-pensions/DESIGN.md
 `docs/pay-and-pensions/README.md`.
 
 It's built the same way as Vehicle Manager, and shares its plumbing through `GreenHedges.HomeServer.Common.Web`
-(sign-in, audit columns, concurrency, migrations, `/health`, SQL Server backups). Where this file says nothing, follow
+(sign-in, audit columns, concurrency, migrations, `/health`, SQL Server backups, OpenTelemetry). Its telemetry goes to
+Grafana as `service_name` `PayAndPensions` when `OTEL_EXPORTER_OTLP_ENDPOINT` is set; never log names, employers or
+amounts. Where this file says nothing, follow
 `src/VehicleManager/CLAUDE.md`'s conventions: pages never use entity classes (`*Input` and projections), edits use
 `TrySaveEditAsync`, deletes use `ExecuteDeleteAsync`, use `FirstOrDefaultAsync` rather than `FindAsync`, and every
 schema change is an EF Core migration.

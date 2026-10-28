@@ -1,4 +1,5 @@
-# Grafana: dashboards for the home server's data (so far the Weather collector's), at https://grafana.<home domain>
+# Grafana: dashboards for the home server's data (so far the Weather collector's, and the web apps' telemetry from
+# deploy/telemetry/), at https://grafana.<home domain>
 # on the tailnet, through Caddy. Installed on the host in /opt/grafana with its provisioning and dashboards; settings in
 # /etc/grafana/grafana.env. See deploy/grafana/HOST-SETUP.md. Install or update with deploy/grafana/deploy-grafana.sh.
 #

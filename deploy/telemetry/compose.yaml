@@ -1,0 +1,84 @@
+# Telemetry storage for the web apps' OpenTelemetry (logs, traces, metrics), shown in Grafana. Installed on the host in
+# /opt/telemetry (this file and the config folders beside it); data in /var/lib/telemetry. See
+# deploy/telemetry/HOST-SETUP.md. Install or update with deploy/telemetry/deploy-telemetry.sh.
+#
+#   apps ──OTLP (127.0.0.1:4317 gRPC, 4318 HTTP)──► Alloy ──► Loki (logs), Tempo (traces), Prometheus (metrics)
+#                                                                  ▲
+#                         Grafana (host network) ── 127.0.0.1:3100, 3200, 9090
+#
+# Its own bridge network, so the four can't clash over their internal ports. Only what the apps and Grafana use is
+# published, on 127.0.0.1 only (Docker's published ports bypass ufw). Telemetry is for looking into problems, not a
+# record: it's kept for a while (logs and metrics 30 days, traces 7) and never backed up.
+#
+# TELEMETRY_DATA moves the data folder, e.g. to try the stack on a dev machine; it defaults to the host's.
+
+name: telemetry
+
+x-defaults: &defaults
+  restart: unless-stopped
+  user: "10001:10001"                    # owns /var/lib/telemetry (HOST-SETUP.md)
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  alloy:
+    <<: *defaults
+    # Pinned, as are the others: update deliberately (HOST-SETUP.md, "Updating").
+    image: grafana/alloy:v1.21.3
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy
+      - --disable-reporting
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:4317:4317"            # OTLP gRPC: the apps' default
+      - "127.0.0.1:4318:4318"            # OTLP HTTP
+      - "127.0.0.1:12345:12345"          # Alloy's own UI and health, for checking by hand
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ${TELEMETRY_DATA:-/var/lib/telemetry}/alloy:/var/lib/alloy
+    mem_limit: 256m
+    depends_on: [loki, tempo, prometheus]
+
+  loki:
+    <<: *defaults
+    image: grafana/loki:3.7.9
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    ports:
+      - "127.0.0.1:3100:3100"            # Grafana's Loki data source
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - ${TELEMETRY_DATA:-/var/lib/telemetry}/loki:/loki
+    mem_limit: 768m
+
+  tempo:
+    <<: *defaults
+    image: grafana/tempo:2.10.10
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    ports:
+      - "127.0.0.1:3200:3200"            # Grafana's Tempo data source
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - ${TELEMETRY_DATA:-/var/lib/telemetry}/tempo:/var/tempo
+    mem_limit: 512m
+
+  prometheus:
+    <<: *defaults
+    image: prom/prometheus:v3.15.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-otlp-receiver         # metrics arrive from Alloy over OTLP; nothing is scraped
+    ports:
+      - "127.0.0.1:9090:9090"            # Grafana's Prometheus data source
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${TELEMETRY_DATA:-/var/lib/telemetry}/prometheus:/prometheus
+    mem_limit: 512m

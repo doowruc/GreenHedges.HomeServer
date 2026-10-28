@@ -24,7 +24,6 @@
     <Project Path="src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions/GreenHedges.HomeServer.PayAndPensions.csproj" />
   </Folder>
   <Folder Name="/src/VehicleManager/">
-    <Project Path="src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost/GreenHedges.HomeServer.VehicleManager.AppHost.csproj" />
     <Project Path="src/VehicleManager/GreenHedges.HomeServer.VehicleManager/GreenHedges.HomeServer.VehicleManager.csproj" />
   </Folder>
   <Folder Name="/tests/" />

@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 // nothing elsewhere.
 builder.Services.AddSystemd();
 
+// Logs, traces and metrics over OTLP when an endpoint is set: on the server, to Grafana (deploy/telemetry/).
+builder.AddTelemetry("PayAndPensions");
+
 // Auth0 sign-in, and every page requires a signed-in user whose verified email is on the allow-list (AllowedEmails),
 // unless it opts out with [AllowAnonymous]. Signed-in users who aren't allowed are sent to Account/AccessDenied.
 // Settings live in user secrets in development (see the README), environment variables elsewhere, e.g. Auth0__Domain.

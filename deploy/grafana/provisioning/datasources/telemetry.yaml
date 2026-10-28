@@ -1,0 +1,47 @@
+# The web apps' OpenTelemetry, kept by the telemetry stack (deploy/telemetry/) on the host's 127.0.0.1. Each app is its
+# service_name (Loki label; service.name in Tempo and Prometheus): VehicleManager, PayAndPensions. A trace links to its
+# logs, and a log line with a trace id links to the trace.
+apiVersion: 1
+
+datasources:
+  - name: Logs
+    uid: loki
+    type: loki
+    url: http://127.0.0.1:3100
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - name: Trace
+          matcherType: label         # the trace_id structured metadata OTLP logs carry
+          matcherRegex: trace_id
+          datasourceUid: tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: View trace
+    editable: false
+
+  - name: Traces
+    uid: tempo
+    type: tempo
+    url: http://127.0.0.1:3200
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        spanStartTimeShift: "-5m"
+        spanEndTimeShift: "5m"
+        tags:
+          - key: service.name
+            value: service_name
+      tracesToMetrics:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+    editable: false
+
+  - name: Metrics
+    uid: prometheus
+    type: prometheus
+    url: http://127.0.0.1:9090
+    jsonData:
+      timeInterval: 1m
+    editable: false

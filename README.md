@@ -9,7 +9,7 @@ The services that run on a small always-on home server, in one repository and on
 | **Vehicle Manager** ([docs](docs/vehicle-manager/README.md)) | A web app for the vehicles I own: fuel log and MPG, services, MOT history from the DVSA, due-date reminders | Running on the home server (moved from Azure SQL: [plan](docs/vehicle-manager/HOMESERVER-MIGRATION.md)) |
 | **Pay & Pensions** ([docs](docs/pay-and-pensions/README.md), [design](docs/pay-and-pensions/DESIGN.md)) | A web app for my household's payslip history, imported from Excel, and later our pension pots | Being built: people, employers and pay elements so far |
 
-The **collectors** keep my own copy of data that otherwise only lives in someone else's cloud. They share a .NET 10 Worker Service under systemd, SQLite archives that keep the data as received, nightly backups pulled off the host, encrypted off-site copies, email alerts and an external heartbeat. **Vehicle Manager** and **Pay & Pensions** are ASP.NET Core Razor Pages apps on SQL Server. Everything is reached over Tailscale only.
+The **collectors** keep my own copy of data that otherwise only lives in someone else's cloud. They share a .NET 10 Worker Service under systemd, SQLite archives that keep the data as received, nightly backups pulled off the host, encrypted off-site copies, email alerts and an external heartbeat. **Vehicle Manager** and **Pay & Pensions** are ASP.NET Core Razor Pages apps on SQL Server, with their logs, traces and metrics in Grafana. Everything is reached over Tailscale only.
 
 ## Layout
 
@@ -28,7 +28,8 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/vehicle-manager/` | Vehicle Manager's systemd unit, deploy script, database setup and host setup |
 | `deploy/TAILSCALE-SERVICES.md` | One-off Tailscale setup: the server's tag and access to `svc:home`, the tailnet address of the web apps |
 | `deploy/caddy/` | Caddy, the web apps' front door: `https://<app>.<home domain>` on the tailnet, one wildcard certificate |
-| `deploy/grafana/` | Grafana: dashboards (so far the Weather collector's), its data sources and dashboards as files, deploy and database scripts |
+| `deploy/grafana/` | Grafana: dashboards (so far the Weather collector's), its data sources (including the web apps' telemetry) and dashboards as files, deploy and database scripts |
+| `deploy/telemetry/` | Where the web apps' OpenTelemetry goes, for Grafana: Alloy (OTLP) into Loki, Tempo and Prometheus, in Docker; deploy script and host setup |
 | `deploy/deploy.sh` | Publishes services and installs them on the host: `deploy/deploy.sh all`, or name them (`deploy/deploy.sh libre weather`; `deploy/<service>/deploy.sh` for one). Services run on the host's .NET runtime (Ubuntu's package); `--self-contained` bundles the SDK's runtime instead, for a security fix Ubuntu hasn't shipped yet |
 | `deploy/libre/` | The Libre collector's systemd unit, deploy script, host setup and Nightscout stack |
 | `docs/libre/` | Its README (setup and use) and design notes |
