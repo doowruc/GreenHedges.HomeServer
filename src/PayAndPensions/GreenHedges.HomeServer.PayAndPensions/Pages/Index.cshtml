@@ -22,7 +22,7 @@ else
                     <ul class="list-unstyled mb-0">
                         <li><a asp-page="/Employers/Index" asp-route-personId="@p.Id">@p.Employers @(p.Employers == 1 ? "employer" : "employers")</a></li>
                         <li><a asp-page="/PayElements/Index" asp-route-personId="@p.Id">@p.PayElements pay @(p.PayElements == 1 ? "element" : "elements")</a></li>
-                        <li class="text-body-secondary">@p.Payslips @(p.Payslips == 1 ? "payslip" : "payslips")</li>
+                        <li><a asp-page="/Payslips/Index" asp-route-personId="@p.Id">@p.Payslips @(p.Payslips == 1 ? "payslip" : "payslips")</a></li>
                     </ul>
                 </div></div>
             </div>

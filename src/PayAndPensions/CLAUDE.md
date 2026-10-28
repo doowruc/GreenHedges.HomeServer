@@ -46,11 +46,15 @@ figures, and never a real spreadsheet.
 GreenHedges.HomeServer.PayAndPensions/
   Models/      EF Core entities: Person (the user-owned root), Employer, PayElement (+ PayElementKind, PayCategory),
                Payslip, PayslipLine
-  ViewModels/  *Input classes for the forms
+  ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
+  Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
+               each tax year's totals, as the spreadsheets worked them out; pure, unit tested)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
-  Pages/       Index (dashboard), People/*, Employers/* and PayElements/* (per person, under /People/{personId}/…,
-               through PersonPageModel), Account/* (sign in/out), Shared/ (layout), Names (name tidying)
-  wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager)
+  Pages/       Index (dashboard), People/*, Employers/*, PayElements/* and Payslips/* (per person, under
+               /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
+               Account/* (sign in/out), Shared/ (layout), Names (name tidying)
+  wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
+               on the payslip form)
 ```
 
 ## Data rules
@@ -65,3 +69,12 @@ GreenHedges.HomeServer.PayAndPensions/
 - A pay element's **kind** says whether it adds to gross, comes off it, or is the employer's (in neither); its
   **category** drives the derived figures (annual salary, pension %, bonus %). Both enums are stored as text, so order
   them in memory, not in SQL.
+- **Figures are worked out, never stored** (`PayCalculations`): gross, deductions, net, annual salary (Salary × 12)
+  and rises, pension % of salary, take-home %, year to date and the predicted year (12 ÷ tax month × year to date, from
+  recorded payslips only), bonus % of annual salary; per tax year, totals, the change on the year just before, and
+  higher-rate pension relief (20% of employee pension). Pages pass payslips oldest first, with the year before's for
+  the first rise.
+- **Payslip form:** one amount per pay element; blank means no line. Element and employer ids come back from the form,
+  so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same amounts,
+  pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the
+  payslip row as changed, so its `RowVersion` guards the lines too.

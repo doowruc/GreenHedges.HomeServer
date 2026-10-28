@@ -6,3 +6,8 @@
 
 /* Equal-width digits, so amounts line up in columns. */
 .amount { font-variant-numeric: tabular-nums; }
+
+/* The payslips table (Payslips/Index): many columns, so small text, and the month stays in view when it scrolls sideways. */
+.payslip-table { font-size: .85rem; white-space: nowrap; }
+.payslip-table td.small { white-space: normal; min-width: 12rem; }
+.payslip-table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; background: var(--bs-body-bg); }

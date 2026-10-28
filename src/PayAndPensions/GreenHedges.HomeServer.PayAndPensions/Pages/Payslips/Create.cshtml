@@ -1,0 +1,32 @@
+@page "/People/{personId:int}/Payslips/Create"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Payslips.CreateModel
+@{ ViewData["Title"] = "Add payslip"; }
+
+<h1 class="h3 mb-3">Add a payslip for @Model.PersonName</h1>
+@if (Model.EmployerOptions.Count == 0 || Model.Elements.Count == 0)
+{
+    <div class="alert alert-info">
+        A payslip needs an employer and pay elements first:
+        <a asp-page="/Employers/Index" asp-route-personId="@Model.PersonId">employers</a>,
+        <a asp-page="/PayElements/Index" asp-route-personId="@Model.PersonId">pay elements</a>.
+    </div>
+}
+else
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <form method="post">
+            @* Not in the form partial, so page-level errors (an edit conflict) show at the top. *@
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <partial name="_PayslipForm" model="Model" />
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-year="@Model.Payslip.TaxYear" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div></div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/payslip-totals.js" asp-append-version="true"></script>
+}

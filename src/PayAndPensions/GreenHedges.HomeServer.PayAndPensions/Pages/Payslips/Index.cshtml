@@ -1,0 +1,122 @@
+@page "/People/{personId:int}/Payslips"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Payslips.IndexModel
+@using GreenHedges.HomeServer.PayAndPensions.Services
+@{
+    var year = Model.Year!.Value;
+    ViewData["Title"] = $"{Model.PersonName}'s payslips {TaxYears.Label(year)}";
+    static string Money(decimal? value) => value is { } v ? v.ToString("N2") : "";
+    static string Percent(decimal? value) => value is { } v ? v.ToString("P1") : "";
+    var t = Model.Totals;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.PersonName's payslips</h1>
+    <div class="d-flex gap-2">
+        <form method="get" class="d-flex">
+            <label for="year" class="visually-hidden">Tax year</label>
+            <select id="year" name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                @foreach (var y in Model.Years)
+                {
+                    <option value="@y" selected="@(y == year)">@TaxYears.Label(y)</option>
+                }
+            </select>
+            <noscript><button type="submit" class="btn btn-sm btn-outline-secondary ms-1">Show</button></noscript>
+        </form>
+        <a asp-page="Create" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-plus-lg me-1"></i>Add payslip</a>
+    </div>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="alert alert-info">No payslips for @TaxYears.Label(year) yet. <a asp-page="Create" asp-route-personId="@Model.PersonId">Add one</a>.</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0 payslip-table">
+                <thead class="table-head">
+                    <tr>
+                        <th>Month</th>
+                        <th>Paid</th>
+                        @if (Model.ManyEmployers) { <th>Employer</th> }
+                        @foreach (var c in Model.Columns)
+                        {
+                            <th class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null)">@c.Name</th>
+                        }
+                        <th class="text-end">Gross</th>
+                        <th class="text-end">Deductions</th>
+                        <th class="text-end">Net</th>
+                        <th class="text-end">Annual salary</th>
+                        <th class="text-end">Rise</th>
+                        <th class="text-end" title="Employee pension as a % of salary">EE pension</th>
+                        <th class="text-end" title="Employer pension as a % of salary">ER pension</th>
+                        <th class="text-end">Take-home</th>
+                        <th class="text-end">Year to date</th>
+                        <th class="text-end" title="12 ÷ tax month × year to date">Predicted</th>
+                        <th>Pension received</th>
+                        <th>Notes</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody class="amount">
+                @foreach (var r in Model.Rows)
+                {
+                    var f = r.Figures;
+                    <tr>
+                        <td class="text-nowrap" title="Tax month @r.TaxMonth">@r.TaxMonth @TaxYears.MonthName(r.TaxMonth)[..3]</td>
+                        <td class="text-nowrap">@r.PayDate.ToString("dd/MM/yy")</td>
+                        @if (Model.ManyEmployers) { <td>@r.Employer</td> }
+                        @foreach (var c in Model.Columns)
+                        {
+                            <td class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null)">@Money(r.Amounts.TryGetValue(c.Id, out var a) ? a : null)</td>
+                        }
+                        <td class="text-end">@Money(f.Gross)</td>
+                        <td class="text-end">@Money(f.Deductions)</td>
+                        <td class="text-end fw-semibold">@Money(f.Net)</td>
+                        <td class="text-end">@Money(f.AnnualSalary)</td>
+                        <td class="text-end text-nowrap">@if (f.Rise is { } rise) {<span title="@Percent(f.RisePercent)">@Money(rise)</span>}</td>
+                        <td class="text-end">@Percent(f.EmployeePensionPercent)</td>
+                        <td class="text-end">@Percent(f.EmployerPensionPercent)</td>
+                        <td class="text-end">@Percent(f.TakeHomePercent)</td>
+                        <td class="text-end">@Money(f.YearToDateGross)</td>
+                        <td class="text-end">@Money(f.PredictedAnnualGross)</td>
+                        <td class="text-nowrap">@r.PensionReceivedDate?.ToString("dd/MM/yy")</td>
+                        <td class="small">@r.Notes@if (f.BonusPercent is { } bonus) {<span class="text-body-secondary">@(r.Notes is null ? "" : " · ")bonus @Percent(bonus)</span>}</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (t is not null)
+    {
+        <h2 class="h5 mt-4">@TaxYears.Label(year) totals <span class="text-body-secondary small">(@t.Payslips @(t.Payslips == 1 ? "payslip" : "payslips"))</span></h2>
+        <div class="card shadow-sm"><div class="card-body">
+            <dl class="row mb-0 amount">
+                <dt class="col-sm-4 col-lg-3">Gross</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.Gross)@if (t.GrossChange is { } gc) {<span class="text-body-secondary small ms-2">@(gc >= 0 ? "+" : "")@Money(gc) (@Percent(t.GrossChangePercent)) on @TaxYears.Label(year - 1)</span>}</dd>
+                <dt class="col-sm-4 col-lg-3">Net</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.Net)@if (t.NetChange is { } nc) {<span class="text-body-secondary small ms-2">@(nc >= 0 ? "+" : "")@Money(nc) (@Percent(t.NetChangePercent))</span>}</dd>
+                <dt class="col-sm-4 col-lg-3">Tax</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.Tax)</dd>
+                <dt class="col-sm-4 col-lg-3">National Insurance</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.NationalInsurance)</dd>
+                <dt class="col-sm-4 col-lg-3">Pension (yours)</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.EmployeePension)</dd>
+                <dt class="col-sm-4 col-lg-3">Pension (employer's)</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.EmployerPension)</dd>
+                <dt class="col-sm-4 col-lg-3" title="20% of your pension contributions, reclaimed through Self Assessment by a higher-rate taxpayer with a relief-at-source pension">Higher-rate pension relief</dt>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.PensionRelief)</dd>
+                <dt class="col-sm-4 col-lg-3">Take-home</dt>
+                <dd class="col-sm-8 col-lg-3">@Percent(t.TakeHomePercent) of gross</dd>
+            </dl>
+        </div></div>
+    }
+}
+<a asp-page="/People/Index" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>People</a>
