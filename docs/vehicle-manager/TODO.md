@@ -110,6 +110,13 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
       attachments) for servicing, tyres, repairs, insurance, tax, parking and tolls. This makes pence per mile a true
       total cost of ownership rather than fuel only. Add it to the backup.
   - [ ] Start with a cost on each service record, now that there's a service history.
+- [ ] **Insurance policies.** Record each vehicle's policies: insurer, policy number, cover (comprehensive, third
+      party…), start and end dates, cost, excess, named drivers and notes (optionally the policy documents, kept on the
+      server's disk with the backups). The current policy's end date sets the existing insurance renewal reminder
+      (30 and 7 days before) instead of a date typed separately, and its cost feeds the running costs above. No lookup:
+      the Motor Insurance Database has no API for individuals (askMID is a manual check under its user agreement;
+      programmatic access is for insurers, brokers and fleets through the MIB), so it's entered by hand; a link to
+      askMID on the vehicle page is enough for an occasional check.
 - [ ] **Vehicle lifecycle: sold/disposed date and an "active" flag.** Hide sold vehicles from the dashboard and the
       fill-up vehicle dropdown, but keep their history. Optionally record purchase and sale price to show depreciation.
 - [ ] **Partial fill-ups.** A "full tank" flag on `FuelEntry`, so real MPG is worked out from one full fill to the
