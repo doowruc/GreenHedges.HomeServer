@@ -108,7 +108,7 @@ builder.AddBackups<SqlServerBackupSource>();
 
 builder.Services.AddSingleton<AppHealth>();
 builder.Services.AddSingleton<IHeartbeatSource>(services => services.GetRequiredService<AppHealth>());
-builder.Services.AddSingleton<IDatabaseProbe, DatabaseProbe>();
+builder.Services.AddSingleton<IDatabaseProbe, DatabaseProbe<AppDbContext>>();
 // The monitor probes the database every minute. On by default outside Development; off in Development, so a local
 // copy left running doesn't keep a pausing database (Azure SQL's free offer) awake. Alerts:Monitor overrides it.
 if (builder.Configuration.GetValue("Alerts:Monitor", !builder.Environment.IsDevelopment()))

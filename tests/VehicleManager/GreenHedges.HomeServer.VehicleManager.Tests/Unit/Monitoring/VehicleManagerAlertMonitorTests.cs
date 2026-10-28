@@ -4,6 +4,7 @@ using Microsoft.Extensions.Time.Testing;
 using GreenHedges.HomeServer.Common.Alerts;
 using GreenHedges.HomeServer.Common.Backups;
 using GreenHedges.HomeServer.Common.Hosting;
+using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.VehicleManager.Monitoring;
 
 namespace GreenHedges.HomeServer.VehicleManager.Tests.Unit.Monitoring;

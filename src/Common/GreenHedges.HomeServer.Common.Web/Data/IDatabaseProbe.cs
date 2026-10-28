@@ -1,4 +1,4 @@
-namespace GreenHedges.HomeServer.VehicleManager.Monitoring;
+namespace GreenHedges.HomeServer.Common.Web.Data;
 
 /// <summary>Asks whether the database answers, for the alert checks.</summary>
 public interface IDatabaseProbe
