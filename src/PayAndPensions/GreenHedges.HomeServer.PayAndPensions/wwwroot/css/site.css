@@ -1,0 +1,8 @@
+/* Page background a touch off-white in light mode; Bootstrap's own dark background otherwise. */
+[data-bs-theme="light"] body { background: #f6f7f9; }
+
+/* Tinted table header that works in both themes (Bootstrap's .table-light stays light in dark mode). */
+.table > thead.table-head > tr > th { --bs-table-bg: var(--bs-tertiary-bg); }
+
+/* Equal-width digits, so amounts line up in columns. */
+.amount { font-variant-numeric: tabular-nums; }

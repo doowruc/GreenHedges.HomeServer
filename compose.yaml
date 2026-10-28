@@ -1,4 +1,4 @@
-# SQL Server for local development and Vehicle Manager's database tests: see "Local database" in
+# SQL Server for local development and the web apps' database tests (Vehicle Manager, Pay & Pensions): see "Local database" in
 # docs/vehicle-manager/README.md. Only for this machine: the port is bound to localhost, and the sa password is in .env
 # next to this file (git-ignored; copy .env.example). The home server will have its own setup (deploy/sqlserver/).
 name: greenhedges-homeserver

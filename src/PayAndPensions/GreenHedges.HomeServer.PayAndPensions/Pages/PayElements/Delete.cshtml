@@ -1,0 +1,21 @@
+@page "/People/{personId:int}/PayElements/Delete/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.PayElements.DeleteModel
+@{ ViewData["Title"] = "Delete pay element"; }
+
+<h1 class="h3 mb-3">Delete @Model.PersonName's pay element</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    @if (Model.Payslips > 0)
+    {
+        <p><strong>@Model.ElementName</strong> can't be deleted while it's on payslips (@Model.Payslips). If it's no
+            longer used, <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@Model.Id">hide it</a> instead.</p>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
+        <p>Are you sure you want to delete <strong>@Model.ElementName</strong>?</p>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-page="Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    }
+</div></div>

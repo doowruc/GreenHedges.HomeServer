@@ -1,4 +1,4 @@
-# Build and test on every pull request and on main, with a SQL Server container for Vehicle Manager's tests.
+# Build and test on every pull request and on main, with a SQL Server container for the web apps' tests.
 # Warnings are errors (Directory.Build.props), and a NuGet vulnerability advisory fails restore, so this also flags
 # vulnerable packages.
 name: CI
@@ -25,7 +25,7 @@ jobs:
       # Throwaway, for this run's SQL Server container only (not a secret: it's reachable only from the runner).
       MSSQL_SA_PASSWORD: CiOnly${{ github.run_id }}Sql
     services:
-      # For Vehicle Manager's database and page tests, which create their own throwaway database on it.
+      # For the web apps' database and page tests, which each create their own throwaway database on it.
       # Same image as compose.yaml.
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2025-CU10-ubuntu-24.04
@@ -60,4 +60,5 @@ jobs:
       - name: Test
         env:
           ConnectionStrings__VehicleManagerTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
+          ConnectionStrings__PayAndPensionsTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
         run: dotnet test --no-build -c Release --logger "console;verbosity=normal"

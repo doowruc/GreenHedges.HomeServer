@@ -1,0 +1,35 @@
+@page
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@{
+    ViewData["Title"] = "Access denied";
+    var email = AllowedUsers.Email(User);
+}
+
+<div class="card shadow-sm mx-auto border-danger" style="max-width: 32rem"><div class="card-body text-center">
+    <h1 class="h4">Access denied</h1>
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <p class="text-muted">You need to sign in to use Pay &amp; Pensions.</p>
+        <a asp-page="/Account/Login" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-1"></i>Sign in</a>
+    }
+    else
+    {
+        <p class="text-muted">
+            @if (email is null)
+            {
+                <text>Your account didn't provide an email address, so Pay &amp; Pensions can't check whether it's allowed.</text>
+            }
+            else if (!AllowedUsers.EmailVerified(User))
+            {
+                <text><strong>@email</strong> hasn't been verified yet. Verify it with Auth0, then sign in again.</text>
+            }
+            else
+            {
+                <text><strong>@email</strong> isn't allowed to use Pay &amp; Pensions.</text>
+            }
+        </p>
+        <form method="post" asp-page="/Account/Logout">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-right me-1"></i>Sign in with a different account</button>
+        </form>
+    }
+</div></div>

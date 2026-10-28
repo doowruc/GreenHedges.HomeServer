@@ -2,7 +2,8 @@
 
 A web app for my household's payslip history and, later, our pension pots. Both have lived in Excel workbooks for
 years; this replaces them. Part of [GreenHedges.HomeServer](../../README.md), built the same way as
-[Vehicle Manager](../vehicle-manager/README.md). Nothing is built yet: this is the agreed plan.
+[Vehicle Manager](../vehicle-manager/README.md). This is the agreed plan; [Build order](#build-order) says how far
+it has got, and the [README](README.md) how to run it.
 
 ## Goals and constraints
 
@@ -90,7 +91,7 @@ columns, and differences are listed.
 
 | Thing | Value |
 |---|---|
-| Code | `src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions` (+ `.AppHost` for local development), `tests/PayAndPensions/…Tests` |
+| Code | `src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions`, `tests/PayAndPensions/…Tests` |
 | Docs, deploy | `docs/pay-and-pensions/`, `deploy/pay-and-pensions/` (systemd unit, deploy script, database setup, host setup) |
 | Service | systemd `payandpensions` (user `payandpensions`, in `sqlbackups`), `127.0.0.1:5081` |
 | Address | `https://pay.<home domain>` through Caddy (a new block in `deploy/caddy/Caddyfile`) |
@@ -100,15 +101,23 @@ columns, and differences are listed.
 | Off-site | `age`-encrypted copies to the shared bucket under `payandpensions/`, by a new write-only IAM user in `deploy/aws/offsite.yaml` |
 | Mac | Daily pull to `~/Backups/PayAndPensions` (a `payandpensions` case in `deploy/mac/pull-backups.sh` and `install-backup-pull.sh`) |
 | Monitoring | healthchecks.io heartbeat; Resend alerts |
+| Telemetry | OpenTelemetry logs, traces and metrics over OTLP to the server's Grafana (through Alloy into Loki, Tempo and Prometheus), set up in `Common.Web` and shared with Vehicle Manager. No Aspire: locally, with no OTLP endpoint set, logs go to the console only |
 
 ## Build order
 
 One branch and PR each:
 
+**Progress:** steps 1 (PR #47) and 2 done.
+
 1. **Shared groundwork.** Move what both web apps need out of Vehicle Manager into a shared project: the SQL Server
    backup source, Auth0 sign-in with `AllowedEmails`, the current user, audit columns and concurrency helpers.
    Vehicle Manager behaves exactly as before.
 2. **Skeleton.** The project, data model, first migration, test project; People, Employers and Pay elements pages.
+
+   **Then, before step 3: telemetry to Grafana** (its own PR, for both web apps). On the server, Grafana Alloy receives
+   OTLP and stores logs in Loki, traces in Tempo and metrics in Prometheus, in Docker on 127.0.0.1 like Grafana, as its
+   data sources. Vehicle Manager's OpenTelemetry setup moves into `Common.Web` for both apps, and its Aspire AppHost
+   (with `aspire.config.json`) goes.
 3. **Payslips.** Add and edit (starting from the previous month), the per-tax-year tables, the calculation service.
 4. **Import,** with the preview and self-check (checked first against the other person's workbook headings).
 5. **Dashboard and tax years,** with charts.

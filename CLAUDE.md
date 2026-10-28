@@ -2,15 +2,16 @@
 
 The services that run on my always-on home server, in one public repository and one .NET 10 solution
 (`GreenHedges.HomeServer.slnx`): the Libre and Weather collectors (`src/Collectors/`), their shared code
-(`src/Common/`), and Vehicle Manager (`src/VehicleManager/`, which has its own `CLAUDE.md` for working on it). What
-each does and how it's set up: `README.md`, `docs/<service>/`, `deploy/<service>/`.
+(`src/Common/`), and the web apps Vehicle Manager (`src/VehicleManager/`) and Pay & Pensions (`src/PayAndPensions/`,
+being built), each with its own `CLAUDE.md` for working on it. What each does and how it's set up: `README.md`,
+`docs/<service>/`, `deploy/<service>/`.
 
 ## Build and test
 
 ```bash
 dotnet build                 # warnings are errors (Directory.Build.props)
 dotnet test                  # every project's tests; all must pass
-docker compose up -d --wait  # local SQL Server (compose.yaml) for Vehicle Manager's database and page tests
+docker compose up -d --wait  # local SQL Server (compose.yaml) for the web apps' database and page tests
 ```
 
 - Package versions live in `Directory.Packages.props` (central package management); project files have no versions.

@@ -20,6 +20,9 @@
     <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Summaries/GreenHedges.HomeServer.Collectors.Weather.Summaries.csproj" />
     <Project Path="src/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker/GreenHedges.HomeServer.Collectors.Weather.Worker.csproj" />
   </Folder>
+  <Folder Name="/src/PayAndPensions/">
+    <Project Path="src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions/GreenHedges.HomeServer.PayAndPensions.csproj" />
+  </Folder>
   <Folder Name="/src/VehicleManager/">
     <Project Path="src/VehicleManager/GreenHedges.HomeServer.VehicleManager.AppHost/GreenHedges.HomeServer.VehicleManager.AppHost.csproj" />
     <Project Path="src/VehicleManager/GreenHedges.HomeServer.VehicleManager/GreenHedges.HomeServer.VehicleManager.csproj" />
@@ -43,6 +46,9 @@
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Storage.Tests/GreenHedges.HomeServer.Collectors.Weather.Storage.Tests.csproj" />
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Summaries.Tests/GreenHedges.HomeServer.Collectors.Weather.Summaries.Tests.csproj" />
     <Project Path="tests/Collectors/Weather/GreenHedges.HomeServer.Collectors.Weather.Worker.Tests/GreenHedges.HomeServer.Collectors.Weather.Worker.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/PayAndPensions/">
+    <Project Path="tests/PayAndPensions/GreenHedges.HomeServer.PayAndPensions.Tests/GreenHedges.HomeServer.PayAndPensions.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/VehicleManager/">
     <Project Path="tests/VehicleManager/GreenHedges.HomeServer.VehicleManager.Tests/GreenHedges.HomeServer.VehicleManager.Tests.csproj" />
