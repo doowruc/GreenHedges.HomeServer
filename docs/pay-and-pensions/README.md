@@ -6,7 +6,9 @@ A web app for my household's payslip history, and later our pension pots. Part o
 **So far** (build step 3): people, each person's employers, and the pay elements on their payslips (the lines, e.g.
 Salary, Tax, Employer pension, each with a kind and a category); and **payslips**, a table per tax year with the
 figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
-a few amounts change. And **importing** a person's existing spreadsheet (below). The dashboard, backups and deployment
+a few amounts change. **Importing** a person's existing spreadsheet (below). The **dashboard**, one person at a time:
+their latest payslip, the tax year so far and predicted, and charts of gross and net by month and by tax year. And
+**tax years**: every year's totals, with the change on the same months of the year before. Backups and deployment
 follow in the next steps.
 
 ## Importing a spreadsheet

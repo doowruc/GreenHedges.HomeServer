@@ -1,0 +1,75 @@
+@page "/People/{personId:int}/TaxYears"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Years.IndexModel
+@using GreenHedges.HomeServer.PayAndPensions.Services
+@{
+    ViewData["Title"] = $"{Model.PersonName}'s tax years";
+    static string Money(decimal? value) => value is { } v ? v.ToString("N2") : "";
+    static string Percent(decimal? value) => value is { } v ? v.ToString("P1") : "";
+    static string Change(decimal? value, decimal? percent) =>
+        value is { } v ? $"{(v >= 0 ? "+" : "")}{v:N2} ({(percent is { } p ? p.ToString("P1") : "")})" : "";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.PersonName's tax years</h1>
+    <a asp-page="/Payslips/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary">Payslips</a>
+</div>
+
+@if (Model.Years.Count == 0)
+{
+    <div class="alert alert-info">No payslips yet. <a asp-page="/Payslips/Create" asp-route-personId="@Model.PersonId">Add one</a>
+        or <a asp-page="/Import/Index" asp-route-personId="@Model.PersonId">import a spreadsheet</a>.</div>
+}
+else
+{
+    <div class="card shadow-sm mb-3"><div class="card-body">
+        <div class="chart-box"><canvas data-pay-yearly="@Model.ChartJson" role="img" aria-label="Gross, net and pension each tax year"></canvas></div>
+    </div></div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0 payslip-table">
+                <thead class="table-head">
+                    <tr>
+                        <th>Tax year</th>
+                        <th class="text-end">Payslips</th>
+                        <th class="text-end">Gross</th>
+                        <th class="text-end">Change</th>
+                        <th class="text-end">Net</th>
+                        <th class="text-end">Change</th>
+                        <th class="text-end">Take-home</th>
+                        <th class="text-end">Tax</th>
+                        <th class="text-end">NI</th>
+                        <th class="text-end">Pension (yours)</th>
+                        <th class="text-end">Pension (employer's)</th>
+                        <th class="text-end" title="20% of your pension contributions, reclaimed through Self Assessment by a higher-rate taxpayer with a relief-at-source pension">Pension relief</th>
+                    </tr>
+                </thead>
+                <tbody class="amount">
+                @foreach (var t in Model.Years)
+                {
+                    <tr>
+                        <td><a asp-page="/Payslips/Index" asp-route-personId="@Model.PersonId" asp-route-year="@t.TaxYear">@TaxYears.Label(t.TaxYear)</a></td>
+                        <td class="text-end">@t.Payslips</td>
+                        <td class="text-end">@Money(t.Gross)</td>
+                        <td class="text-end text-body-secondary">@Change(t.GrossChange, t.GrossChangePercent)</td>
+                        <td class="text-end fw-semibold">@Money(t.Net)</td>
+                        <td class="text-end text-body-secondary">@Change(t.NetChange, t.NetChangePercent)</td>
+                        <td class="text-end">@Percent(t.TakeHomePercent)</td>
+                        <td class="text-end">@Money(t.Tax)</td>
+                        <td class="text-end">@Money(t.NationalInsurance)</td>
+                        <td class="text-end">@Money(t.EmployeePension)</td>
+                        <td class="text-end">@Money(t.EmployerPension)</td>
+                        <td class="text-end">@Money(t.PensionRelief)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="text-body-secondary small mt-2">Each year's change is on the same months of the year before, so a year in progress is compared like for like.</p>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    <script src="~/js/pay-charts.js" asp-append-version="true"></script>
+}

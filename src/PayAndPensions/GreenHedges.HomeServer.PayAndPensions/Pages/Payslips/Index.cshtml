@@ -22,6 +22,7 @@
             </select>
             <noscript><button type="submit" class="btn btn-sm btn-outline-secondary ms-1">Show</button></noscript>
         </form>
+        <a asp-page="/Years/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary text-nowrap">Tax years</a>
         <a asp-page="/Import/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
         <a asp-page="Create" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-plus-lg me-1"></i>Add payslip</a>
     </div>
@@ -102,7 +103,7 @@ else
         <div class="card shadow-sm"><div class="card-body">
             <dl class="row mb-0 amount">
                 <dt class="col-sm-4 col-lg-3">Gross</dt>
-                <dd class="col-sm-8 col-lg-3">£@Money(t.Gross)@if (t.GrossChange is { } gc) {<span class="text-body-secondary small ms-2">@(gc >= 0 ? "+" : "")@Money(gc) (@Percent(t.GrossChangePercent)) on @TaxYears.Label(year - 1)</span>}</dd>
+                <dd class="col-sm-8 col-lg-3">£@Money(t.Gross)@if (t.GrossChange is { } gc) {<span class="text-body-secondary small ms-2">@(gc >= 0 ? "+" : "")@Money(gc) (@Percent(t.GrossChangePercent)) on the same months of @TaxYears.Label(year - 1)</span>}</dd>
                 <dt class="col-sm-4 col-lg-3">Net</dt>
                 <dd class="col-sm-8 col-lg-3">£@Money(t.Net)@if (t.NetChange is { } nc) {<span class="text-body-secondary small ms-2">@(nc >= 0 ? "+" : "")@Money(nc) (@Percent(t.NetChangePercent))</span>}</dd>
                 <dt class="col-sm-4 col-lg-3">Tax</dt>

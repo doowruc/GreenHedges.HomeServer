@@ -1,31 +1,106 @@
 @page
 @model GreenHedges.HomeServer.PayAndPensions.Pages.IndexModel
-@{ ViewData["Title"] = "Dashboard"; }
+@using GreenHedges.HomeServer.PayAndPensions.Services
+@{
+    ViewData["Title"] = "Dashboard";
+    static string Money(decimal value) => "£" + value.ToString("N2");
+    var p = Model.Shown;
+}
 
-<h1 class="h3 mb-3">Dashboard</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    @if (Model.People.Count > 1)
+    {
+        <ul class="nav nav-pills">
+            @foreach (var person in Model.People)
+            {
+                <li class="nav-item">
+                    <a asp-page="/Index" asp-route-person="@person.Id" class="nav-link py-1 @(person.Id == p?.Id ? "active" : null)"
+                       aria-current="@(person.Id == p?.Id ? "page" : null)">@person.Name</a>
+                </li>
+            }
+        </ul>
+    }
+</div>
 
-@if (Model.People.Count == 0)
+@if (p is null)
 {
     <div class="alert alert-info">
-        Welcome. Start by <a asp-page="/People/Create">adding a person</a>, then their employers and the pay elements on
-        their payslips.
+        Welcome. Start by <a asp-page="/People/Create">adding a person</a>, then import their payslip spreadsheet, or add
+        their employer, pay elements and payslips by hand.
     </div>
+}
+else if (Model.Latest is null)
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <h2 class="h5">@p.Name has no payslips yet</h2>
+        <ul class="mb-0">
+            <li><a asp-page="/Import/Index" asp-route-personId="@p.Id">Import a spreadsheet</a> of them, or</li>
+            <li>set up <a asp-page="/Employers/Index" asp-route-personId="@p.Id">@p.Employers @(p.Employers == 1 ? "employer" : "employers")</a>
+                and <a asp-page="/PayElements/Index" asp-route-personId="@p.Id">@p.PayElements pay @(p.PayElements == 1 ? "element" : "elements")</a>,
+                then <a asp-page="/Payslips/Create" asp-route-personId="@p.Id">add a payslip</a>.</li>
+        </ul>
+    </div></div>
 }
 else
 {
-    <div class="row g-3">
-        @foreach (var p in Model.People)
-        {
-            <div class="col-md-6 col-lg-4">
-                <div class="card shadow-sm h-100"><div class="card-body">
-                    <h2 class="h5 card-title">@p.Name</h2>
-                    <ul class="list-unstyled mb-0">
-                        <li><a asp-page="/Employers/Index" asp-route-personId="@p.Id">@p.Employers @(p.Employers == 1 ? "employer" : "employers")</a></li>
-                        <li><a asp-page="/PayElements/Index" asp-route-personId="@p.Id">@p.PayElements pay @(p.PayElements == 1 ? "element" : "elements")</a></li>
-                        <li><a asp-page="/Payslips/Index" asp-route-personId="@p.Id">@p.Payslips @(p.Payslips == 1 ? "payslip" : "payslips")</a></li>
-                    </ul>
-                </div></div>
+    var latest = Model.Latest;
+    var year = Model.ThisYear!;
+    var last = Model.LastYear;
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+            <div class="label">Latest net pay</div>
+            <div class="value">@Money(latest.Figures.Net)</div>
+            <div class="small text-body-secondary">@TaxYears.MonthName(latest.TaxMonth) @TaxYears.Label(latest.TaxYear), paid @latest.PayDate.ToString("d")</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+            <div class="label">Annual salary</div>
+            <div class="value">@Money(latest.Figures.AnnualSalary)</div>
+            <div class="small text-body-secondary">Gross this month @Money(latest.Figures.Gross)</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+            <div class="label">@TaxYears.Label(year.TaxYear) so far</div>
+            <div class="value">@Money(year.Gross)</div>
+            <div class="small text-body-secondary">gross, @Money(year.Net) net, from @year.Payslips @(year.Payslips == 1 ? "payslip" : "payslips")</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+            <div class="label" title="12 ÷ tax month × year to date">@TaxYears.Label(year.TaxYear) predicted</div>
+            <div class="value">@Money(year.PredictedGross)</div>
+            <div class="small text-body-secondary">
+                @if (last is not null)
+                {
+                    <text>gross; @TaxYears.Label(last.TaxYear) was @Money(last.Gross)</text>
+                }
+                else
+                {
+                    <text>gross, if the rest of the year goes the same</text>
+                }
             </div>
-        }
+        </div></div></div>
     </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Each month</h2>
+            <div class="chart-box"><canvas data-pay-monthly="@Model.MonthlyChartJson" role="img" aria-label="Gross and net pay on each payslip"></canvas></div>
+        </div></div></div>
+        <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Each tax year</h2>
+            <div class="chart-box"><canvas data-pay-yearly="@Model.YearlyChartJson" role="img" aria-label="Gross, net and pension each tax year"></canvas></div>
+        </div></div></div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-3">
+        <a asp-page="/Payslips/Index" asp-route-personId="@p.Id" class="btn btn-sm btn-outline-secondary">Payslips</a>
+        <a asp-page="/Years/Index" asp-route-personId="@p.Id" class="btn btn-sm btn-outline-secondary">Tax years</a>
+        <a asp-page="/Payslips/Create" asp-route-personId="@p.Id" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Add payslip</a>
+    </div>
+}
+
+@section Scripts {
+    @if (Model.Latest is not null)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+        <script src="~/js/pay-charts.js" asp-append-version="true"></script>
+    }
 }

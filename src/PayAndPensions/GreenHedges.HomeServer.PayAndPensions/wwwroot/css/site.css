@@ -11,3 +11,9 @@
 .payslip-table { font-size: .85rem; white-space: nowrap; }
 .payslip-table td.small { white-space: normal; min-width: 12rem; }
 .payslip-table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; background: var(--bs-body-bg); }
+
+/* Chart container: Chart.js fills it (maintainAspectRatio: false), so charts stay readable on phones. */
+.chart-box { position: relative; height: clamp(16rem, 35vw, 22rem); }
+
+.stat-card .value { font-size: 1.4rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stat-card .label { font-size: .8rem; color: var(--bs-secondary-color); text-transform: uppercase; letter-spacing: .03em; }
