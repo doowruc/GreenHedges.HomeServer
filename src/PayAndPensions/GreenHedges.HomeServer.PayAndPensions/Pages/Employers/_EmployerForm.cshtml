@@ -1,0 +1,9 @@
+@model EmployerInput
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" autofocus />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+</div>

@@ -1,0 +1,20 @@
+@page "{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.People.DeleteModel
+@{ ViewData["Title"] = "Delete person"; }
+
+<h1 class="h3 mb-3">Delete person</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    @if (Model.Payslips > 0)
+    {
+        <p><strong>@Model.PersonName</strong> can't be deleted while they have payslips (@Model.Payslips). Delete those first.</p>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
+        <p>Are you sure you want to delete <strong>@Model.PersonName</strong>, with their employers and pay elements?</p>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    }
+</div></div>

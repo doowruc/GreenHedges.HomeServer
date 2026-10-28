@@ -1,0 +1,31 @@
+@page
+@model GreenHedges.HomeServer.PayAndPensions.Pages.IndexModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<h1 class="h3 mb-3">Dashboard</h1>
+
+@if (Model.People.Count == 0)
+{
+    <div class="alert alert-info">
+        Welcome. Start by <a asp-page="/People/Create">adding a person</a>, then their employers and the pay elements on
+        their payslips.
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var p in Model.People)
+        {
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm h-100"><div class="card-body">
+                    <h2 class="h5 card-title">@p.Name</h2>
+                    <ul class="list-unstyled mb-0">
+                        <li><a asp-page="/Employers/Index" asp-route-personId="@p.Id">@p.Employers @(p.Employers == 1 ? "employer" : "employers")</a></li>
+                        <li><a asp-page="/PayElements/Index" asp-route-personId="@p.Id">@p.PayElements pay @(p.PayElements == 1 ? "element" : "elements")</a></li>
+                        <li class="text-body-secondary">@p.Payslips @(p.Payslips == 1 ? "payslip" : "payslips")</li>
+                    </ul>
+                </div></div>
+            </div>
+        }
+    </div>
+}

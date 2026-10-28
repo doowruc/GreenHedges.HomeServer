@@ -1,0 +1,37 @@
+@page "/People/{personId:int}/Employers"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Employers.IndexModel
+@{ ViewData["Title"] = $"{Model.PersonName}'s employers"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">@Model.PersonName's employers</h1>
+    <a asp-page="Create" asp-route-personId="@Model.PersonId" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add employer</a>
+</div>
+
+@if (Model.Employers.Count == 0)
+{
+    <div class="alert alert-info">No employers yet. <a asp-page="Create" asp-route-personId="@Model.PersonId">Add one</a>: every payslip is from an employer.</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-head">
+                <tr><th>Name</th><th class="text-end">Payslips</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var m in Model.Employers)
+            {
+                <tr>
+                    <td>@m.Name</td>
+                    <td class="text-end">@m.Payslips</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@m.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+<a asp-page="/People/Index" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>People</a>

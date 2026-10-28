@@ -1,0 +1,46 @@
+@page "/People/{personId:int}/PayElements"
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model GreenHedges.HomeServer.PayAndPensions.Pages.PayElements.IndexModel
+@{
+    ViewData["Title"] = $"{Model.PersonName}'s pay elements";
+    string Label<T>(T value) where T : struct, Enum =>
+        Html.GetEnumSelectList<T>().First(i => i.Value == Convert.ToInt32(value).ToString()).Text;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">@Model.PersonName's pay elements</h1>
+    <a asp-page="Create" asp-route-personId="@Model.PersonId" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add pay element</a>
+</div>
+<p class="text-body-secondary">The lines on @Model.PersonName's payslips, e.g. Salary, Overtime, Tax and Employer pension.</p>
+
+@if (Model.Elements.Count == 0)
+{
+    <div class="alert alert-info">No pay elements yet. <a asp-page="Create" asp-route-personId="@Model.PersonId">Add the first one</a>.</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-head">
+                <tr><th>Name</th><th>Kind</th><th>Category</th><th class="text-end">Order</th><th class="text-end">Payslips</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var el in Model.Elements)
+            {
+                <tr class="@(el.Hidden ? "text-body-secondary" : null)">
+                    <td>@el.Name</td>
+                    <td>@Label(el.Kind)</td>
+                    <td>@Label(el.Category)@if (el.Hidden) {<span class="badge text-bg-secondary ms-2">Hidden</span>}</td>
+                    <td class="text-end">@el.SortOrder</td>
+                    <td class="text-end">@el.Payslips</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@el.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@el.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}
+<a asp-page="/People/Index" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>People</a>

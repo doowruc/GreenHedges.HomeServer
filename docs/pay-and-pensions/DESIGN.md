@@ -2,7 +2,8 @@
 
 A web app for my household's payslip history and, later, our pension pots. Both have lived in Excel workbooks for
 years; this replaces them. Part of [GreenHedges.HomeServer](../../README.md), built the same way as
-[Vehicle Manager](../vehicle-manager/README.md). Nothing is built yet: this is the agreed plan.
+[Vehicle Manager](../vehicle-manager/README.md). This is the agreed plan; [Build order](#build-order) says how far
+it has got, and the [README](README.md) how to run it.
 
 ## Goals and constraints
 
@@ -104,6 +105,8 @@ columns, and differences are listed.
 ## Build order
 
 One branch and PR each:
+
+**Progress:** steps 1 (PR #47) and 2 done.
 
 1. **Shared groundwork.** Move what both web apps need out of Vehicle Manager into a shared project: the SQL Server
    backup source, Auth0 sign-in with `AllowedEmails`, the current user, audit columns and concurrency helpers.

@@ -1,0 +1,32 @@
+@model PayElementInput
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" autofocus />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+    <div class="col-md-2">
+        <label asp-for="SortOrder" class="form-label"></label>
+        <input asp-for="SortOrder" class="form-control" />
+        <span asp-validation-for="SortOrder" class="text-danger small"></span>
+    </div>
+    <div class="w-100 m-0"></div>
+    <div class="col-md-4">
+        <label asp-for="Kind" class="form-label"></label>
+        <select asp-for="Kind" asp-items="Html.GetEnumSelectList<PayElementKind>()" class="form-select"></select>
+        <div class="form-text">Earnings add up to gross pay and deductions come off it. Employer contributions are shown
+            but are in neither.</div>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Category" class="form-label"></label>
+        <select asp-for="Category" asp-items="Html.GetEnumSelectList<PayCategory>()" class="form-select"></select>
+        <div class="form-text">For the figures worked out from it: annual salary, pension %, bonus %.</div>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="Hidden" class="form-check-input" />
+            <label asp-for="Hidden" class="form-check-label"></label>
+        </div>
+    </div>
+</div>

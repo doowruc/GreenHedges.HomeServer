@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>GreenHedges.HomeServer.PayAndPensions</RootNamespace>
+    <UserSecretsId>1cbe6571-b86a-4438-9eca-44ca1d581dc7</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Sign-in, audited per-user data and SQL Server backups, shared with Vehicle Manager; through it, Common. -->
+    <ProjectReference Include="..\..\Common\GreenHedges.HomeServer.Common.Web\GreenHedges.HomeServer.Common.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" />
+  </ItemGroup>
+
+</Project>

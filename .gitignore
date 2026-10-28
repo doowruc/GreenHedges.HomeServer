@@ -447,6 +447,9 @@ alert-state.json.tmp
 # Vehicle Manager: its fuel spreadsheet, downloaded backups and SQL Server backups never go in the repository
 src/VehicleManager/**/*.xlsx
 src/VehicleManager/**/*.json.gz
+# Pay & Pensions: payslip and pension spreadsheets never go in the repository (they're personal; tests make their own)
+src/PayAndPensions/**/*.xlsx
+tests/PayAndPensions/**/*.xlsx
 *.bak
 # The local SQL Server's backups folder (compose.yaml)
 .sqlserver-backups/
