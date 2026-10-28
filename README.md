@@ -37,6 +37,36 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 
 Building, testing and the pull-request workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Editing files
+
+The guides here edit files with [ttt](https://github.com/eugenioenko/ttt), on the Mac and on the server. Root-owned
+files on the server (`/etc/<service>/env` and the like) are edited with `sudoedit`: it opens a copy in ttt as you, then
+writes it back with its owner and mode unchanged, so the editor never runs as root.
+
+On the Mac, install it with Homebrew and make it the default editor:
+
+```bash
+brew install eugenioenko/ttt/ttt
+```
+
+```bash
+printf '%s\n' 'export EDITOR=ttt VISUAL=ttt' >> ~/.zshrc && . ~/.zshrc
+```
+
+On the server, install the latest release binary for your own account (not root), checked against the release's
+checksums. Set `VERSION` to the [latest release](https://github.com/eugenioenko/ttt/releases):
+
+```bash
+VERSION=v1.9.0 && mkdir -p ~/.local/bin && cd "$(mktemp -d)" && curl -fsSLO "https://github.com/eugenioenko/ttt/releases/download/$VERSION/ttt-linux-amd64" && curl -fsSLO "https://github.com/eugenioenko/ttt/releases/download/$VERSION/checksums.txt" && sha256sum --ignore-missing -c checksums.txt && install -m 755 ttt-linux-amd64 ~/.local/bin/ttt
+```
+
+Then make it the default editor, including for `sudoedit` (log in again first if `~/.local/bin` was only just created,
+so it's on your `PATH`):
+
+```bash
+printf '%s\n' 'export EDITOR=ttt VISUAL=ttt SUDO_EDITOR="$HOME/.local/bin/ttt"' >> ~/.bashrc && . ~/.bashrc
+```
+
 ## Licence
 
 [MIT](LICENSE)

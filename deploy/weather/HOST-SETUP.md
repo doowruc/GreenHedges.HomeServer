@@ -63,7 +63,7 @@ The service gets the dongle through `SupplementaryGroups=plugdev` in its unit, s
 ## 5. Settings that stay off the repository
 
 ```bash
-sudo install -m 0600 /dev/null /etc/weathercollector/env && sudo nano /etc/weathercollector/env
+sudo install -m 0600 /dev/null /etc/weathercollector/env && sudoedit /etc/weathercollector/env
 ```
 
 Contents (environment variable form of the config keys; `__` separates sections, `__0` is the first list item):
@@ -114,7 +114,7 @@ sudo grep -E '^(Alerts__|Offsite__(Bucket|Region|AgeRecipient)=)' /etc/librecoll
 ```
 
 ```bash
-sudo nano /etc/weathercollector/env
+sudoedit /etc/weathercollector/env
 ```
 
 Change the `Alerts__From` name to `WeatherCollector`, and add the three new lines, so the file has:
@@ -165,7 +165,7 @@ deploy/mac/install-backup-pull.sh weather
 **On the server**, append the line it prints to `~/.ssh/authorized_keys`:
 
 ```bash
-nano ~/.ssh/authorized_keys
+ttt ~/.ssh/authorized_keys
 ```
 
 **In a browser**, create another healthchecks.io check (period **1 day**, grace **1 day**). Then **on the Mac**, save its ping URL and test a pull:
@@ -216,7 +216,7 @@ your password manager, with the station id (`I…`, on the station's page).
 **On the server**, add both to the env file (paste the key straight in):
 
 ```bash
-sudo nano /etc/weathercollector/env
+sudoedit /etc/weathercollector/env
 ```
 
 ```
