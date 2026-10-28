@@ -49,13 +49,16 @@ GreenHedges.HomeServer.PayAndPensions/
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
                each tax year's totals, as the spreadsheets worked them out; pure, unit tested),
-               Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it)
+               Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it),
+               PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
-  Pages/       Index (dashboard), People/*, Employers/*, PayElements/*, Payslips/* and Import/ (per person, under
+  Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
+               PayElements/*, Payslips/*, Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
+               TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
                Account/* (sign in/out), Shared/ (layout), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
-               on the payslip form)
+               on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager)
 ```
 
 ## Data rules
@@ -74,7 +77,9 @@ GreenHedges.HomeServer.PayAndPensions/
   and rises, pension % of salary, take-home %, year to date and the predicted year (12 ÷ tax month × year to date, from
   recorded payslips only), bonus % of annual salary; per tax year, totals, the change on the year just before, and
   higher-rate pension relief (20% of employee pension). Pages pass payslips oldest first, with the year before's for
-  the first rise.
+  the first rise. A year's change is on the **same tax months** of the year before, so a year in progress compares like
+  for like.
+- Format text outside a request (services, the import's messages) with en-GB explicitly: CI runs in US English.
 - **Payslip form:** one amount per pay element; blank means no line. Element and employer ids come back from the form,
   so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same amounts,
   pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the

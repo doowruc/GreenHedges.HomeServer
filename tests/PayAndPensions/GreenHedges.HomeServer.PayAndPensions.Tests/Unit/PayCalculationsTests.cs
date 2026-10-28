@@ -112,6 +112,20 @@ public class PayCalculationsTests
     }
 
     [Fact]
+    public void A_year_in_progress_is_compared_with_the_same_months_of_the_year_before()
+    {
+        var payslips = new List<PayslipAmounts>();
+        for (var month = 1; month <= 12; month++) payslips.Add(Payslip(2025, month, Salary(3000)));
+        payslips.Add(Payslip(2026, 1, Salary(3300)));
+        payslips.Add(Payslip(2026, 2, Salary(3300)));
+
+        var thisYear = PayCalculations.TotalsByTaxYear(payslips)[1];
+
+        Assert.Equal(600m, thisYear.GrossChange);              // 6,600 against April and May's 6,000, not the year's 36,000
+        Assert.Equal(0.1m, thisYear.GrossChangePercent);
+    }
+
+    [Fact]
     public void A_year_isnt_compared_across_a_gap()
     {
         var totals = PayCalculations.TotalsByTaxYear([Payslip(2023, 1, Salary(3000)), Payslip(2025, 1, Salary(3000))]);

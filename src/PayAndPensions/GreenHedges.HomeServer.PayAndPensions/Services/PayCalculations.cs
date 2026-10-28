@@ -46,8 +46,8 @@ public sealed record PayslipFigures(
 /// <param name="EmployeePension">Employee pension deductions.</param>
 /// <param name="PensionRelief">The extra pension tax relief a higher-rate taxpayer reclaims through Self Assessment: 20% of
 /// <paramref name="EmployeePension"/> (relief-at-source contributions, which only get basic-rate relief at source).</param>
-/// <param name="GrossChange">Gross less the year before's; null without a year before.</param>
-/// <param name="NetChange">Net less the year before's; null without a year before.</param>
+/// <param name="GrossChange">Gross less the same tax months' of the year before; null without a year before.</param>
+/// <param name="NetChange">Net less the same tax months' of the year before; null without a year before.</param>
 public sealed record TaxYearTotals(
     int TaxYear,
     int Payslips,
@@ -119,27 +119,37 @@ public static class PayCalculations
     }
 
     /// <summary>
-    /// Totals for each tax year in <paramref name="payslips"/> (one person's, any order), oldest first, each compared with
-    /// the year before it if that's there too.
+    /// Totals for each tax year in <paramref name="payslips"/> (one person's, any order), oldest first. Each is compared
+    /// with the same tax months of the year just before, so a year in progress is compared like for like (and a whole
+    /// year with the whole year before).
     /// </summary>
     public static IReadOnlyList<TaxYearTotals> TotalsByTaxYear(IEnumerable<PayslipAmounts> payslips)
     {
+        var years = payslips.GroupBy(p => p.TaxYear).OrderBy(g => g.Key).ToList();
+        var byYear = years.ToDictionary(g => g.Key, g => g.ToList());
         var totals = new List<TaxYearTotals>();
-        TaxYearTotals? previous = null;
-        foreach (var year in payslips.GroupBy(p => p.TaxYear).OrderBy(g => g.Key))
+        foreach (var year in years)
         {
             var lines = year.SelectMany(p => p.Lines).ToList();
-            decimal Sum(PayElementKind kind, PayCategory? category = null) =>
-                lines.Where(l => l.Kind == kind && (category is null || l.Category == category)).Sum(l => l.Amount);
+            decimal Sum(PayElementKind kind, PayCategory? category = null) => SumOf(lines, kind, category);
 
             var gross = Sum(PayElementKind.Earning);
             var deductions = Sum(PayElementKind.Deduction);
             var net = gross - deductions;
             var employeePension = Sum(PayElementKind.Deduction, PayCategory.Pension);
-            // Only against the year just before: a gap of a year would make the change meaningless.
-            var before = previous?.TaxYear == year.Key - 1 ? previous : null;
 
-            var current = new TaxYearTotals(
+            // Only against the year just before (a gap of a year would make the change meaningless), and only its
+            // months this year has too.
+            decimal? grossBefore = null, netBefore = null;
+            if (byYear.TryGetValue(year.Key - 1, out var previous))
+            {
+                var months = year.Select(p => p.TaxMonth).ToHashSet();
+                var linesBefore = previous.Where(p => months.Contains(p.TaxMonth)).SelectMany(p => p.Lines).ToList();
+                grossBefore = SumOf(linesBefore, PayElementKind.Earning);
+                netBefore = grossBefore - SumOf(linesBefore, PayElementKind.Deduction);
+            }
+
+            totals.Add(new TaxYearTotals(
                 TaxYear: year.Key,
                 Payslips: year.Count(),
                 Gross: gross,
@@ -152,15 +162,16 @@ public static class PayCalculations
                 EmployerPension: Sum(PayElementKind.EmployerContribution, PayCategory.Pension),
                 PensionRelief: Math.Round(employeePension * PensionReliefRate, 2),
                 TakeHomePercent: Fraction(net, gross),
-                GrossChange: gross - before?.Gross,
-                GrossChangePercent: before is null ? null : Fraction(gross - before.Gross, before.Gross),
-                NetChange: net - before?.Net,
-                NetChangePercent: before is null ? null : Fraction(net - before.Net, before.Net));
-            totals.Add(current);
-            previous = current;
+                GrossChange: gross - grossBefore,
+                GrossChangePercent: grossBefore is { } gb ? Fraction(gross - gb, gb) : null,
+                NetChange: net - netBefore,
+                NetChangePercent: netBefore is { } nb ? Fraction(net - nb, nb) : null));
         }
         return totals;
     }
+
+    private static decimal SumOf(IEnumerable<PayLine> lines, PayElementKind kind, PayCategory? category = null) =>
+        lines.Where(l => l.Kind == kind && (category is null || l.Category == category)).Sum(l => l.Amount);
 
     private static decimal? Fraction(decimal part, decimal whole) => whole == 0 ? null : part / whole;
 }
