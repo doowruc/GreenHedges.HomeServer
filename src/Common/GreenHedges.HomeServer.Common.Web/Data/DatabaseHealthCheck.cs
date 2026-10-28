@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using GreenHedges.HomeServer.VehicleManager.Data;
 
-namespace GreenHedges.HomeServer.VehicleManager.Services;
+namespace GreenHedges.HomeServer.Common.Web.Data;
 
 /// <summary>
 /// The <c>/health</c> check: healthy when the database answers. The registration's timeout bounds it, as the
 /// retrying execution strategy would otherwise keep trying for a while when the database is down.
 /// </summary>
-public sealed class DatabaseHealthCheck(AppDbContext db) : IHealthCheck
+public sealed class DatabaseHealthCheck<TContext>(TContext db) : IHealthCheck where TContext : DbContext
 {
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default) =>
         await db.Database.CanConnectAsync(cancellationToken)

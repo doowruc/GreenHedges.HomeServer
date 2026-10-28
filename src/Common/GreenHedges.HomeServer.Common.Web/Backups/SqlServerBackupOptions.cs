@@ -1,4 +1,4 @@
-namespace GreenHedges.HomeServer.VehicleManager.Backups;
+namespace GreenHedges.HomeServer.Common.Web.Backups;
 
 /// <summary>
 /// Where SQL Server writes the nightly backup, from the shared <c>Backup</c> section (with <c>Common</c>'s

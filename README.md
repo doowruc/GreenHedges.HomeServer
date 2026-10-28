@@ -16,7 +16,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | Path | What |
 |---|---|
 | `GreenHedges.HomeServer.slnx` | The one solution |
-| `src/Common/`, `tests/Common/` | Shared by every service (`GreenHedges.HomeServer.Common`): host setup, email alerts, heartbeat, backups and off-site copies |
+| `src/Common/`, `tests/Common/` | Shared by every service (`GreenHedges.HomeServer.Common`): host setup, email alerts, heartbeat, backups and off-site copies; by the collectors (`.Common.Sqlite`): their SQLite databases; by the web apps (`.Common.Web`): Auth0 sign-in for allowed emails, per-user data with audit columns, SQL Server backups |
 | `src/Collectors/Libre/`, `tests/Collectors/Libre/` | The Libre collector (`GreenHedges.HomeServer.Collectors.Libre.*`) |
 | `src/Collectors/Weather/`, `tests/Collectors/Weather/` | The Weather collector (`GreenHedges.HomeServer.Collectors.Weather.*`) |
 | `src/VehicleManager/`, `tests/VehicleManager/` | Vehicle Manager (`GreenHedges.HomeServer.VehicleManager`, `.AppHost` for local development, `.Tests`) |

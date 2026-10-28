@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace GreenHedges.HomeServer.VehicleManager.Models;
+namespace GreenHedges.HomeServer.Common.Web.Data;
 
 /// <summary>
-/// Audit columns shared by every table. <c>AppDbContext</c> sets the Added/Modified values when rows
+/// Audit columns shared by every table. <see cref="AuditedDbContext"/> sets the Added/Modified values when rows
 /// are saved; <see cref="RowVersion"/> is a SQL Server <c>rowversion</c> that the database changes on
 /// every insert and update, and EF Core uses it to detect conflicting edits.
 /// </summary>

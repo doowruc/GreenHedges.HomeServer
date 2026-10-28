@@ -1,3 +1,5 @@
+using GreenHedges.HomeServer.Common.Web.Data;
+
 namespace GreenHedges.HomeServer.VehicleManager.Models;
 
 /// <summary>

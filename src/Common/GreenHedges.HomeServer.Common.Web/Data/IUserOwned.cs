@@ -1,7 +1,7 @@
-namespace GreenHedges.HomeServer.VehicleManager.Models;
+namespace GreenHedges.HomeServer.Common.Web.Data;
 
 /// <summary>
-/// Data that belongs to one signed-in user. <c>AppDbContext</c> only returns the current user's
+/// Data that belongs to one signed-in user. The app's <see cref="AuditedDbContext"/> only returns the current user's
 /// rows and stamps new rows with their id.
 /// </summary>
 public interface IUserOwned

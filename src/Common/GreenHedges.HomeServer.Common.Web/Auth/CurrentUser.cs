@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace GreenHedges.HomeServer.VehicleManager.Services;
+namespace GreenHedges.HomeServer.Common.Web.Auth;
 
 /// <summary>The signed-in user for the current request, identified by their Auth0 user id.</summary>
 public class CurrentUser(IHttpContextAccessor httpContextAccessor)

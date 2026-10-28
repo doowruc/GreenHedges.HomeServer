@@ -3,6 +3,7 @@
   <Folder Name="/src/Common/">
     <Project Path="src/Common/GreenHedges.HomeServer.Common.Sqlite/GreenHedges.HomeServer.Common.Sqlite.csproj" />
     <Project Path="src/Common/GreenHedges.HomeServer.Common/GreenHedges.HomeServer.Common.csproj" />
+    <Project Path="src/Common/GreenHedges.HomeServer.Common.Web/GreenHedges.HomeServer.Common.Web.csproj" />
   </Folder>
   <Folder Name="/src/Collectors/" />
   <Folder Name="/src/Collectors/Libre/">
@@ -26,6 +27,7 @@
   <Folder Name="/tests/" />
   <Folder Name="/tests/Common/">
     <Project Path="tests/Common/GreenHedges.HomeServer.Common.Tests/GreenHedges.HomeServer.Common.Tests.csproj" />
+    <Project Path="tests/Common/GreenHedges.HomeServer.Common.Web.Tests/GreenHedges.HomeServer.Common.Web.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/Collectors/" />
   <Folder Name="/tests/Collectors/Libre/">

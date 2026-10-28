@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using GreenHedges.HomeServer.Common.Web.Auth;
 using GreenHedges.HomeServer.VehicleManager.Data;
 
 namespace GreenHedges.HomeServer.VehicleManager.Services;

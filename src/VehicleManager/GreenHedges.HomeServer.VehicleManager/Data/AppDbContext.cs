@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using GreenHedges.HomeServer.Common.Web.Auth;
+using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.VehicleManager.Models;
-using GreenHedges.HomeServer.VehicleManager.Services;
 
 namespace GreenHedges.HomeServer.VehicleManager.Data;
 
@@ -8,12 +9,12 @@ namespace GreenHedges.HomeServer.VehicleManager.Data;
 /// Each signed-in user has their own data. Query filters limit every query to the current user's
 /// owners, vehicles, fuel brands and stations, settings, and (through their vehicle) fill-ups and their stops,
 /// service records, MOT tests and their defects, and sent reminders.
-/// <see cref="SaveChangesAsync(bool, CancellationToken)"/> stamps new user-owned rows with the
-/// current user's id and fills in every table's audit columns.
-/// With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
+/// Saving stamps new user-owned rows with the current user's id and fills in every table's audit columns
+/// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
 /// </remarks>
-public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? currentUser = null) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? currentUser = null)
+    : AuditedDbContext(options, currentUser)
 {
     public DbSet<Owner> Owners => Set<Owner>();
     public DbSet<Vehicle> Vehicles => Set<Vehicle>();
@@ -26,15 +27,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
     public DbSet<MotTest> MotTests => Set<MotTest>();
     public DbSet<MotDefect> MotDefects => Set<MotDefect>();
-
-    /// <summary>Read by the query filters; EF Core evaluates it per query, as a parameter.</summary>
-    private string? CurrentUserId => currentUser?.Id;
-
-    /// <summary>
-    /// When set, new rows keep the audit values they already have (a restored backup's), and only
-    /// missing ones are filled in. New user-owned rows still always belong to the current user.
-    /// </summary>
-    public bool KeepAuditValues { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -149,50 +141,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
             e.HasQueryFilter(s => s.UserId == CurrentUserId);
             e.HasIndex(s => s.UserId).IsUnique();
         });
-    }
-
-    public override int SaveChanges(bool acceptAllChangesOnSuccess)
-    {
-        StampChanges();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
-    }
-
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
-    {
-        StampChanges();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-    }
-
-    /// <summary>Fills in the audit columns, and the owning user on new rows.</summary>
-    private void StampChanges()
-    {
-        var entries = ChangeTracker.Entries<AuditedEntity>()
-            .Where(e => e.State is EntityState.Added or EntityState.Modified)
-            .ToList();
-        if (entries.Count == 0) return;
-
-        var userId = CurrentUserId
-            ?? throw new InvalidOperationException("Can't save data without a signed-in user.");
-        var now = DateTime.UtcNow;
-
-        foreach (var entry in entries)
-        {
-            var audit = entry.Entity;
-            var keep = KeepAuditValues && entry.State == EntityState.Added;
-            if (entry.State == EntityState.Added)
-            {
-                if (!keep || audit.AddedDate == default) audit.AddedDate = now;
-                if (!keep || audit.AddedBy.Length == 0) audit.AddedBy = userId;
-                if (audit is IUserOwned owned) owned.UserId = userId;
-            }
-            else
-            {
-                // Who added a row, and when, never changes.
-                entry.Property(e => e.AddedDate).IsModified = false;
-                entry.Property(e => e.AddedBy).IsModified = false;
-            }
-            if (!keep || audit.ModifiedDate == default) audit.ModifiedDate = now;
-            if (!keep || audit.ModifiedBy.Length == 0) audit.ModifiedBy = userId;
-        }
     }
 }

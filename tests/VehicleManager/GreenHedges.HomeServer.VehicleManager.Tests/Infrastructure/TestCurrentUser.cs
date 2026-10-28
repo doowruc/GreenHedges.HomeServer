@@ -1,4 +1,4 @@
-using GreenHedges.HomeServer.VehicleManager.Services;
+using GreenHedges.HomeServer.Common.Web.Auth;
 
 namespace GreenHedges.HomeServer.VehicleManager.Tests.Infrastructure;
 

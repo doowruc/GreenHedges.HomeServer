@@ -2,7 +2,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using GreenHedges.HomeServer.VehicleManager.Backups;
+using GreenHedges.HomeServer.Common.Hosting;
+using GreenHedges.HomeServer.Common.Web.Backups;
 using GreenHedges.HomeServer.VehicleManager.Tests.Infrastructure;
 
 namespace GreenHedges.HomeServer.VehicleManager.Tests.Data;
@@ -16,6 +17,7 @@ public class SqlServerBackupSourceTests : DatabaseTest
                 ["ConnectionStrings:VehicleManager"] = connectionString
             }).Build(),
             Options.Create(options),
+            new CollectorIdentity("VehicleManager"),
             NullLogger<SqlServerBackupSource>.Instance);
 
     [SqlServerBackupFact]
