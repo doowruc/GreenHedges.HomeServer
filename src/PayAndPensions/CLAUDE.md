@@ -48,9 +48,10 @@ GreenHedges.HomeServer.PayAndPensions/
                Payslip, PayslipLine
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
-               each tax year's totals, as the spreadsheets worked them out; pure, unit tested)
+               each tax year's totals, as the spreadsheets worked them out; pure, unit tested),
+               Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
-  Pages/       Index (dashboard), People/*, Employers/*, PayElements/* and Payslips/* (per person, under
+  Pages/       Index (dashboard), People/*, Employers/*, PayElements/*, Payslips/* and Import/ (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
                Account/* (sign in/out), Shared/ (layout), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
@@ -78,3 +79,13 @@ GreenHedges.HomeServer.PayAndPensions/
   so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same amounts,
   pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the
   payslip row as changed, so its `RowVersion` guards the lines too.
+- **Import** (`Services/Import/`, `Pages/Import/`): upload, preview, import; nothing is kept between the steps but
+  the workbook itself, base64 in the preview's form (limit 2 MB), so the import reads exactly what was previewed.
+  Heading row with Year (the tax year's **end**), Period, Date; pay columns from Date to Gross; Transfer Date →
+  pension received; Notes (text only). Kinds come from the first row's Gross and Deductions `=SUM()` ranges (outside
+  both: employer contribution), else columns from Tax on are deductions. A repeated heading gets its kind added.
+  Formula cells are read as Excel saved them (`CachedValue`), or worked out if never saved (the tests' workbooks).
+  Rows without a date are skipped quietly; with a bad Period or a date outside the tax year, skipped with the reason.
+  Months the person already has are left alone; a column named like one of their pay elements uses it. The preview
+  checks each row's gross and net against the sheet's own. It's all one `SaveChanges`. Log counts only.
+- **Never commit a real workbook,** or put its figures in tests: `TestWorkbook` builds made-up ones in code.

@@ -22,13 +22,15 @@
             </select>
             <noscript><button type="submit" class="btn btn-sm btn-outline-secondary ms-1">Show</button></noscript>
         </form>
+        <a asp-page="/Import/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
         <a asp-page="Create" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-plus-lg me-1"></i>Add payslip</a>
     </div>
 </div>
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="alert alert-info">No payslips for @TaxYears.Label(year) yet. <a asp-page="Create" asp-route-personId="@Model.PersonId">Add one</a>.</div>
+    <div class="alert alert-info">No payslips for @TaxYears.Label(year) yet. <a asp-page="Create" asp-route-personId="@Model.PersonId">Add one</a>,
+        or <a asp-page="/Import/Index" asp-route-personId="@Model.PersonId">import a spreadsheet</a> of them.</div>
 }
 else
 {

@@ -6,7 +6,27 @@ A web app for my household's payslip history, and later our pension pots. Part o
 **So far** (build step 3): people, each person's employers, and the pay elements on their payslips (the lines, e.g.
 Salary, Tax, Employer pension, each with a kind and a category); and **payslips**, a table per tax year with the
 figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
-a few amounts change. The spreadsheet import, the dashboard, backups and deployment follow in the next steps.
+a few amounts change. And **importing** a person's existing spreadsheet (below). The dashboard, backups and deployment
+follow in the next steps.
+
+## Importing a spreadsheet
+
+**People** → the person's import button (or **Import** on their payslips page). Upload the workbook (.xlsx): its first
+sheet needs a heading row with **Year** (the year the tax year *ends*, so 2019 is 2018-19), **Period** (the tax
+month, 1 to 12) and **Date** (the pay date), then a column per kind of pay up to **Gross**. Columns after Gross are
+worked out here instead, except **Notes**; **Transfer Date** becomes each payslip's pension received date.
+
+The preview shows, before anything is saved:
+
+- how many payslips it would import, and which months are already there (those are left as they are, so an updated
+  workbook can be imported again);
+- rows it can't import and why, e.g. a date outside its tax year: correct the cell and import again, or add that
+  payslip by hand;
+- whether every row's gross and net match the spreadsheet's own;
+- what each column becomes: a pay element with a kind (from the sheet's Gross and Deductions formulas) and a guessed
+  category, both changeable. A heading used twice (an earnings Adj and a deductions Adj) gets its kind added. Name a
+  column after one of the person's pay elements to use it;
+- which employer the payslips are from: one of theirs, or a new one.
 
 ## Running it locally
 
