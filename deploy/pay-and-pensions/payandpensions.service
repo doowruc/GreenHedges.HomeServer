@@ -1,0 +1,46 @@
+# systemd unit for Pay & Pensions. Installed by deploy/pay-and-pensions/deploy.sh into /etc/systemd/system/.
+# The build goes in /opt/payandpensions (read-only); data-protection keys, backups and alert state in
+# /var/lib/payandpensions. Its database is on the SQL Server container (deploy/sqlserver/). Settings that stay off the
+# repo (connection string, Auth0, alert, heartbeat and off-site keys) go in /etc/payandpensions/env (root:root, 0600);
+# see deploy/pay-and-pensions/HOST-SETUP.md.
+[Unit]
+Description=Pay & Pensions (payslips and pensions web app)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=notify
+User=payandpensions
+Group=payandpensions
+# SQL Server writes the nightly backup into its shared folder, group sqlbackups (deploy/sqlserver/HOST-SETUP.md).
+SupplementaryGroups=sqlbackups
+WorkingDirectory=/var/lib/payandpensions
+ExecStart=/opt/payandpensions/GreenHedges.HomeServer.PayAndPensions
+EnvironmentFile=/etc/payandpensions/env
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=ASPNETCORE_ENVIRONMENT=Production
+# appsettings.json is in the install folder, not the working directory (which holds the data: keys, backups, alert
+# state).
+Environment=ASPNETCORE_CONTENTROOT=/opt/payandpensions
+# Localhost only: Caddy publishes it on the tailnet, with HTTPS, as https://pay.<home domain>.
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5081
+Environment=DataProtection__KeysFolder=keys
+Environment=Backup__Enabled=true
+Environment=Backup__SqlServerFolder=/var/opt/mssql/backups
+Environment=Backup__SqlServerFolderOnHost=/var/lib/sqlserver/backups
+# Logs, traces and metrics over OTLP to the telemetry stack (deploy/telemetry/), shown in Grafana. If it's down, the app
+# carries on and the telemetry is dropped.
+Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
+Restart=always
+RestartSec=30
+
+# Hardening. It reads SQL Server's backups folder (read-only under ProtectSystem=strict) and writes only its own.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/lib/payandpensions
+
+[Install]
+WantedBy=multi-user.target
