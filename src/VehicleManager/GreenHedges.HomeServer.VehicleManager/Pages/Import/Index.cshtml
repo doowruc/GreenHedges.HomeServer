@@ -3,7 +3,12 @@
 @{ ViewData["Title"] = "Import fuel history"; }
 
 <h1 class="h3 mb-3">Import fuel history</h1>
-<div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+@* "All" renders the box even with nothing in it (for client-side validation, which this page doesn't use), so only
+   when there's an error. *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+}
 
 @if (Model.Sheets.Count == 0)
 {
