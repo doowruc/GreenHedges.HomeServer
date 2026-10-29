@@ -158,6 +158,16 @@ public class ImportPagesTests(AppFactory app) : DatabaseTest, IClassFixture<AppF
     }
 
     [DatabaseFact]
+    public async Task The_error_box_only_shows_when_there_is_an_error()
+    {
+        var personId = await PersonAsync();
+        var client = app.ClientFor(UserId);
+
+        Assert.DoesNotContain("alert-danger", (await client.GetAsync($"/People/{personId}/Import")).Html);
+        Assert.Contains("alert-danger", (await PreviewAsync(client, personId, "not a spreadsheet"u8.ToArray())).Html);
+    }
+
+    [DatabaseFact]
     public async Task A_file_that_isnt_a_workbook_is_refused()
     {
         var personId = await PersonAsync();
