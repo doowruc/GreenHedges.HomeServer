@@ -2,7 +2,7 @@
 # Pull one service's backups from the host to this Mac. Run daily by launchd, or by hand to test (see
 # install-backup-pull.sh, which installs this as ~/.local/bin/<service>-pull-backups).
 # Uses a dedicated SSH key that the host restricts to read-only rsync of that service's backups folder.
-# Backups are <name>-<UTC time>.<extension>.gz: .db.gz for the collectors (SQLite), .bak.gz for Vehicle Manager (SQL Server).
+# Backups are <name>-<UTC time>.<extension>.gz: .db.gz for the collectors (SQLite), .bak.gz for the web apps (SQL Server).
 set -euo pipefail
 
 # Braces make bash read the whole script before running it, so editing the file mid-run can't break a run.
@@ -11,13 +11,13 @@ set -euo pipefail
 # The service comes from this script's installed name (<service>-pull-backups), and the settings from
 # the file the installer writes. Jobs installed before the scripts were shared set LIBRECOLLECTOR_* instead.
 NAME="$(basename "$0")"; NAME="${NAME%-pull-backups}"
-case "$NAME" in librecollector|weathercollector|vehiclemanager) ;; *) NAME=librecollector ;; esac
+case "$NAME" in librecollector|weathercollector|vehiclemanager|payandpensions) ;; *) NAME=librecollector ;; esac
 CONFIG="$HOME/.config/$NAME/backup-pull.env"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 HOST="${BACKUP_HOST:-${LIBRECOLLECTOR_HOST:-}}"
 REMOTE_USER="${BACKUP_USER:-${LIBRECOLLECTOR_USER:-}}"
 [ -n "$HOST" ] && [ -n "$REMOTE_USER" ] || {
-  case "$NAME" in vehiclemanager) ARG=vehicle-manager ;; *) ARG="${NAME%collector}" ;; esac
+  case "$NAME" in vehiclemanager) ARG=vehicle-manager ;; payandpensions) ARG=pay-and-pensions ;; *) ARG="${NAME%collector}" ;; esac
   echo "No settings for $NAME in $CONFIG: run deploy/mac/install-backup-pull.sh $ARG" >&2; exit 2; }
 DEST="${BACKUP_DIR:-${LIBRECOLLECTOR_BACKUP_DIR:-$HOME/Backups/LibreCollector}}"
 KEY="$HOME/.ssh/${NAME}_backup"

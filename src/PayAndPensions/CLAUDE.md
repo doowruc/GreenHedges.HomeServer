@@ -52,6 +52,8 @@ GreenHedges.HomeServer.PayAndPensions/
                Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
+  Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
+               BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
                PayElements/*, Payslips/*, Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
@@ -80,6 +82,11 @@ GreenHedges.HomeServer.PayAndPensions/
   the first rise. A year's change is on the **same tax months** of the year before, so a year in progress compares like
   for like.
 - Format text outside a request (services, the import's messages) with en-GB explicitly: CI runs in US English.
+- **Backups, alerts, heartbeat** as Vehicle Manager's, through Common (`AddBackups<SqlServerBackupSource>`,
+  `AddAlerting`, `AddHeartbeat`) with `CollectorIdentity("PayAndPensions")`: the backup's database is
+  `ConnectionStrings:PayAndPensions`, its file `payandpensions-latest.bak`, the off-site prefix `payandpensions`. All off
+  until configured; backups at 03:45. No scheduled jobs of its own, so the monitor only checks the database and
+  backups. The tests turn the monitor on (`AppFactory`), with nothing to send to.
 - **Payslip form:** one amount per pay element; blank means no line. Element and employer ids come back from the form,
   so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same amounts,
   pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the
