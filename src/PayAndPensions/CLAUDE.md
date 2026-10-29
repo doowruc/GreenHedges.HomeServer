@@ -30,6 +30,12 @@ dotnet test tests/PayAndPensions/GreenHedges.HomeServer.PayAndPensions.Tests   #
 docker compose up -d --wait  # local SQL Server (compose.yaml), shared with Vehicle Manager
 ```
 
+## Server
+
+`https://pay.<home domain>` on the home server: systemd `payandpensions` on `127.0.0.1:5081`, database
+`PayAndPensions` on the shared SQL Server, files in `deploy/pay-and-pensions/` (`HOST-SETUP.md` has every step).
+`deploy/pay-and-pensions/deploy.sh` really deploys: never run it to test it; check it with `bash -n` and by reading.
+
 ## Tests
 
 `GreenHedges.HomeServer.PayAndPensions.Tests` (in `tests/PayAndPensions/`, xUnit), laid out like Vehicle Manager's:

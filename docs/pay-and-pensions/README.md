@@ -10,7 +10,7 @@ a few amounts change. **Importing** a person's existing spreadsheet (below). The
 their latest payslip, the tax year so far and predicted, and charts of gross and net by month and by tax year. And
 **tax years**: every year's totals, with the change on the same months of the year before. And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
-(below). Deployment is the last step.
+(below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).
 
 ## Importing a spreadsheet
 
@@ -61,7 +61,8 @@ database on that server. Without it, the database and page tests are skipped.
 
 ## Backups, alerts and the heartbeat
 
-All off until configured, so a local copy does none of it. On the server (step 7 sets these up):
+All off until configured, so a local copy does none of it. On the server, [deploy/pay-and-pensions/HOST-SETUP.md](../../deploy/pay-and-pensions/HOST-SETUP.md)
+sets them up:
 
 | What | How | Settings |
 |---|---|---|

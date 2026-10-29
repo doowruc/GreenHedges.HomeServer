@@ -107,7 +107,7 @@ columns, and differences are listed.
 
 One branch and PR each:
 
-**Progress:** steps 1 (PR #47), 2 (PR #48), 3 (PR #50), 4 (PR #51), 5 (PR #52) and 6 done, and telemetry to Grafana (PR #49).
+**Progress:** steps 1 (PR #47), 2 (PR #48), 3 (PR #50), 4 (PR #51), 5 (PR #52), 6 (PR #53) and 7's deploy files done, and telemetry to Grafana (PR #49). Next: deploying it.
 
 1. **Shared groundwork.** Move what both web apps need out of Vehicle Manager into a shared project: the SQL Server
    backup source, Auth0 sign-in with `AllowedEmails`, the current user, audit columns and concurrency helpers.

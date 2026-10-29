@@ -51,6 +51,12 @@
 		reverse_proxy 127.0.0.1:5080
 	}
 
+	# Pay & Pensions (deploy/pay-and-pensions), the same way.
+	@pay host pay.{$HOME_DOMAIN}
+	handle @pay {
+		reverse_proxy 127.0.0.1:5081
+	}
+
 	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
 	@nightscout host nightscout.{$HOME_DOMAIN}
 	handle @nightscout {
