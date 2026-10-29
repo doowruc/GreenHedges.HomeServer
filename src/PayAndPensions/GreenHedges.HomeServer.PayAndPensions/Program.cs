@@ -1,10 +1,17 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using GreenHedges.HomeServer.Common.Alerts;
+using CommonBackupOptions = GreenHedges.HomeServer.Common.Backups.BackupOptions;
+using GreenHedges.HomeServer.Common.Heartbeat;
+using GreenHedges.HomeServer.Common.Hosting;
 using GreenHedges.HomeServer.Common.Web.Auth;
+using GreenHedges.HomeServer.Common.Web.Backups;
 using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.PayAndPensions.Data;
+using GreenHedges.HomeServer.PayAndPensions.Monitoring;
 using GreenHedges.HomeServer.PayAndPensions.Services;
 using GreenHedges.HomeServer.PayAndPensions.Services.Import;
 
@@ -38,7 +45,38 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<PayHistory>();
 builder.Services.AddScoped<PayslipImporter>();
 
+// Alert emails (through Resend) and the off-machine heartbeat (healthchecks.io), shared with the other services
+// (GreenHedges.HomeServer.Common). Both are off until configured: Alerts:ResendApiKey, From and To; Heartbeat:PingUrl.
+builder.Services.TryAddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(new CollectorIdentity("PayAndPensions"));
+builder.AddAlerting();
+builder.AddHeartbeat();
+builder.Services.AddOptions<PayAndPensionsAlertOptions>()
+    .BindConfiguration(AlertOptions.SectionName)
+    .Validate(o => o.DatabaseDownAfter > TimeSpan.Zero, "Alerts:DatabaseDownAfter must be positive.")
+    .ValidateOnStart();
+// Nightly database backups (03:45, after Vehicle Manager's), gzipped and kept 7, with age-encrypted off-site copies,
+// through Common as the other services. Off by default (Backup:Enabled): on the server, where SQL Server shares a folder
+// with the app. The database is ConnectionStrings:PayAndPensions (the CollectorIdentity's name).
+builder.Services.AddOptions<SqlServerBackupOptions>()
+    .BindConfiguration(CommonBackupOptions.SectionName)
+    .Validate(o => !builder.Configuration.GetValue<bool>("Backup:Enabled") || !string.IsNullOrWhiteSpace(o.SqlServerFolder),
+        "Backup:SqlServerFolder must be set when Backup:Enabled is true.")
+    .ValidateOnStart();
+builder.AddBackups<SqlServerBackupSource>();
+
+builder.Services.AddSingleton<AppHealth>();
+builder.Services.AddSingleton<IHeartbeatSource>(services => services.GetRequiredService<AppHealth>());
+builder.Services.AddSingleton<IDatabaseProbe, DatabaseProbe<AppDbContext>>();
+// The monitor probes the database every minute. On by default outside Development; Alerts:Monitor overrides it.
+if (builder.Configuration.GetValue("Alerts:Monitor", !builder.Environment.IsDevelopment()))
+    builder.Services.AddHostedService<PayAndPensionsAlertMonitor>();
+
 var app = builder.Build();
+
+// `--test-alert` sends one alert through the configured sender and exits, to check the Resend setup.
+if (await app.TrySendTestAlertAsync(args))
+    return;
 
 // Create the tables on first run and apply any pending migrations. The tests turn this off, so
 // only the real app changes the database's schema.

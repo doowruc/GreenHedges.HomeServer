@@ -91,7 +91,7 @@ GreenHedges.HomeServer.VehicleManager/
                js/spend-chart.js (dashboard fuel spending charts), favicon.svg/.ico + icons/ + site.webmanifest (made by
                ../make-icons.py: Bootstrap Icons' car on the navbar's dark grey; re-run it to change them)
   Monitoring/  AppHealth (database probes and job runs; the heartbeat source), VehicleManagerAlertMonitor (the alert rules),
-               DatabaseProbe/IDatabaseProbe, VehicleManagerAlertOptions, ScheduledJob, JobRun
+               VehicleManagerAlertOptions, ScheduledJob, JobRun (the database probe is Common.Web's)
 ```
 
 Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web/` (tests in `tests/Common/`):
@@ -99,7 +99,7 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 ```
   Auth/        AllowedUsers, CurrentUser, SignIn (AddAllowedUserSignIn: Auth0 + the AllowedUser policy)
   Data/        AuditedEntity, IUserOwned, AuditedDbContext (audit stamping; AppDbContext's base), ConcurrencyExtensions,
-               DatabaseMigrator, DatabaseHealthCheck<TContext>
+               DatabaseMigrator, DatabaseHealthCheck<TContext>, DatabaseProbe<TContext> (+ IDatabaseProbe, for the alert monitors)
   Backups/     SqlServerBackupSource + SqlServerBackupOptions: the nightly SQL Server backup for Common's BackupService
   Hosting/     WebAppHosting: RequiredSetting, AddForwardedHeaders (behind Caddy), AddLastingDataProtection;
                WebAppTelemetry: OpenTelemetry over OTLP when OTEL_EXPORTER_OTLP_ENDPOINT is set

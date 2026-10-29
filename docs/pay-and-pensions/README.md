@@ -8,8 +8,9 @@ Salary, Tax, Employer pension, each with a kind and a category); and **payslips*
 figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
 a few amounts change. **Importing** a person's existing spreadsheet (below). The **dashboard**, one person at a time:
 their latest payslip, the tax year so far and predicted, and charts of gross and net by month and by tax year. And
-**tax years**: every year's totals, with the change on the same months of the year before. Backups and deployment
-follow in the next steps.
+**tax years**: every year's totals, with the change on the same months of the year before. And, as Vehicle Manager,
+nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
+(below). Deployment is the last step.
 
 ## Importing a spreadsheet
 
@@ -57,6 +58,18 @@ It needs SQL Server and an Auth0 application, like Vehicle Manager.
 
 `ConnectionStrings:PayAndPensionsTests` is for the tests: each run creates (and a later run drops) its own throwaway
 database on that server. Without it, the database and page tests are skipped.
+
+## Backups, alerts and the heartbeat
+
+All off until configured, so a local copy does none of it. On the server (step 7 sets these up):
+
+| What | How | Settings |
+|---|---|---|
+| Nightly backup | At 03:45 (after Vehicle Manager's), SQL Server backs up `ConnectionStrings:PayAndPensions` into its shared folder; Common's `BackupService` gzips it to `backups/payandpensions-<UTC>.bak.gz` and keeps 7 | `Backup:Enabled`, `Backup:SqlServerFolder` (required when on), `Backup:SqlServerFolderOnHost` |
+| Off-site | Each backup `age`-encrypted to the shared bucket under `payandpensions/`, by the write-only IAM user `<stack>-payandpensions` ([deploy/aws/](../../deploy/aws/README.md)) | `Offsite:Bucket`, `Region`, `AccessKeyId`, `SecretAccessKey`, `AgeRecipient` |
+| Mac pull | Daily at 09:30 into `~/Backups/PayAndPensions`: `deploy/mac/install-backup-pull.sh pay-and-pensions` | `deploy/local.env` |
+| Alerts | Resend emails when the database doesn't answer for 5 minutes, or backups or off-site copies fail; resolved emails when they recover. `--test-alert` sends one and exits | `Alerts:ResendApiKey`, `From`, `To` |
+| Heartbeat | A healthchecks.io ping every 5 minutes while the database answers | `Heartbeat:PingUrl` |
 
 ## Privacy
 
