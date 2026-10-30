@@ -12,7 +12,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.Payslips;
 /// </summary>
 public class IndexModel(AppDbContext db) : PersonPageModel(db)
 {
-    public record Column(int Id, string Name, PayElementKind Kind);
+    /// <param name="EndsGroup">The last column of its kind's group, so a separator follows it.</param>
+    public record Column(int Id, string Name, PayElementKind Kind, PayCategory Category, bool EndsGroup);
 
     public record Row(int Id, int TaxMonth, DateOnly PayDate, string Employer, DateOnly? PensionReceivedDate, string? Notes,
         IReadOnlyDictionary<int, decimal> Amounts, PayslipFigures Figures);
@@ -32,6 +33,9 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
 
     /// <summary>Whether the payslips are from more than one employer, so it's worth a column.</summary>
     public bool ManyEmployers { get; private set; }
+
+    /// <summary>Whether any payslip that year has a pension received date, so it's worth a column.</summary>
+    public bool ShowPensionReceived { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -65,11 +69,18 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
 
         Rows = shown.Select((s, i) => new Row(s.Id, s.TaxMonth, s.PayDate, s.Employer, s.PensionReceivedDate, s.Notes,
             s.Lines.ToDictionary(l => l.PayElementId, l => l.Amount), figures[i])).ToList();
-        Columns = shown.SelectMany(s => s.Lines)
+        ManyEmployers = shown.Select(s => s.Employer).Distinct().Count() > 1;
+        ShowPensionReceived = shown.Any(s => s.PensionReceivedDate is not null);
+        // Earnings, deductions, then the employer's (with the pension received date after them, when shown), each group
+        // ending in a separator.
+        var lines = shown.SelectMany(s => s.Lines)
             .DistinctBy(l => l.PayElementId)
             .OrderBy(l => l.Kind).ThenBy(l => l.SortOrder).ThenBy(l => l.Name)
-            .Select(l => new Column(l.PayElementId, l.Name, l.Kind)).ToList();
-        ManyEmployers = shown.Select(s => s.Employer).Distinct().Count() > 1;
+            .ToList();
+        Columns = lines.Select((l, i) => new Column(l.PayElementId, l.Name, l.Kind, l.Category,
+                EndsGroup: (i == lines.Count - 1 || lines[i + 1].Kind != l.Kind) &&
+                           !(l.Kind == PayElementKind.EmployerContribution && ShowPensionReceived)))
+            .ToList();
 
         // The totals compare with the year before, whose payslips are all here too.
         Totals = PayCalculations.TotalsByTaxYear(payslips

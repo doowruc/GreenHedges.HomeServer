@@ -11,6 +11,11 @@
 .payslip-table { font-size: .85rem; white-space: nowrap; }
 .payslip-table td.small { white-space: normal; min-width: 12rem; }
 .payslip-table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; background: var(--bs-body-bg); }
+/* Its sections (Payslips/Index.cshtml): a separator after each one's last column. */
+.payslip-table > :is(thead, tbody) > tr > .section-end { border-right: 2px solid var(--bs-border-color); }
+
+/* A value with more in its tooltip (title): underlined with dots, as is usual. */
+.has-tip { text-decoration: underline dotted; text-underline-offset: .2em; cursor: help; }
 
 /* Chart container: Chart.js fills it (maintainAspectRatio: false), so charts stay readable on phones. */
 .chart-box { position: relative; height: clamp(16rem, 35vw, 22rem); }
