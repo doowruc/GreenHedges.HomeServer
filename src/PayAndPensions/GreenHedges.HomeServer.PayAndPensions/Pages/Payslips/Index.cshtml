@@ -37,27 +37,27 @@ else
 {
     <div class="card shadow-sm">
         <div class="table-responsive">
+            @* Sections, each ending in a separator (.section-end): the payslip; earnings; deductions; the employer's and
+               when the pension arrived; gross and deductions; net; the worked-out figures; notes. *@
             <table class="table table-sm table-hover align-middle mb-0 payslip-table">
                 <thead class="table-head">
                     <tr>
                         <th>Month</th>
-                        <th>Paid</th>
-                        @if (Model.ManyEmployers) { <th>Employer</th> }
+                        <th class="@(Model.ManyEmployers ? null : "section-end")">Paid</th>
+                        @if (Model.ManyEmployers) { <th class="section-end">Employer</th> }
                         @foreach (var c in Model.Columns)
                         {
-                            <th class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null)">@c.Name</th>
+                            <th class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null) @(c.EndsGroup ? "section-end" : null)">@c.Name</th>
                         }
+                        @if (Model.ShowPensionReceived) { <th class="section-end">Pension received</th> }
                         <th class="text-end">Gross</th>
-                        <th class="text-end">Deductions</th>
-                        <th class="text-end">Net</th>
+                        <th class="text-end section-end">Deductions</th>
+                        <th class="text-end section-end">Net</th>
                         <th class="text-end">Annual salary</th>
                         <th class="text-end">Rise</th>
-                        <th class="text-end" title="Employee pension as a % of salary">EE pension</th>
-                        <th class="text-end" title="Employer pension as a % of salary">ER pension</th>
                         <th class="text-end">Take-home</th>
                         <th class="text-end">Year to date</th>
-                        <th class="text-end" title="12 ÷ tax month × year to date">Predicted</th>
-                        <th>Pension received</th>
+                        <th class="text-end section-end" title="12 ÷ tax month × year to date">Predicted</th>
                         <th>Notes</th>
                         <th></th>
                     </tr>
@@ -68,23 +68,25 @@ else
                     var f = r.Figures;
                     <tr>
                         <td class="text-nowrap" title="Tax month @r.TaxMonth">@r.TaxMonth @TaxYears.MonthName(r.TaxMonth)[..3]</td>
-                        <td class="text-nowrap">@r.PayDate.ToString("dd/MM/yy")</td>
-                        @if (Model.ManyEmployers) { <td>@r.Employer</td> }
+                        <td class="text-nowrap @(Model.ManyEmployers ? null : "section-end")">@r.PayDate.ToString("dd/MM/yy")</td>
+                        @if (Model.ManyEmployers) { <td class="section-end">@r.Employer</td> }
                         @foreach (var c in Model.Columns)
                         {
-                            <td class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null)">@Money(r.Amounts.TryGetValue(c.Id, out var a) ? a : null)</td>
+                            var amount = r.Amounts.TryGetValue(c.Id, out var a) ? a : (decimal?)null;
+                            // A pension amount's tooltip is it as a % of the month's salary.
+                            var tip = c.Category == PayCategory.Pension && amount is { } p && f.Salary != 0
+                                ? $"{(p / f.Salary).ToString("P1")} of salary" : null;
+                            <td class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null) @(c.EndsGroup ? "section-end" : null)">@if (tip is null) {@Money(amount)} else {<span class="has-tip" title="@tip">@Money(amount)</span>}</td>
                         }
+                        @if (Model.ShowPensionReceived) { <td class="text-nowrap section-end">@r.PensionReceivedDate?.ToString("dd/MM/yy")</td> }
                         <td class="text-end">@Money(f.Gross)</td>
-                        <td class="text-end">@Money(f.Deductions)</td>
-                        <td class="text-end fw-semibold">@Money(f.Net)</td>
+                        <td class="text-end section-end">@Money(f.Deductions)</td>
+                        <td class="text-end fw-semibold section-end">@Money(f.Net)</td>
                         <td class="text-end">@Money(f.AnnualSalary)</td>
-                        <td class="text-end text-nowrap">@if (f.Rise is { } rise) {<span title="@Percent(f.RisePercent)">@Money(rise)</span>}</td>
-                        <td class="text-end">@Percent(f.EmployeePensionPercent)</td>
-                        <td class="text-end">@Percent(f.EmployerPensionPercent)</td>
+                        <td class="text-end text-nowrap">@if (f.Rise is { } rise) {<span class="has-tip" title="@((f.RisePercent ?? 0) >= 0 ? "+" : "")@Percent(f.RisePercent) on the annual salary before">@Money(rise)</span>}</td>
                         <td class="text-end">@Percent(f.TakeHomePercent)</td>
                         <td class="text-end">@Money(f.YearToDateGross)</td>
-                        <td class="text-end">@Money(f.PredictedAnnualGross)</td>
-                        <td class="text-nowrap">@r.PensionReceivedDate?.ToString("dd/MM/yy")</td>
+                        <td class="text-end section-end">@Money(f.PredictedAnnualGross)</td>
                         <td class="small">@r.Notes@if (f.BonusPercent is { } bonus) {<span class="text-body-secondary">@(r.Notes is null ? "" : " · ")bonus @Percent(bonus)</span>}</td>
                         <td class="text-end text-nowrap">
                             <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>

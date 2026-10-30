@@ -219,6 +219,45 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.DoesNotContain(">Employer pension<", text);   // not used this year, so no column
     }
 
+    /// <summary>The table's headings in order, each marked "|" if a section separator follows it.</summary>
+    private static List<string> Headings(PageResponse page) =>
+        System.Text.RegularExpressions.Regex.Matches(
+                System.Text.RegularExpressions.Regex.Match(page.Html, "<thead.*?</thead>", System.Text.RegularExpressions.RegexOptions.Singleline).Value,
+                "<th[^>]*?(section-end)?[^>]*>([^<]*)</th>")
+            .Select(m => m.Groups[2].Value + (m.Value.Contains("section-end") ? " |" : ""))
+            .Where(h => h.Length > 0)
+            .ToList();
+
+    [DatabaseFact]
+    public async Task The_table_is_in_sections_with_pension_percentages_in_tooltips()
+    {
+        var person = await PersonAsync();
+        await using (var db = Db())
+        {
+            await TestData.AddPayslipAsync(db, person, 2026, 1, ("Salary", 3000m), ("Tax", 500m), ("Pension", 150m), ("Employer pension", 225m));
+            await TestData.AddPayslipAsync(db, person, 2026, 2, ("Salary", 3300m), ("Tax", 560m), ("Pension", 165m), ("Employer pension", 247.5m));
+        }
+        var client = app.ClientFor(UserId);
+        var url = $"/People/{person.Id}/Payslips?year=2026";
+
+        var page = await client.GetAsync(url);
+
+        Assert.Equal(
+            ["Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
+             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |", "Notes"],
+            Headings(page));
+        Assert.Contains("title=\"5.0% of salary\"", page.Text);         // the employee's pension
+        Assert.Contains("title=\"7.5% of salary\"", page.Text);         // the employer's
+        Assert.Contains("title=\"+10.0% on the annual salary before\"", page.Text);   // the rise
+        Assert.DoesNotContain("EE pension", page.Text);
+
+        // With a pension received date that year, it comes after the employer's columns, ending their section.
+        await using (var db = Db())
+            await db.Payslips.Where(s => s.TaxMonth == 2).ExecuteUpdateAsync(s => s.SetProperty(p => p.PensionReceivedDate, new DateOnly(2026, 6, 9)));
+        var headings = Headings(await client.GetAsync(url));
+        Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[4..8]);
+    }
+
     [DatabaseFact]
     public async Task Another_users_or_persons_payslip_is_not_found()
     {
