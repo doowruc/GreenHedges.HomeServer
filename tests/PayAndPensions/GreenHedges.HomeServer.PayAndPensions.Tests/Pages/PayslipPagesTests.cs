@@ -244,7 +244,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
 
         Assert.Equal(
             ["Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
-             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |", "Notes"],
+             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |"],
             Headings(page));
         Assert.Contains("title=\"5.0% of salary\"", page.Text);         // the employee's pension
         Assert.Contains("title=\"7.5% of salary\"", page.Text);         // the employer's
@@ -256,6 +256,29 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
             await db.Payslips.Where(s => s.TaxMonth == 2).ExecuteUpdateAsync(s => s.SetProperty(p => p.PensionReceivedDate, new DateOnly(2026, 6, 9)));
         var headings = Headings(await client.GetAsync(url));
         Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[4..8]);
+    }
+
+    [DatabaseFact]
+    public async Task A_bonus_shows_its_share_of_salary_and_notes_show_on_the_month()
+    {
+        var person = await PersonAsync();
+        await using (var db = Db())
+        {
+            db.PayElements.Add(new PayElement { PersonId = person.Id, Name = "Xmas bonus", Kind = PayElementKind.Earning, Category = PayCategory.Bonus, SortOrder = 15 });
+            await db.SaveChangesAsync();
+            person = await db.People.Include(p => p.Employers).Include(p => p.PayElements).SingleAsync(p => p.Id == person.Id);
+            var payslip = await TestData.AddPayslipAsync(db, person, 2026, 9, ("Salary", 3000m), ("Xmas bonus", 3600m), ("Tax", 1200m));
+            payslip.Notes = "Includes the Christmas bonus";
+            await TestData.AddPayslipAsync(db, person, 2026, 10, ("Salary", 3000m), ("Xmas bonus", 0m), ("Tax", 600m));
+            await db.SaveChangesAsync();
+        }
+
+        var page = await app.ClientFor(UserId).GetAsync($"/People/{person.Id}/Payslips?year=2026");
+
+        Assert.Contains("title=\"10.0% of annual salary\"", page.Text);   // 3,600 of 36,000
+        Assert.DoesNotContain("title=\"0.0% of annual salary\"", page.Text);  // a zero has nothing to say
+        Assert.Contains("title=\"Includes the Christmas bonus\"", page.Text);
+        Assert.DoesNotContain(">Notes<", page.Html);
     }
 
     [DatabaseFact]
