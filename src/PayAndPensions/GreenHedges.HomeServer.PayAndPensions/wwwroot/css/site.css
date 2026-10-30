@@ -22,3 +22,6 @@
 
 .stat-card .value { font-size: 1.4rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .stat-card .label { font-size: .8rem; color: var(--bs-secondary-color); text-transform: uppercase; letter-spacing: .03em; }
+
+/* The navbar's people switcher (Shared/Components/PersonSwitcher): pills, side by side even in the collapsed menu. */
+.person-switcher { flex-direction: row; gap: .25rem; }

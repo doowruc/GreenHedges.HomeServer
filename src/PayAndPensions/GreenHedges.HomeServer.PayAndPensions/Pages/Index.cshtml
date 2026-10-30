@@ -3,25 +3,13 @@
 @using GreenHedges.HomeServer.PayAndPensions.Services
 @{
     ViewData["Title"] = "Dashboard";
+    // The navbar's people switcher shows who's on show (the dashboard's person isn't in its route).
+    ViewData[GreenHedges.HomeServer.PayAndPensions.Pages.Shared.PersonSwitcherViewComponent.CurrentPersonKey] = Model.Shown?.Id;
     static string Money(decimal value) => "£" + value.ToString("N2");
     var p = Model.Shown;
 }
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Dashboard</h1>
-    @if (Model.People.Count > 1)
-    {
-        <ul class="nav nav-pills">
-            @foreach (var person in Model.People)
-            {
-                <li class="nav-item">
-                    <a asp-page="/Index" asp-route-person="@person.Id" class="nav-link py-1 @(person.Id == p?.Id ? "active" : null)"
-                       aria-current="@(person.Id == p?.Id ? "page" : null)">@person.Name</a>
-                </li>
-            }
-        </ul>
-    }
-</div>
+<h1 class="h3 mb-3">Dashboard@(p is null ? null : $": {p.Name}")</h1>
 
 @if (p is null)
 {

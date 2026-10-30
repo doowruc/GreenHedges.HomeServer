@@ -64,9 +64,11 @@ GreenHedges.HomeServer.PayAndPensions/
                PayElements/*, Payslips/*, Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
-               Account/* (sign in/out), Shared/ (layout), Names (name tidying)
+               Account/* (sign in/out), Shared/ (layout; PersonSwitcherViewComponent, the navbar's people switcher:
+               the same page for another person), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
-               on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager)
+               on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager), js/tooltips.js (every
+               title="…" becomes a Bootstrap tooltip: pages just write title)
 ```
 
 ## Data rules

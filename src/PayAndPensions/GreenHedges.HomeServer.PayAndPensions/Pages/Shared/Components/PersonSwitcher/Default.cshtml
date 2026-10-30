@@ -1,0 +1,9 @@
+@model List<GreenHedges.HomeServer.PayAndPensions.Pages.Shared.PersonSwitcherViewComponent.Option>
+<ul class="navbar-nav nav-pills person-switcher" aria-label="Person">
+    @foreach (var option in Model)
+    {
+        <li class="nav-item">
+            <a href="@option.Url" class="nav-link py-1 px-2 @(option.Current ? "active" : null)" aria-current="@(option.Current ? "page" : null)">@option.Name</a>
+        </li>
+    }
+</ul>
