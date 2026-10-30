@@ -68,7 +68,9 @@ GreenHedges.HomeServer.PayAndPensions/
                the same page for another person), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
                on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager), js/tooltips.js (every
-               title="…" becomes a Bootstrap tooltip: pages just write title)
+               title="…" becomes a Bootstrap tooltip: pages just write title), favicon.svg/.ico + icons/ + site.webmanifest
+               (made by ../make-icons.py from Bootstrap Icons' cash-stack on the navbar's dark grey; re-run it to change
+               them: needs rsvg-convert, brew install librsvg)
 ```
 
 ## Data rules
