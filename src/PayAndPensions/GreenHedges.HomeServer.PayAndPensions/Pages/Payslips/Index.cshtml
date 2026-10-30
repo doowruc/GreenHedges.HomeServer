@@ -48,7 +48,7 @@ else
                         @if (Model.ManyEmployers) { <th class="section-end">Employer</th> }
                         @foreach (var c in Model.Columns)
                         {
-                            <th class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null) @(c.EndsGroup ? "section-end" : null)">@c.Name</th>
+                            <th class="text-end @(c.EndsGroup ? "section-end" : null)">@c.Name</th>
                         }
                         @if (Model.ShowPensionReceived) { <th class="section-end">Pension received</th> }
                         <th class="text-end">Gross</th>
@@ -78,7 +78,7 @@ else
                                 : c.Category == PayCategory.Pension && f.Salary != 0 ? $"{(p / f.Salary).ToString("P1")} of salary"
                                 : c.Category == PayCategory.Bonus && c.Kind == PayElementKind.Earning && f.AnnualSalary != 0 ? $"{(p / f.AnnualSalary).ToString("P1")} of annual salary"
                                 : null;
-                            <td class="text-end @(c.Kind == PayElementKind.EmployerContribution ? "text-body-secondary" : null) @(c.EndsGroup ? "section-end" : null)">@if (tip is null) {@Money(amount)} else {<span class="has-tip" title="@tip">@Money(amount)</span>}</td>
+                            <td class="text-end @(c.EndsGroup ? "section-end" : null)">@if (tip is null) {@Money(amount)} else {<span class="has-tip" title="@tip">@Money(amount)</span>}</td>
                         }
                         @if (Model.ShowPensionReceived) { <td class="text-nowrap section-end">@r.PensionReceivedDate?.ToString("dd/MM/yy")</td> }
                         <td class="text-end">@Money(f.Gross)</td>

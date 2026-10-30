@@ -250,6 +250,8 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Contains("title=\"7.5% of salary\"", page.Text);         // the employer's
         Assert.Contains("title=\"+10.0% on the annual salary before\"", page.Text);   // the rise
         Assert.DoesNotContain("EE pension", page.Text);
+        Assert.DoesNotContain("text-body-secondary", System.Text.RegularExpressions.Regex.Match(page.Html, "<table.*?</table>", System.Text.RegularExpressions.RegexOptions.Singleline).Value
+            .Replace("bi-sticky ms-1 text-body-secondary", ""));   // the employer's columns are ordinary text
 
         // With a pension received date that year, it comes after the employer's columns, ending their section.
         await using (var db = Db())
