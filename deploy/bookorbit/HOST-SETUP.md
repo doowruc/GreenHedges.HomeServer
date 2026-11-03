@@ -20,11 +20,12 @@ sudo useradd --system --home-dir /var/lib/bookorbit --create-home --shell /usr/s
 sudo usermod -aG bookorbit "$USER"
 ```
 
-Log out and back in for the group to apply. The app's data, and an empty folder for PostgreSQL (its container takes
-it over on first start):
+Log out and back in for the group to apply. The app's data, and an empty folder for PostgreSQL, owned by `postgres` in
+its image (uid 999). Its container only takes over the `pgdata` folder it creates inside, so it must be able to get
+into this one:
 
 ```bash
-sudo install -d -m 0750 -o bookorbit -g bookorbit /var/lib/bookorbit/app && sudo install -d -m 0700 /var/lib/bookorbit/postgres
+sudo install -d -m 0750 -o bookorbit -g bookorbit /var/lib/bookorbit/app && sudo install -d -m 0700 -o 999 -g 999 /var/lib/bookorbit/postgres
 ```
 
 ```bash
