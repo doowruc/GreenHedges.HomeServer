@@ -1,0 +1,12 @@
+# Starts bookorbit-backup.service nightly at 04:15, clear of the other services' backups (03:30 Weather, 03:45 Pay &
+# Pensions). Persistent: a night missed while the server was off runs at the next boot. Installed and enabled by
+# deploy/bookorbit/deploy-bookorbit.sh.
+[Unit]
+Description=Nightly BookOrbit database backup
+
+[Timer]
+OnCalendar=*-*-* 04:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,20 @@
+# BookOrbit's nightly database backup (backup.sh), started by bookorbit-backup.timer. Installed by
+# deploy/bookorbit/deploy-bookorbit.sh into /etc/systemd/system/. Runs as root, since it uses docker (doowruc isn't in
+# the docker group); writes only the backups folder. Settings: /etc/bookorbit/backup.env (root, 0600). Run it now with
+# `sudo systemctl start bookorbit-backup.service`; its output is in `journalctl -u bookorbit-backup`.
+[Unit]
+Description=BookOrbit database backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/bookorbit/backup.sh
+EnvironmentFile=/etc/bookorbit/backup.env
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/var/lib/bookorbit/backups

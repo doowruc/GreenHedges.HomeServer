@@ -46,6 +46,11 @@ Parameters:
     Default: payandpensions
     Description: Key prefix for Pay and Pensions' copies (its Offsite:Prefix setting).
     AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  BookOrbitPrefix:
+    Type: String
+    Default: bookorbit
+    Description: Key prefix for BookOrbit's database dumps (OFFSITE_PREFIX in its backup.env).
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
 
 Resources:
   OffsiteBucket:
@@ -187,6 +192,25 @@ Resources:
                 Action: s3:PutObject
                 Resource: !Sub "${OffsiteBucket.Arn}/${PayAndPensionsPrefix}/*"
 
+  BookOrbitUploader:
+    Type: AWS::IAM::User
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: BookOrbit's off-site key (its backup script, deploy/bookorbit/backup.sh); same shape as LibreUploader
+        must:
+          - s3:PutObject on its own prefix only
+    Properties:
+      UserName: !Sub "${AWS::StackName}-bookorbit"
+      Policies:
+        - PolicyName: UploadOffsiteBackupsOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: UploadOffsiteBackupsOnly
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${OffsiteBucket.Arn}/${BookOrbitPrefix}/*"
+
 Outputs:
   BucketName:
     Description: Offsite:Bucket for every service.
@@ -203,3 +227,6 @@ Outputs:
   PayAndPensionsUser:
     Description: IAM user to create Pay and Pensions' access key for.
     Value: !Ref PayAndPensionsUploader
+  BookOrbitUser:
+    Description: IAM user to create BookOrbit's access key for.
+    Value: !Ref BookOrbitUploader
