@@ -107,8 +107,100 @@ per series), **Folder as Book** for ebooks and audiobooks (a folder per book). S
 
 ## Backups
 
-Not yet: a nightly database dump with an off-site copy comes next. The books themselves aren't backed up here; keep
-the originals.
+Every night at 04:15, [`backup.sh`](backup.sh) (run by `bookorbit-backup.timer`) dumps the database into
+`/var/lib/bookorbit/backups` (`bookorbit-<time>.dump`, 7 kept), checks the dump reads back, uploads an `age`-encrypted
+copy to the off-site bucket under `bookorbit/`, and pings healthchecks.io, which emails if a night fails or is missed.
+The deploy script installs and enables it. Only the database: the books themselves aren't backed up here, so keep the
+originals.
+
+### 1. Backups folder (on the server)
+
+Readable by you (group `bookorbit`), not the app:
+
+```bash
+sudo install -d -m 2750 -g bookorbit /var/lib/bookorbit/backups
+```
+
+### 2. Off-site user (on the Mac)
+
+The off-site stack ([deploy/aws](../aws/README.md)) has a write-only user for BookOrbit, `<stack>-bookorbit`.
+Update the stack (the parameters keep their values):
+
+```bash
+aws cloudformation deploy --region eu-west-2 --stack-name greenhedges-offsite --template-file deploy/aws/offsite.yaml --capabilities CAPABILITY_NAMED_IAM
+```
+
+Then create its access key ("Application running outside AWS") in the console, **IAM → Users →
+`greenhedges-offsite-bookorbit` → Security credentials → Create access key**, straight into your password manager
+("Home server BookOrbit off-site key").
+
+### 3. Heartbeat
+
+In healthchecks.io, add a check "BookOrbit backup": period **1 day**, grace **2 hours**. Copy its ping URL.
+
+### 4. Settings (on the server)
+
+The bucket, region and `age` public key are the ones the other services use; copy them from one of their env files
+(here Vehicle Manager's), renamed:
+
+```bash
+sudo install -m 0600 /dev/null /etc/bookorbit/backup.env && sudo sed -n -e 's/^Offsite__Bucket=/OFFSITE_BUCKET=/p' -e 's/^Offsite__Region=/OFFSITE_REGION=/p' -e 's/^Offsite__AgeRecipient=/OFFSITE_AGE_RECIPIENT=/p' /etc/vehiclemanager/env | sudo tee /etc/bookorbit/backup.env > /dev/null
+```
+
+Then add the access key and the ping URL, pasted from your password manager and healthchecks.io
+([`backup.env.example`](backup.env.example) has the names):
+
+```bash
+sudoedit /etc/bookorbit/backup.env
+```
+
+```ini
+OFFSITE_ACCESS_KEY_ID=AKIA…
+OFFSITE_SECRET_ACCESS_KEY=…
+HEARTBEAT_PING_URL=https://hc-ping.com/<uuid>
+```
+
+### 5. Deploy and try it
+
+Re-run `deploy/bookorbit/deploy-bookorbit.sh` on the Mac: it installs the script and timer and shows the next run.
+Then run a backup now, on the server:
+
+```bash
+sudo systemctl start bookorbit-backup.service && journalctl -u bookorbit-backup -n 10 --no-pager
+```
+
+It shows `Backed up bookorbit-….dump`, then `Off-site copy uploaded: s3://…/bookorbit/bookorbit-….dump.age`, and the
+healthchecks.io check turns green.
+
+## Restoring
+
+From a local dump (newest last):
+
+```bash
+ls -l /var/lib/bookorbit/backups
+```
+
+Or from the off-site copy: download `bookorbit/bookorbit-<time>.dump.age` from the bucket (it may first need restoring
+from Glacier Deep Archive, up to 12 hours), decrypt it on the Mac with the `age` private key from your password manager
+(`age -d -i <key file> -o bookorbit.dump bookorbit-<time>.dump.age`), and copy it to the server.
+
+Then stop the app, restore over the database, and start it again (on the server):
+
+```bash
+sudo docker compose -f /opt/bookorbit/compose.yaml stop app
+```
+
+```bash
+sudo docker compose -f /opt/bookorbit/compose.yaml exec -T postgres pg_restore -U bookorbit -d bookorbit --clean --if-exists --no-owner < /var/lib/bookorbit/backups/bookorbit-<time>.dump
+```
+
+```bash
+sudo docker compose -f /opt/bookorbit/compose.yaml start app
+```
+
+If the whole server is rebuilt: set it up as above with the same `JWT_SECRET` if you have it (otherwise everyone signs
+in again), let the first start create an empty database, then restore. Covers and other app data in
+`/var/lib/bookorbit/app` aren't backed up: refresh covers from the libraries.
 
 ## Updating
 

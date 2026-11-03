@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install or update BookOrbit on the host: its compose file, then pull the images, (re)start it and check it answers.
+# Install or update BookOrbit on the host: its compose file, then pull the images, (re)start it and check it answers;
+# and its nightly database backup (backup.sh, with its systemd service and timer).
 # Run on the dev machine:  deploy/bookorbit/deploy-bookorbit.sh [user@host]
 # The host defaults to COLLECTORS_SSH (or LIBRECOLLECTOR_SSH) from deploy/local.env (see local.env.example).
 # The host must be prepared first (deploy/bookorbit/HOST-SETUP.md). You'll be asked for your sudo password on the host.
@@ -21,10 +22,11 @@ SSH_OPTS=(-o ControlMaster=auto -o "ControlPath=$CONTROL_DIR/%C" -o ControlPersi
 cleanup() { ssh "${SSH_OPTS[@]}" -O exit "$HOST" 2>/dev/null || true; rm -rf "$CONTROL_DIR"; }
 trap cleanup EXIT
 
-echo "==> Copying BookOrbit's compose file to $HOST"
+echo "==> Copying BookOrbit's files to $HOST"
 ssh "${SSH_OPTS[@]}" -fN "$HOST"
 ssh "${SSH_OPTS[@]}" "$HOST" 'rm -rf ~/bookorbit-release && mkdir ~/bookorbit-release'
-scp -q "${SSH_OPTS[@]}" "$HERE/compose.yaml" "$HOST:bookorbit-release/"
+scp -q "${SSH_OPTS[@]}" "$HERE/compose.yaml" "$HERE/backup.sh" "$HERE/bookorbit-backup.service" "$HERE/bookorbit-backup.timer" \
+  "$HOST:bookorbit-release/"
 
 echo "==> Validating, installing and starting on $HOST"
 ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
@@ -34,11 +36,16 @@ ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
   done
   sudo test -d /var/lib/bookorbit/app -a -d /var/lib/bookorbit/postgres || { echo "Missing /var/lib/bookorbit/app or /postgres (see HOST-SETUP.md)"; exit 1; }
   [ "$(sudo stat -c %u /var/lib/bookorbit/postgres)" = 999 ] || { echo "/var/lib/bookorbit/postgres must be owned by uid 999, PostgreSQL in its image (see HOST-SETUP.md)"; exit 1; }
+  sudo test -d /var/lib/bookorbit/backups -a -f /etc/bookorbit/backup.env || { echo "Missing /var/lib/bookorbit/backups or /etc/bookorbit/backup.env (see HOST-SETUP.md, \"Backups\")"; exit 1; }
   # Without the drive, the app would start on an empty /srv/books folder on the root disk.
   mountpoint -q /srv/books || { echo "/srv/books is not mounted: is the USB drive plugged in and unlocked?"; exit 1; }
   sudo docker compose -f ~/bookorbit-release/compose.yaml config -q
   sudo install -d -m 0755 /opt/bookorbit
   sudo install -m 0644 -o root -g root ~/bookorbit-release/compose.yaml /opt/bookorbit/compose.yaml
+  sudo install -m 0755 -o root -g root ~/bookorbit-release/backup.sh /opt/bookorbit/backup.sh
+  sudo install -m 0644 -o root -g root ~/bookorbit-release/bookorbit-backup.service ~/bookorbit-release/bookorbit-backup.timer /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now bookorbit-backup.timer
   rm -rf ~/bookorbit-release
   sudo docker compose -f /opt/bookorbit/compose.yaml pull -q
   sudo docker compose -f /opt/bookorbit/compose.yaml up -d --remove-orphans --wait --wait-timeout 180
@@ -46,6 +53,8 @@ ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
   sudo docker compose -f /opt/bookorbit/compose.yaml ps
   echo
   curl -fsS http://127.0.0.1:5082/api/v1/health; echo
+  echo
+  systemctl list-timers bookorbit-backup.timer --no-pager
   # Its logs are JSON lines with numeric levels: 40 warn, 50 error, 60 fatal. LegacyRouteConverter warns at every
   # start about route patterns it converts itself (3.6.0): not a problem.
   sudo docker compose -f /opt/bookorbit/compose.yaml logs --no-log-prefix --since 3m app | grep -E "\"level\":(40|50|60)" | grep -v LegacyRouteConverter | tail -10 || true'
