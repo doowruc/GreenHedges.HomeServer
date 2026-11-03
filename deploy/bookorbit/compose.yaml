@@ -1,0 +1,93 @@
+# BookOrbit (https://bookorbit.app): the books, comics and manga library, at https://books.<home domain> on the tailnet,
+# through Caddy. Installed on the host as /opt/bookorbit/compose.yaml; settings and secrets in
+# /etc/bookorbit/bookorbit.env. See deploy/bookorbit/HOST-SETUP.md. Install or update with
+# deploy/bookorbit/deploy-bookorbit.sh.
+#
+#   Caddy ──► 127.0.0.1:5082 ──► app (:3000) ──► postgres (:5432, compose network only)
+#                                     │
+#                                     ├── /books  = /srv/books (the USB drive's encrypted `books` partition)
+#                                     └── /data   = /var/lib/bookorbit/app (covers, Book Dock uploads)
+#
+# Based on BookOrbit's own docker-compose.yml, keeping its hardening (read-only root, dropped capabilities). The
+# optional text-to-speech and read-aloud workers are left out. Its own bridge network: only the app is published, on
+# 127.0.0.1 only (Docker's published ports bypass ufw); PostgreSQL isn't reachable from the host at all.
+
+name: bookorbit
+
+services:
+  app:
+    # Pinned, as is PostgreSQL: update deliberately (HOST-SETUP.md, "Updating"). Migrations run at startup.
+    image: ghcr.io/bookorbit/bookorbit:3.6.0
+    restart: unless-stopped
+    init: true
+    env_file:
+      - /etc/bookorbit/bookorbit.env     # APP_URL, PUID, PGID, POSTGRES_PASSWORD, JWT_SECRET, SETUP_BOOTSTRAP_TOKEN
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: bookorbit
+      POSTGRES_DB: bookorbit
+      TZ: Europe/London
+      # Node's heap sized from the container's memory limit below (BookOrbit's default is a fixed 2 GB).
+      NODE_MAX_OLD_SPACE_SIZE: auto
+      # The library folder picker starts at the books, not the container's root.
+      LIBRARY_BROWSE_ROOT: /books
+    ports:
+      - "127.0.0.1:5082:3000"
+    volumes:
+      # The app runs as PUID:PGID (the host's bookorbit user). At startup it fixes ownership of /data only, never
+      # of /books: /srv/books is owned by bookorbit with group write (HOST-SETUP.md).
+      - /srv/books:/books
+      - /var/lib/bookorbit/app:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    cap_add:                             # for the entrypoint to fix /data's ownership, then drop to PUID:PGID
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    # The host has 8 GB shared with SQL Server, the telemetry stack and the collectors. The image has its own health
+    # check (GET /api/v1/health).
+    mem_limit: 1536m
+    stop_grace_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    # PostgreSQL 18 with pgvector, as BookOrbit's compose file has (it also needs uuid-ossp, pg_trgm and unaccent,
+    # which are built in).
+    image: pgvector/pgvector:0.8.6-pg18
+    restart: unless-stopped
+    env_file:
+      - /etc/bookorbit/bookorbit.env     # POSTGRES_PASSWORD (the rest is the app's and unused here)
+    environment:
+      POSTGRES_USER: bookorbit
+      POSTGRES_DB: bookorbit
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /var/lib/bookorbit/postgres:/var/lib/postgresql/data   # owned by postgres in the image (uid 999)
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookorbit -d bookorbit"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    stop_grace_period: 30s
+    logging: *logging
