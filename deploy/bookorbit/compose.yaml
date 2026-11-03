@@ -79,7 +79,9 @@ services:
       POSTGRES_DB: bookorbit
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - /var/lib/bookorbit/postgres:/var/lib/postgresql/data   # owned by postgres in the image (uid 999)
+      # Owned by postgres in the image (uid 999), mode 0700: the entrypoint creates and owns pgdata inside, but
+      # PostgreSQL can't reach it if this folder is root's.
+      - /var/lib/bookorbit/postgres:/var/lib/postgresql/data
     security_opt:
       - no-new-privileges:true
     mem_limit: 512m

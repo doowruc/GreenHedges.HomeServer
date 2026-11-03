@@ -33,6 +33,7 @@ ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
     sudo grep -q "^$key=." /etc/bookorbit/bookorbit.env || { echo "No $key in /etc/bookorbit/bookorbit.env (see HOST-SETUP.md)"; exit 1; }
   done
   sudo test -d /var/lib/bookorbit/app -a -d /var/lib/bookorbit/postgres || { echo "Missing /var/lib/bookorbit/app or /postgres (see HOST-SETUP.md)"; exit 1; }
+  [ "$(sudo stat -c %u /var/lib/bookorbit/postgres)" = 999 ] || { echo "/var/lib/bookorbit/postgres must be owned by uid 999, PostgreSQL in its image (see HOST-SETUP.md)"; exit 1; }
   # Without the drive, the app would start on an empty /srv/books folder on the root disk.
   mountpoint -q /srv/books || { echo "/srv/books is not mounted: is the USB drive plugged in and unlocked?"; exit 1; }
   sudo docker compose -f ~/bookorbit-release/compose.yaml config -q
