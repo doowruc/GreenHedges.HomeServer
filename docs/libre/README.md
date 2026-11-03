@@ -128,7 +128,7 @@ Once it's running, there's nothing to do. You'll hear from it only when somethin
 | Subject | Meaning | What to do |
 |---|---|---|
 | **No new glucose readings** | No new reading for 20 minutes (after a sensor change, for 20 minutes after its warm-up was due to end) | Usually phone or sensor: phone offline, LibreLink closed, Bluetooth, a warm-up that overran, or an **expired sensor** (the email says so). A RESOLVED email follows when readings return. |
-| **LibreLinkUp needs attention** | Wrong password, terms to re-accept, app version retired, or no connection | Read the email. For terms, sign in to the LibreLinkUp app with the follower account once. For a version error, raise `LibreLinkUp:Version`. Collection retries every 30 minutes. |
+| **LibreLinkUp needs attention** | Wrong password, terms to re-accept, app version retired, or no connection for 10 minutes | Read the email. For terms, sign in to the LibreLinkUp app with the follower account once. For a version error, raise `LibreLinkUp:Version`. Collection retries every 30 minutes. |
 | **Backups failing** | No good backup for 36 hours | Check disk space and the log. |
 | **Off-site backup failing** | No successful off-site copy for 36 hours | Check the log (`Off-site copy … failed`): AWS key, bucket policy, or `age` missing. Local backups are unaffected. |
 | **Nightscout publishing stalled** | Couldn't reach Nightscout for 30 minutes | Check the Docker stack. Collection carries on; Nightscout catches up. |
@@ -186,6 +186,7 @@ Settings come from `appsettings.json` (defaults, shipped with the build), overri
 | `Collector:SensorLifetime` | `15.00:00:00` | For the "expected end" log line and the "probably expired" alert wording. |
 | `Collector:SensorWarmup` | `01:00:00` | Used only if LibreLinkUp doesn't report a sensor's warm-up. |
 | `Collector:UserActionPause` | `00:30:00` | Wait after errors that need you to act (avoids account lockout). |
+| `Collector:NoConnectionsGrace` | `00:10:00` | How long the follower account must show no connections before the alert; shorter blips are retried. |
 | `Archive:DatabasePath` | `librecollector.db` | Relative to the working directory (`/var/lib/librecollector` on the host). |
 
 **Alerts, heartbeat and backups**

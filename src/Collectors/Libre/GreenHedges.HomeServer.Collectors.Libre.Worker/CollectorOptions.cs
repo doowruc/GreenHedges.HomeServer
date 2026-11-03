@@ -39,6 +39,13 @@ public sealed class CollectorOptions
     /// </summary>
     public TimeSpan UserActionPause { get; set; } = TimeSpan.FromMinutes(30);
 
+    /// <summary>
+    /// How long the follower account must have no connections before it counts as needing the user.
+    /// LibreLinkUp sometimes returns an empty list for one poll; until then it's retried like any transient failure.
+    /// Kept under <c>Alerts:StaleAfter</c> so lost sharing raises this alert rather than "no new readings".
+    /// </summary>
+    public TimeSpan NoConnectionsGrace { get; set; } = TimeSpan.FromMinutes(10);
+
     /// <summary>Minimum pause after an HTTP 429, even if <c>Retry-After</c> is shorter or missing.</summary>
     public TimeSpan MinRateLimitPause { get; set; } = TimeSpan.FromMinutes(5);
 }

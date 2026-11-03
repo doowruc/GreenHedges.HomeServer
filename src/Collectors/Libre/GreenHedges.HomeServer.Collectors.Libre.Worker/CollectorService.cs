@@ -23,6 +23,7 @@ public sealed class CollectorService(
     private readonly CollectorOptions _options = options.Value;
     private DateTimeOffset _nextGraphAt = DateTimeOffset.MinValue;
     private bool _warnedAboutMultipleConnections;
+    private readonly NoConnectionsGrace _noConnections = new(options.Value.NoConnectionsGrace);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -206,8 +207,10 @@ public sealed class CollectorService(
     {
         if (connections.Count == 0)
         {
-            throw new NoConnectionsException();
+            throw _noConnections.Empty(time.GetUtcNow());
         }
+
+        _noConnections.Reset();
 
         if (!string.IsNullOrEmpty(_options.PatientId))
         {

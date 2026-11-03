@@ -91,7 +91,7 @@ Versioned migrations (`PRAGMA user_version`) run at startup, before any hosted s
 | Alert | Raised when | Resolved when (evidence since startup) |
 |---|---|---|
 | No new glucose readings | Newest reading older than 20 min (timed from startup at the earliest). If a sensor was activated after the newest reading, timed from the end of its warm-up instead (activation + `w`, or `Collector:SensorWarmup` if missing), so a normal swap raises nothing; the email then says when readings were expected. After the sensor's expected end, the email says it has probably expired | A reading newer than 20 min |
-| LibreLinkUp needs attention | An error that needs the user (credentials, terms, version, no connection); suppresses the stale alert | A successful poll |
+| LibreLinkUp needs attention | An error that needs the user (credentials, terms, version, no connection for `Collector:NoConnectionsGrace`, 10 min: LibreLinkUp sometimes returns an empty list for one poll); suppresses the stale alert | A successful poll |
 | Backups failing | No good backup for 36 h | A backup within 36 h |
 | Nightscout publishing stalled | Publishing failing for 30 min | A successful publish |
 
