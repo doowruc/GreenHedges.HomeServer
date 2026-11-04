@@ -112,6 +112,23 @@ public class PayCalculationsTests
     }
 
     [Fact]
+    public void Pension_paid_by_salary_sacrifice_gets_no_higher_rate_relief()
+    {
+        var sacrificed = new PayLine(PayElementKind.Deduction, PayCategory.Pension, 200, SalarySacrifice: true);
+        var payslips = new List<PayslipAmounts>
+        {
+            Payslip(2026, 1, Salary(3000), Pension(150)),
+            Payslip(2026, 2, Salary(3000), sacrificed),
+            Payslip(2026, 3, Salary(3000), sacrificed, Pension(50)),
+        };
+
+        var year = PayCalculations.TotalsByTaxYear(payslips).Single();
+
+        Assert.Equal(600m, year.EmployeePension);   // every employee pension still counts as pension
+        Assert.Equal(40m, year.PensionRelief);      // 20% of the 200 not sacrificed
+    }
+
+    [Fact]
     public void A_year_in_progress_is_compared_with_the_same_months_of_the_year_before()
     {
         var payslips = new List<PayslipAmounts>();

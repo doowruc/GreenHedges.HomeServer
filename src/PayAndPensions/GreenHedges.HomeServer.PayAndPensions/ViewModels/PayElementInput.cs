@@ -19,13 +19,16 @@ public class PayElementInput
     [Display(Name = "Hidden (no longer on new payslips)")]
     public bool Hidden { get; set; }
 
+    [Display(Name = "Salary sacrifice (no higher-rate pension relief to reclaim)")]
+    public bool SalarySacrifice { get; set; }
+
     /// <summary>The row's version when the form was loaded, to detect conflicting edits. Never copied to the entity.</summary>
     public byte[] RowVersion { get; set; } = [];
 
     public static readonly Expression<Func<PayElement, PayElementInput>> Projection = el => new PayElementInput
     {
         Name = el.Name, Kind = el.Kind, Category = el.Category, SortOrder = el.SortOrder, Hidden = el.Hidden,
-        RowVersion = el.RowVersion
+        SalarySacrifice = el.SalarySacrifice,         RowVersion = el.RowVersion
     };
 
     public void ApplyTo(PayElement element)
@@ -35,5 +38,6 @@ public class PayElementInput
         element.Category = Category;
         element.SortOrder = SortOrder;
         element.Hidden = Hidden;
+        element.SalarySacrifice = SalarySacrifice;
     }
 }

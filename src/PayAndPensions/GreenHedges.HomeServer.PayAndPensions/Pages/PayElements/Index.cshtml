@@ -30,7 +30,7 @@ else
                 <tr class="@(el.Hidden ? "text-body-secondary" : null)">
                     <td>@el.Name</td>
                     <td>@Label(el.Kind)</td>
-                    <td>@Label(el.Category)@if (el.Hidden) {<span class="badge text-bg-secondary ms-2">Hidden</span>}</td>
+                    <td>@Label(el.Category)@if (el.SalarySacrifice) {<span class="badge text-bg-info ms-2">Salary sacrifice</span>}@if (el.Hidden) {<span class="badge text-bg-secondary ms-2">Hidden</span>}</td>
                     <td class="text-end">@el.SortOrder</td>
                     <td class="text-end">@el.Payslips</td>
                     <td class="text-end text-nowrap">

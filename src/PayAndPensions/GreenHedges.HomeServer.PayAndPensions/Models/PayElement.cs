@@ -29,6 +29,12 @@ public class PayElement : AuditedEntity
     /// <summary>No longer used: kept for old payslips, left off new ones.</summary>
     public bool Hidden { get; set; }
 
+    /// <summary>
+    /// An employee pension paid by salary sacrifice: it already has full tax relief, so it's left out of the
+    /// higher-rate pension relief. Only for pension deductions.
+    /// </summary>
+    public bool SalarySacrifice { get; set; }
+
     public List<PayslipLine> Lines { get; set; } = [];
 }
 

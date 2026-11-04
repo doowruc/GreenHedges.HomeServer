@@ -3,7 +3,8 @@ using GreenHedges.HomeServer.PayAndPensions.Models;
 namespace GreenHedges.HomeServer.PayAndPensions.Services;
 
 /// <summary>One amount on a payslip, with what its pay element is.</summary>
-public sealed record PayLine(PayElementKind Kind, PayCategory Category, decimal Amount);
+/// <param name="SalarySacrifice">A pension paid by salary sacrifice, left out of the higher-rate pension relief.</param>
+public sealed record PayLine(PayElementKind Kind, PayCategory Category, decimal Amount, bool SalarySacrifice = false);
 
 /// <summary>What the calculations need from a payslip.</summary>
 public sealed record PayslipAmounts(int TaxYear, int TaxMonth, IReadOnlyList<PayLine> Lines);
@@ -45,7 +46,8 @@ public sealed record PayslipFigures(
 /// <summary>A tax year's totals, compared with the year before where there is one.</summary>
 /// <param name="EmployeePension">Employee pension deductions.</param>
 /// <param name="PensionRelief">The extra pension tax relief a higher-rate taxpayer reclaims through Self Assessment: 20% of
-/// <paramref name="EmployeePension"/> (relief-at-source contributions, which only get basic-rate relief at source).</param>
+/// <paramref name="EmployeePension"/> (relief-at-source contributions, which only get basic-rate relief at source), less
+/// any paid by salary sacrifice, which already has full relief.</param>
 /// <param name="GrossChange">Gross less the same tax months' of the year before; null without a year before.</param>
 /// <param name="NetChange">Net less the same tax months' of the year before; null without a year before.</param>
 public sealed record TaxYearTotals(
@@ -137,6 +139,8 @@ public static class PayCalculations
             var deductions = Sum(PayElementKind.Deduction);
             var net = gross - deductions;
             var employeePension = Sum(PayElementKind.Deduction, PayCategory.Pension);
+            var sacrificed = lines.Where(l => l.SalarySacrifice && l.Kind == PayElementKind.Deduction && l.Category == PayCategory.Pension)
+                .Sum(l => l.Amount);
 
             // Only against the year just before (a gap of a year would make the change meaningless), and only its
             // months this year has too.
@@ -160,7 +164,7 @@ public static class PayCalculations
                 NationalInsurance: Sum(PayElementKind.Deduction, PayCategory.NationalInsurance),
                 EmployeePension: employeePension,
                 EmployerPension: Sum(PayElementKind.EmployerContribution, PayCategory.Pension),
-                PensionRelief: Math.Round(employeePension * PensionReliefRate, 2),
+                PensionRelief: Math.Round((employeePension - sacrificed) * PensionReliefRate, 2),
                 TakeHomePercent: Fraction(net, gross),
                 GrossChange: gross - grossBefore,
                 GrossChangePercent: grossBefore is { } gb ? Fraction(gross - gb, gb) : null,
