@@ -219,6 +219,26 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.DoesNotContain(">Employer pension<", text);   // not used this year, so no column
     }
 
+    [DatabaseFact]
+    public async Task The_arrows_step_to_the_years_either_side_that_have_payslips()
+    {
+        var person = await PersonAsync();
+        await using (var db = Db())
+            foreach (var year in new[] { 2023, 2025, 2026 })   // none in 2024-25
+                await TestData.AddPayslipAsync(db, person, year, 1, ("Salary", 3000m));
+        var client = app.ClientFor(UserId);
+        var url = $"/People/{person.Id}/Payslips";
+
+        var middle = await client.GetAsync($"{url}?year=2025");
+        var latest = await client.GetAsync(url);
+
+        Assert.Contains($"href=\"{url}?year=2023\"", middle.Html);   // back, over the gap
+        Assert.Contains($"href=\"{url}?year=2026\"", middle.Html);   // forward
+        Assert.Contains($"href=\"{url}?year=2025\"", latest.Html);   // back from the latest
+        Assert.DoesNotContain("Next tax year", latest.Html);           // and nothing after it
+        Assert.Contains("Previous tax year, 2025-26", latest.Html);
+    }
+
     /// <summary>The table's headings in order, each marked "|" if a section separator follows it.</summary>
     private static List<string> Headings(PageResponse page) =>
         System.Text.RegularExpressions.Regex.Matches(
