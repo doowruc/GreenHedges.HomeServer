@@ -25,6 +25,10 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
     /// <summary>Tax years with payslips, latest first (and the one shown, if it has none).</summary>
     public List<int> Years { get; private set; } = [];
 
+    /// <summary>The tax years either side of the one shown, among <see cref="Years"/>; null at either end.</summary>
+    public int? PreviousYear => Years.Where(y => y < Year).Cast<int?>().FirstOrDefault();
+    public int? NextYear => Years.Where(y => y > Year).Cast<int?>().LastOrDefault();
+
     public List<Column> Columns { get; private set; } = [];
 
     public List<Row> Rows { get; private set; } = [];

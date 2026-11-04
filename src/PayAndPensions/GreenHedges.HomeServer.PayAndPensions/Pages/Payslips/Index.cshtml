@@ -12,15 +12,32 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h1 class="h3 mb-0">@Model.PersonName's payslips</h1>
     <div class="d-flex gap-2">
-        <form method="get" class="d-flex">
+        @* The arrows step through the years with payslips: back to the year before, forward to the one after. *@
+        <form method="get" class="input-group input-group-sm flex-nowrap w-auto">
+            @if (Model.PreviousYear is { } previous)
+            {
+                <a asp-route-year="@previous" class="btn btn-outline-secondary" title="@TaxYears.Label(previous)" aria-label="Previous tax year, @TaxYears.Label(previous)"><i class="bi bi-chevron-left"></i></a>
+            }
+            else
+            {
+                <span class="btn btn-outline-secondary disabled" aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+            }
             <label for="year" class="visually-hidden">Tax year</label>
-            <select id="year" name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+            <select id="year" name="year" class="form-select" onchange="this.form.submit()">
                 @foreach (var y in Model.Years)
                 {
                     <option value="@y" selected="@(y == year)">@TaxYears.Label(y)</option>
                 }
             </select>
-            <noscript><button type="submit" class="btn btn-sm btn-outline-secondary ms-1">Show</button></noscript>
+            @if (Model.NextYear is { } next)
+            {
+                <a asp-route-year="@next" class="btn btn-outline-secondary" title="@TaxYears.Label(next)" aria-label="Next tax year, @TaxYears.Label(next)"><i class="bi bi-chevron-right"></i></a>
+            }
+            else
+            {
+                <span class="btn btn-outline-secondary disabled" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            }
+            <noscript><button type="submit" class="btn btn-outline-secondary">Show</button></noscript>
         </form>
         <a asp-page="/Years/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary text-nowrap">Tax years</a>
         <a asp-page="/Import/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
