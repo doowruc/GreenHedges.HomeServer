@@ -23,11 +23,11 @@ public sealed class PayHistory(AppDbContext db)
             .Select(s => new
             {
                 s.Id, s.TaxYear, s.TaxMonth, s.PayDate,
-                Lines = s.Lines.Select(l => new { l.PayElement!.Kind, l.PayElement.Category, l.Amount }).ToList()
+                Lines = s.Lines.Select(l => new { l.PayElement!.Kind, l.PayElement.Category, l.Amount, l.PayElement.SalarySacrifice }).ToList()
             })
             .ToListAsync();
         var amounts = payslips.Select(s => new PayslipAmounts(s.TaxYear, s.TaxMonth,
-            s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount)).ToList())).ToList();
+            s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount, l.SalarySacrifice)).ToList())).ToList();
         var figures = PayCalculations.Calculate(amounts);
         return new PersonPay(
             payslips.Select((s, i) => new PayslipSummary(s.Id, s.TaxYear, s.TaxMonth, s.PayDate, figures[i])).ToList(),

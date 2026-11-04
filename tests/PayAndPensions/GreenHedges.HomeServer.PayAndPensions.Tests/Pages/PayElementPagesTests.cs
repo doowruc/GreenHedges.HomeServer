@@ -67,6 +67,45 @@ public class PayElementPagesTests(AppFactory app) : DatabaseTest, IClassFixture<
     }
 
     [DatabaseFact]
+    public async Task A_pension_deduction_can_be_marked_salary_sacrifice()
+    {
+        int personId, pensionId;
+        await using (var db = Db())
+        {
+            var person = await TestData.AddPersonAsync(db);
+            (personId, pensionId) = (person.Id, person.PayElements.Single(el => el.Name == "Pension").Id);
+        }
+        var client = app.ClientFor(UserId);
+
+        var edit = $"/People/{personId}/PayElements/Edit/{pensionId}";
+        var saved = await client.PostFormAsync(edit, await client.GetAsync(edit), new() { ["Element.SalarySacrifice"] = "true" });
+
+        Assert.Equal(HttpStatusCode.Redirect, saved.Status);
+        await using (var check = Db()) Assert.True((await check.PayElements.SingleAsync(el => el.Id == pensionId)).SalarySacrifice);
+        Assert.Contains("Salary sacrifice</span>", (await client.GetAsync($"/People/{personId}/PayElements")).Html);
+    }
+
+    [DatabaseFact]
+    public async Task Only_a_pension_deduction_can_be_salary_sacrifice()
+    {
+        int personId, employerPensionId;
+        await using (var db = Db())
+        {
+            var person = await TestData.AddPersonAsync(db);
+            (personId, employerPensionId) = (person.Id, person.PayElements.Single(el => el.Name == "Employer pension").Id);
+        }
+        var client = app.ClientFor(UserId);
+
+        var edit = $"/People/{personId}/PayElements/Edit/{employerPensionId}";
+        var page = await client.PostFormAsync(edit, await client.GetAsync(edit), new() { ["Element.SalarySacrifice"] = "true" });
+
+        Assert.Equal(HttpStatusCode.OK, page.Status);
+        Assert.Contains("Only a pension deduction can be salary sacrifice", page.Text);
+        await using var check = Db();
+        Assert.False((await check.PayElements.SingleAsync(el => el.Id == employerPensionId)).SalarySacrifice);
+    }
+
+    [DatabaseFact]
     public async Task An_unused_element_can_be_deleted()
     {
         int personId, elementId;

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using GreenHedges.HomeServer.PayAndPensions.Models;
 using GreenHedges.HomeServer.PayAndPensions.Tests.Infrastructure;
@@ -76,6 +77,23 @@ public class DashboardPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Contains("360.00", page.Text);                 // its pension relief: 20% of 1,800
         Assert.Contains("+600.00 (10.0%)", page.Text);        // 2026-27 so far against April and May of 2025-26
         Assert.Contains("data-pay-yearly=", page.Text);
+    }
+
+    [DatabaseFact]
+    public async Task Salary_sacrifice_pension_is_left_out_of_the_relief_on_the_tax_year_pages()
+    {
+        var person = await PersonWithPayAsync();
+        await using (var db = Db())
+            await db.PayElements.Where(el => el.Name == "Pension").ExecuteUpdateAsync(s => s.SetProperty(el => el.SalarySacrifice, true));
+        var client = app.ClientFor(UserId);
+
+        var years = await client.GetAsync($"/People/{person.Id}/TaxYears");
+        var payslips = await client.GetAsync($"/People/{person.Id}/Payslips?year=2025");
+
+        Assert.Contains("36,000.00", years.Text);
+        Assert.DoesNotContain("360.00", years.Text);             // no relief on 2025-26's 1,800 of pension
+        Assert.Contains("Higher-rate pension relief", payslips.Text);
+        Assert.DoesNotContain("£360.00", payslips.Text);
     }
 
     [DatabaseFact]

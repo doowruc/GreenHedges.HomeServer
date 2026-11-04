@@ -55,7 +55,8 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
                 s.Id, s.TaxYear, s.TaxMonth, s.PayDate, Employer = s.Employer!.Name, s.PensionReceivedDate, s.Notes,
                 Lines = s.Lines.Select(l => new
                 {
-                    l.PayElementId, l.PayElement!.Name, l.PayElement.Kind, l.PayElement.Category, l.PayElement.SortOrder, l.Amount
+                    l.PayElementId, l.PayElement!.Name, l.PayElement.Kind, l.PayElement.Category, l.PayElement.SortOrder, l.Amount,
+                    l.PayElement.SalarySacrifice
                 }).ToList()
             })
             .ToListAsync();
@@ -63,7 +64,7 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
         var shown = payslips.Where(s => s.TaxYear == Year).ToList();
         var calculated = (before is null ? shown : shown.Prepend(before)).ToList();
         var figures = PayCalculations.Calculate(calculated
-            .Select(s => new PayslipAmounts(s.TaxYear, s.TaxMonth, s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount)).ToList()))
+            .Select(s => new PayslipAmounts(s.TaxYear, s.TaxMonth, s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount, l.SalarySacrifice)).ToList()))
             .ToList());
         if (before is not null) figures = figures.Skip(1).ToList();
 
@@ -84,7 +85,7 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
 
         // The totals compare with the year before, whose payslips are all here too.
         Totals = PayCalculations.TotalsByTaxYear(payslips
-                .Select(s => new PayslipAmounts(s.TaxYear, s.TaxMonth, s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount)).ToList())))
+                .Select(s => new PayslipAmounts(s.TaxYear, s.TaxMonth, s.Lines.Select(l => new PayLine(l.Kind, l.Category, l.Amount, l.SalarySacrifice)).ToList())))
             .FirstOrDefault(t => t.TaxYear == Year);
         return Page();
     }

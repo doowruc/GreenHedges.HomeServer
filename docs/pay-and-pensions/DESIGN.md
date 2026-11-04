@@ -48,7 +48,7 @@ earnings columns, so the columns can't be fixed in the schema.
 |---|---|
 | `Person` | Name (unique per user). The root: `IUserOwned`, with a per-user query filter |
 | `Employer` | Belongs to a person: name. Payslips from a job change stay comparable |
-| `PayElement` | Belongs to a person: name, **kind** (Earning, Deduction, Employer contribution), **category** (Salary, Bonus, Allowance, Overtime, Back pay, Tax, NI, Pension, Other), sort order, hidden. One per workbook column |
+| `PayElement` | Belongs to a person: name, **kind** (Earning, Deduction, Employer contribution), **category** (Salary, Bonus, Allowance, Overtime, Back pay, Tax, NI, Pension, Other), sort order, hidden, **salary sacrifice** (pension deductions only). One per workbook column |
 | `Payslip` | Person, employer, tax year (stored as its start year), tax month, pay date, **pension received** date (the workbook's Transfer Date), notes. Unique per person, tax year and month |
 | `PayslipLine` | Payslip, pay element, amount (`decimal(19,2)`) |
 
@@ -58,7 +58,8 @@ Every table inherits `AuditedEntity`. Child tables are filtered through their pe
 category × 12) and each rise in £ and %; employee and employer pension as % of salary; take-home %; year-to-date gross
 and the predicted annual figure; bonus as % of annual salary; and per tax year: gross, pension, net, take-home %,
 change on the year before, and **higher-rate pension relief** (20% of the year's employee pension contributions, the
-extra relief reclaimed through Self Assessment).
+extra relief reclaimed through Self Assessment), leaving out pension paid by salary sacrifice, which comes off before
+tax and so already has full relief.
 
 **Room for later:** pension pots belong to a person; a pension pay element can point at a pot, so payslip
 contributions feed its history without typing them twice, and the pension received date becomes the date a

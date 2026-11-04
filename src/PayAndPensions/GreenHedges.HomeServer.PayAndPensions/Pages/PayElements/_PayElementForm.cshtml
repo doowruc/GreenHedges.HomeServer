@@ -28,5 +28,12 @@
             <input asp-for="Hidden" class="form-check-input" />
             <label asp-for="Hidden" class="form-check-label"></label>
         </div>
+        <div class="form-check">
+            <input asp-for="SalarySacrifice" class="form-check-input" />
+            <label asp-for="SalarySacrifice" class="form-check-label"></label>
+        </div>
+        <span asp-validation-for="SalarySacrifice" class="text-danger small"></span>
+        <div class="form-text">For an employee pension deduction paid by salary sacrifice: it comes off before tax, so it
+            already has full relief and is left out of the higher-rate pension relief.</div>
     </div>
 </div>
