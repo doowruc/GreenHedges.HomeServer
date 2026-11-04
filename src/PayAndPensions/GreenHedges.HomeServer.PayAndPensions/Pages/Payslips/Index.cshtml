@@ -139,6 +139,17 @@ else
                 <dd class="col-sm-8 col-lg-3">£@Money(t.PensionRelief)</dd>
                 <dt class="col-sm-4 col-lg-3">Take-home</dt>
                 <dd class="col-sm-8 col-lg-3">@Percent(t.TakeHomePercent) of gross</dd>
+                @if (t.StartAnnualSalary is not null)
+                {
+                    <dt class="col-sm-4 col-lg-3" title="Salary × 12 on the year's first payslip">Annual salary at start of year</dt>
+                    <dd class="col-sm-8 col-lg-3">£@Money(t.StartAnnualSalary)</dd>
+                    <dt class="col-sm-4 col-lg-3" title="Salary × 12 on the year's last payslip so far">Annual salary at end of year</dt>
+                    <dd class="col-sm-8 col-lg-3">£@Money(t.EndAnnualSalary)</dd>
+                    <dt class="col-sm-4 col-lg-3">Annual salary increase</dt>
+                    <dd class="col-sm-8 col-lg-3">£@Money(t.AnnualSalaryIncrease)</dd>
+                    <dt class="col-sm-4 col-lg-3">Annual salary increase %</dt>
+                    <dd class="col-sm-8 col-lg-3">@Percent(t.AnnualSalaryIncreasePercent)</dd>
+                }
             </dl>
         </div></div>
     }

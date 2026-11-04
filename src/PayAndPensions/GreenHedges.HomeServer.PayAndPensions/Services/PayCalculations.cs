@@ -48,6 +48,10 @@ public sealed record PayslipFigures(
 /// <param name="PensionRelief">The extra pension tax relief a higher-rate taxpayer reclaims through Self Assessment: 20% of
 /// <paramref name="EmployeePension"/> (relief-at-source contributions, which only get basic-rate relief at source), less
 /// any paid by salary sacrifice, which already has full relief.</param>
+/// <param name="StartAnnualSalary">The annual salary (Salary × 12) on the year's first payslip with a salary; null without one.</param>
+/// <param name="EndAnnualSalary">The annual salary on its last payslip with a salary: the latest, for a year in progress.</param>
+/// <param name="AnnualSalaryIncrease">End less start.</param>
+/// <param name="AnnualSalaryIncreasePercent">The increase as a fraction of the start.</param>
 /// <param name="GrossChange">Gross less the same tax months' of the year before; null without a year before.</param>
 /// <param name="NetChange">Net less the same tax months' of the year before; null without a year before.</param>
 public sealed record TaxYearTotals(
@@ -66,7 +70,11 @@ public sealed record TaxYearTotals(
     decimal? GrossChange,
     decimal? GrossChangePercent,
     decimal? NetChange,
-    decimal? NetChangePercent);
+    decimal? NetChangePercent,
+    decimal? StartAnnualSalary,
+    decimal? EndAnnualSalary,
+    decimal? AnnualSalaryIncrease,
+    decimal? AnnualSalaryIncreasePercent);
 
 public static class PayCalculations
 {
@@ -139,6 +147,9 @@ public static class PayCalculations
             var deductions = Sum(PayElementKind.Deduction);
             var net = gross - deductions;
             var employeePension = Sum(PayElementKind.Deduction, PayCategory.Pension);
+            var salaries = year.OrderBy(p => p.TaxMonth).Select(p => SumOf(p.Lines, PayElementKind.Earning, PayCategory.Salary))
+                .Where(s => s != 0).ToList();
+            decimal? startSalary = salaries.Count > 0 ? salaries[0] * 12 : null, endSalary = salaries.Count > 0 ? salaries[^1] * 12 : null;
             var sacrificed = lines.Where(l => l.SalarySacrifice && l.Kind == PayElementKind.Deduction && l.Category == PayCategory.Pension)
                 .Sum(l => l.Amount);
 
@@ -169,7 +180,11 @@ public static class PayCalculations
                 GrossChange: gross - grossBefore,
                 GrossChangePercent: grossBefore is { } gb ? Fraction(gross - gb, gb) : null,
                 NetChange: net - netBefore,
-                NetChangePercent: netBefore is { } nb ? Fraction(net - nb, nb) : null));
+                NetChangePercent: netBefore is { } nb ? Fraction(net - nb, nb) : null,
+                StartAnnualSalary: startSalary,
+                EndAnnualSalary: endSalary,
+                AnnualSalaryIncrease: endSalary - startSalary,
+                AnnualSalaryIncreasePercent: startSalary is { } s && endSalary is { } e ? Fraction(e - s, s) : null));
         }
         return totals;
     }

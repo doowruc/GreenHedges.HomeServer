@@ -216,6 +216,10 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Contains("3,600.00", text);       // month 2's rise (×12)
         Assert.Contains("6,300.00", text);       // the year to date
         Assert.Contains("£63.00", text);         // the relief: 20% of 315
+        Assert.Contains("Annual salary at start of year</dt>\n                    <dd class=\"col-sm-8 col-lg-3\">£36,000.00", text);
+        Assert.Contains("Annual salary at end of year</dt>\n                    <dd class=\"col-sm-8 col-lg-3\">£39,600.00", text);
+        Assert.Contains("Annual salary increase</dt>\n                    <dd class=\"col-sm-8 col-lg-3\">£3,600.00", text);
+        Assert.Contains("Annual salary increase %</dt>\n                    <dd class=\"col-sm-8 col-lg-3\">10.0%", text);
         Assert.DoesNotContain(">Employer pension<", text);   // not used this year, so no column
     }
 
