@@ -29,6 +29,10 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
     public int? PreviousYear => Years.Where(y => y < Year).Cast<int?>().FirstOrDefault();
     public int? NextYear => Years.Where(y => y > Year).Cast<int?>().LastOrDefault();
 
+    /// <summary>The oldest and latest of <see cref="Years"/>; null when that's the one shown.</summary>
+    public int? FirstYear => Years.Count > 0 && Years[^1] != Year ? Years[^1] : null;
+    public int? LastYear => Years.Count > 0 && Years[0] != Year ? Years[0] : null;
+
     public List<Column> Columns { get; private set; } = [];
 
     public List<Row> Rows { get; private set; } = [];

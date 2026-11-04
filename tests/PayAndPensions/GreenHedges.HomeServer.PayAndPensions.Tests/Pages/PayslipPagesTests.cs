@@ -224,11 +224,11 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
-    public async Task The_arrows_step_to_the_years_either_side_that_have_payslips()
+    public async Task The_arrows_step_to_the_years_either_side_and_the_ends_that_have_payslips()
     {
         var person = await PersonAsync();
         await using (var db = Db())
-            foreach (var year in new[] { 2023, 2025, 2026 })   // none in 2024-25
+            foreach (var year in new[] { 2022, 2023, 2025, 2026 })   // none in 2024-25
                 await TestData.AddPayslipAsync(db, person, year, 1, ("Salary", 3000m));
         var client = app.ClientFor(UserId);
         var url = $"/People/{person.Id}/Payslips";
@@ -241,6 +241,10 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Contains($"href=\"{url}?year=2025\"", latest.Html);   // back from the latest
         Assert.DoesNotContain("Next tax year", latest.Html);           // and nothing after it
         Assert.Contains("Previous tax year, 2025-26", latest.Html);
+        Assert.Contains("First tax year, 2022-23", middle.Html);
+        Assert.Contains("Latest tax year, 2026-27", middle.Html);
+        Assert.DoesNotContain("Latest tax year", latest.Html);         // already there
+        Assert.Contains("First tax year, 2022-23", latest.Html);
     }
 
     /// <summary>The table's headings in order, each marked "|" if a section separator follows it.</summary>
