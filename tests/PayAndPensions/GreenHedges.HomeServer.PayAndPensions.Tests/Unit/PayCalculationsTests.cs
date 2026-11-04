@@ -129,6 +129,32 @@ public class PayCalculationsTests
     }
 
     [Fact]
+    public void A_years_annual_salary_runs_from_its_first_payslip_with_a_salary_to_its_last()
+    {
+        var payslips = new List<PayslipAmounts>
+        {
+            Payslip(2026, 3, Salary(3300)),
+            Payslip(2026, 1, Bonus(500)),            // no salary: not the start
+            Payslip(2026, 2, Salary(3000)),
+            Payslip(2026, 4, Salary(3300), Overtime(100)),
+            Payslip(2025, 12, Salary(2500)),
+            Payslip(2024, 1, Bonus(100)),            // a year with no salary at all
+        };
+
+        var totals = PayCalculations.TotalsByTaxYear(payslips);
+
+        var year = totals.Single(t => t.TaxYear == 2026);
+        Assert.Equal((36000m, 39600m, 3600m, 0.1m),
+            (year.StartAnnualSalary, year.EndAnnualSalary, year.AnnualSalaryIncrease, year.AnnualSalaryIncreasePercent));
+        var single = totals.Single(t => t.TaxYear == 2025);
+        Assert.Equal((30000m, 30000m, 0m, 0m),
+            (single.StartAnnualSalary, single.EndAnnualSalary, single.AnnualSalaryIncrease, single.AnnualSalaryIncreasePercent));
+        var none = totals.Single(t => t.TaxYear == 2024);
+        Assert.Null(none.StartAnnualSalary);
+        Assert.Null(none.AnnualSalaryIncreasePercent);
+    }
+
+    [Fact]
     public void A_year_in_progress_is_compared_with_the_same_months_of_the_year_before()
     {
         var payslips = new List<PayslipAmounts>();

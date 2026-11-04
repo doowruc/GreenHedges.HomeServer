@@ -87,7 +87,8 @@ GreenHedges.HomeServer.PayAndPensions/
   them in memory, not in SQL.
 - **Figures are worked out, never stored** (`PayCalculations`): gross, deductions, net, annual salary (Salary × 12)
   and rises, pension % of salary, take-home %, year to date and the predicted year (12 ÷ tax month × year to date, from
-  recorded payslips only), bonus % of annual salary; per tax year, totals, the change on the year just before, and
+  recorded payslips only), bonus % of annual salary; per tax year, totals, the change on the year just before, the annual salary at its start
+  and end (its first and last payslips with a salary) and the increase, and
   higher-rate pension relief (20% of employee pension, except pay elements marked **salary sacrifice**, which only a
   pension deduction can be: it already has full relief). Pages pass payslips oldest first, with the year before's for
   the first rise. A year's change is on the **same tax months** of the year before, so a year in progress compares like
