@@ -223,8 +223,9 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     private static List<string> Headings(PageResponse page) =>
         System.Text.RegularExpressions.Regex.Matches(
                 System.Text.RegularExpressions.Regex.Match(page.Html, "<thead.*?</thead>", System.Text.RegularExpressions.RegexOptions.Singleline).Value,
-                "<th[^>]*?(section-end)?[^>]*>([^<]*)</th>")
-            .Select(m => m.Groups[2].Value + (m.Value.Contains("section-end") ? " |" : ""))
+                "<th([^>]*)>(.*?)</th>")
+            .Select(m => System.Text.RegularExpressions.Regex.Replace(m.Groups[2].Value, "<[^>]+>", "") +
+                         (m.Groups[1].Value.Contains("section-end") ? " |" : ""))
             .Where(h => h.Length > 0)
             .ToList();
 
@@ -243,7 +244,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         var page = await client.GetAsync(url);
 
         Assert.Equal(
-            ["Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
+            ["Actions |", "Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
              "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |"],
             Headings(page));
         Assert.Contains("title=\"5.0% of salary\"", page.Text);         // the employee's pension
@@ -257,7 +258,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         await using (var db = Db())
             await db.Payslips.Where(s => s.TaxMonth == 2).ExecuteUpdateAsync(s => s.SetProperty(p => p.PensionReceivedDate, new DateOnly(2026, 6, 9)));
         var headings = Headings(await client.GetAsync(url));
-        Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[4..8]);
+        Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[5..9]);
     }
 
     [DatabaseFact]
