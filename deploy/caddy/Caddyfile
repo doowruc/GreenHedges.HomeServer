@@ -69,12 +69,6 @@
 		reverse_proxy 127.0.0.1:3000
 	}
 
-	# BookOrbit (deploy/bookorbit): the books, comics and manga library.
-	@books host books.{$HOME_DOMAIN}
-	handle @books {
-		reverse_proxy 127.0.0.1:5082
-	}
-
 	# Any other name under the wildcard: no such app.
 	handle {
 		respond "Not found" 404
