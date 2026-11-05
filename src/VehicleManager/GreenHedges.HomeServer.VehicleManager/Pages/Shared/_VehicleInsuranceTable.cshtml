@@ -1,0 +1,52 @@
+@model (int VehicleId, List<InsurancePolicyView> Policies)
+@{
+    // One row per spell this vehicle had on a policy (usually one per policy; more if it was switched off and back on).
+    var now = Reminders.UkNow();
+    var rows = Model.Policies
+        .SelectMany(p => p.Vehicles.Where(v => v.VehicleId == Model.VehicleId).Select(v => (Policy: p, Period: v)))
+        .OrderByDescending(r => r.Period.From).ToList();
+    var widest = rows.Count == 0 ? [] : rows
+        .DistinctBy(r => (r.Policy.OwnerName, r.Policy.Provider, r.Policy.PolicyNumber, r.Policy.Cover, r.Period.To == r.Policy.EndDate))
+        .Append(rows.MaxBy(r => InsuranceCosts.Share(r.Policy, r.Period).ToString("C").Length))
+        .Distinct().ToList();
+
+    async Task Row((InsurancePolicyView Policy, InsurancePeriodView Period) r)
+    {
+        var share = InsuranceCosts.Share(r.Policy, r.Period);
+        <tr>
+            <td data-order="@r.Period.From.ToString("s")">@r.Period.From.ToString("dd/MM/yyyy HH:mm")</td>
+            <td data-order="@r.Period.To.ToString("s")">@r.Period.To.ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@r.Policy.OwnerName</td>
+            <td><a asp-page="/Insurance/Details" asp-route-id="@r.Policy.Id">@r.Policy.Provider</a></td>
+            <td>@r.Policy.PolicyNumber</td>
+            <td>@r.Policy.CoverName</td>
+            <td class="text-end" data-order="@share">
+                <span title="Its share of the policy's @r.Policy.Premium.ToString("C") premium by time on it@(r.Period.Adjustment is { } a ? $", with a {a:C} adjustment" : "")">@share.ToString("C")</span>
+            </td>
+            <td class="w-100">
+                @if (r.Period.From <= now && now < r.Period.To) { <span class="badge text-bg-success">Current</span> }
+                else if (r.Period.From > now) { <span class="badge text-bg-info">Upcoming</span> }
+                @if (r.Period.To != r.Policy.EndDate) { <span class="badge text-bg-secondary" title="The policy ran on to @r.Policy.EndDate.ToString("dd/MM/yyyy HH:mm")">Switched off</span> }
+                @if (r.Period.From != r.Policy.StartDate) { <span class="badge text-bg-secondary" title="The policy started @r.Policy.StartDate.ToString("dd/MM/yyyy HH:mm")">Mid-term</span> }
+            </td>
+        </tr>
+    }
+}
+<div class="data-table dt-pending" data-noun="policies">
+<div class="table-responsive">
+<table class="table table-sm table-hover table-data align-middle mb-0">
+    <thead class="table-head">
+        <tr>
+            <th>Covered from</th><th>Covered to</th><th>Policyholder</th><th>Insurer</th><th>Policy number</th><th>Cover</th>
+            <th class="text-end">Cost</th><th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var r in rows) { await Row(r); }
+    </tbody>
+    <tfoot class="column-sizer" aria-hidden="true">
+    @foreach (var r in widest) { await Row(r); }
+    </tfoot>
+</table>
+</div>
+</div>

@@ -1,0 +1,17 @@
+@model string
+@* The insurance premium chart card (Insurance page, a vehicle's Insurance tab), drawn by wwwroot/js/premium-chart.js
+   (the page loads it after Chart.js). The model is InsuranceCosts.ChartJson: one series per vehicle. *@
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="fw-semibold">Insurance cost by vehicle</span>
+        @* What each cost, or the same rate for a year (so a short spell on a policy compares with the rest). *@
+        <div class="nav nav-pills nav-pills-sm" role="group" aria-label="Cost shown">
+            <button type="button" class="nav-link active" data-premium-view="actual" aria-pressed="true">Actual</button>
+            <button type="button" class="nav-link" data-premium-view="yearly" aria-pressed="false">Per year</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="chart-box"><canvas id="premium-chart" data-premium-chart="@Model"></canvas></div>
+        <div class="form-text">A policy's premium is shared between its vehicles by their time on it, plus each one's own mid-term adjustment.</div>
+    </div>
+</div>

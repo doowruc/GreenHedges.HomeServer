@@ -1,0 +1,17 @@
+@page "{id:int}"
+@model GreenHedges.HomeServer.VehicleManager.Pages.Insurance.DeleteModel
+@{ ViewData["Title"] = "Delete insurance policy"; }
+
+<h1 class="h3 mb-3">Delete insurance policy</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Delete @(Model.Policy.OwnerName)'s <strong>@Model.Policy.Provider</strong> policy @Model.Policy.PolicyNumber,
+       @Model.Policy.StartDate.ToString("dd/MM/yyyy HH:mm") to @Model.Policy.EndDate.ToString("dd/MM/yyyy HH:mm"), @Model.Policy.TotalCost.ToString("C")?</p>
+    @if (Model.Policy.Vehicles.Count > 0)
+    {
+        <p>It covers @Model.Policy.VehiclesText. Their insurance renewal dates will come from their latest remaining policies, if they have any.</p>
+    }
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="Details" asp-route-id="@Model.Policy.Id" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

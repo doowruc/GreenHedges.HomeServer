@@ -13,6 +13,9 @@ public class DeleteModel(AppDbContext db) : PageModel
     /// <summary>Vehicles still owned; the owner can't be deleted until they are reassigned.</summary>
     public List<VehicleView> Vehicles { get; private set; } = [];
 
+    /// <summary>Insurance policies they hold; the owner can't be deleted until these are deleted or given to someone else.</summary>
+    public int PolicyCount { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var name = await db.Owners.Where(o => o.Id == id).Select(o => o.Name).FirstOrDefaultAsync();
@@ -22,6 +25,7 @@ public class DeleteModel(AppDbContext db) : PageModel
             .OrderBy(v => v.Make).ThenBy(v => v.Model)
             .Select(VehicleView.Projection)
             .ToListAsync();
+        PolicyCount = await db.InsurancePolicies.CountAsync(p => p.OwnerId == id);
         return Page();
     }
 
@@ -29,7 +33,8 @@ public class DeleteModel(AppDbContext db) : PageModel
     {
         var name = await db.Owners.Where(o => o.Id == id).Select(o => o.Name).FirstOrDefaultAsync();
         if (name is null) return RedirectToPage("Index");
-        if (await db.Vehicles.AnyAsync(v => v.OwnerId == id)) return RedirectToPage("Delete", new { id });
+        if (await db.Vehicles.AnyAsync(v => v.OwnerId == id) || await db.InsurancePolicies.AnyAsync(p => p.OwnerId == id))
+            return RedirectToPage("Delete", new { id });
 
         await db.Owners.Where(o => o.Id == id).ExecuteDeleteAsync();
         TempData["Message"] = $"Deleted {name}.";

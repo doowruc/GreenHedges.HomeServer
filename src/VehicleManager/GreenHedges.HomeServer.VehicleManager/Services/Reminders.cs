@@ -20,6 +20,9 @@ public static class Reminders
     /// <summary>Today's date in the UK, whatever the server's time zone.</summary>
     public static DateOnly UkToday() => UkDate(DateTime.UtcNow);
 
+    /// <summary>The time in the UK now, as a wall-clock time (as insurance policies' start and end are stored).</summary>
+    public static DateTime UkNow() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, UkTime);
+
     /// <summary>The UK date at a UTC time (as stored, e.g. when an MOT test was completed).</summary>
     public static DateOnly UkDate(DateTime utc) =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), UkTime));

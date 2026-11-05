@@ -1,0 +1,14 @@
+@page "/Insurance/{policyId:int}/Vehicles/Delete/{id:int}"
+@model GreenHedges.HomeServer.VehicleManager.Pages.Insurance.Vehicles.DeleteModel
+@{ ViewData["Title"] = "Remove vehicle from policy"; }
+
+<h1 class="h3 mb-3">Remove vehicle from policy</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Take <strong>@Model.Period.VehicleLabel</strong> off @Model.PolicyName (covered @Model.Period.From.ToString("dd/MM/yyyy HH:mm")
+       to @Model.Period.To.ToString("dd/MM/yyyy HH:mm"))? The vehicle itself isn't deleted.</p>
+    <p class="text-muted small">To record a change of car part way through, use Switch instead, so the policy keeps its history.</p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Remove</button>
+        <a asp-page="/Insurance/Details" asp-route-id="@Model.PolicyId" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

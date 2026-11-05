@@ -60,9 +60,9 @@ public class LayoutTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactor
         foreach (var (text, href) in items)
             Assert.True(href is not null && (await client.GetAsync(href)).Status == HttpStatusCode.OK, $"{text} ({href}) doesn't load");
 
-        // Only Dashboard and Fuel log stay as top-level links.
+        // Only Dashboard, Fuel log and Insurance stay as top-level links.
         var topLevel = Regex.Matches(page.Html, @"<a class=""nav-link""[^>]*>([^<]+)</a>").Select(m => m.Groups[1].Value);
-        Assert.Equal(["Dashboard", "Fuel Log"], topLevel);
+        Assert.Equal(["Dashboard", "Fuel Log", "Insurance"], topLevel);
         Assert.Matches(@"<a class=""nav-link"" href=""/FuelLog"">Fuel Log</a>", page.Html);
     }
 

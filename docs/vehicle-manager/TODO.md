@@ -110,13 +110,19 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
       attachments) for servicing, tyres, repairs, insurance, tax, parking and tolls. This makes pence per mile a true
       total cost of ownership rather than fuel only. Add it to the backup.
   - [ ] Start with a cost on each service record, now that there's a service history.
-- [ ] **Insurance policies.** Record each vehicle's policies: insurer, policy number, cover (comprehensive, third
+- [x] **Insurance policies.** Record each vehicle's policies: insurer, policy number, cover (comprehensive, third
       party…), start and end dates, cost, excess, named drivers and notes (optionally the policy documents, kept on the
       server's disk with the backups). The current policy's end date sets the existing insurance renewal reminder
       (30 and 7 days before) instead of a date typed separately, and its cost feeds the running costs above. No lookup:
       the Motor Insurance Database has no API for individuals (askMID is a manual check under its user agreement;
       programmatic access is for insurers, brokers and fleets through the MIB), so it's entered by hand; a link to
       askMID on the vehicle page is enough for an occasional check.
+  - [x] Policies belong to an owner, with the vehicles they cover over time (switching car mid-term, with its
+        adjustment; multi-car policies), on an Insurance page and each vehicle's Insurance tab, with a cost chart per
+        vehicle (actual or per year). A vehicle's renewal reminder comes from the latest policy it's on at the end.
+  - [ ] The policy documents, kept on the server's disk with the backups.
+  - [ ] Premiums in the running costs, once there are any.
+  - [ ] A link to askMID on the vehicle page.
 - [ ] **Vehicle lifecycle: sold/disposed date and an "active" flag.** Hide sold vehicles from the dashboard and the
       fill-up vehicle dropdown, but keep their history. Optionally record purchase and sale price to show depreciation.
 - [ ] **Partial fill-ups.** A "full tank" flag on `FuelEntry`, so real MPG is worked out from one full fill to the

@@ -26,6 +26,12 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
     /// <summary>The services of the last 12 months, for the period toggle.</summary>
     public List<ServiceRecordView> ServicesLastYear { get; private set; } = [];
     public List<MotTestView> MotTests { get; private set; } = [];
+    /// <summary>The insurance policies that have covered this vehicle, latest-ending first (with all their vehicles, for its share of each).</summary>
+    public List<InsurancePolicyView> Policies { get; private set; } = [];
+    /// <summary>How many spells the vehicle has had on them (a policy it was switched off and back on to counts twice).</summary>
+    public int InsuranceSpells { get; private set; }
+    /// <summary>This vehicle's insurance costs for wwwroot/js/premium-chart.js (InsuranceCosts.ChartJson); null with fewer than two.</summary>
+    public string? PremiumChartJson { get; private set; }
     /// <summary>The MOT tests of the last 12 months, for the period toggle.</summary>
     public List<MotTestView> MotTestsLastYear { get; private set; } = [];
 
@@ -54,13 +60,15 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
     /// <summary>All vehicles for the switcher; each option's value is that vehicle's details URL, on the current tab.</summary>
     public List<SelectListItem> VehicleOptions { get; private set; } = [];
 
-    /// <summary>The tab shown first: fuel (the default), services or MOT, from <c>?tab=</c>.</summary>
+    /// <summary>The tab shown first: fuel (the default), services, insurance or MOT, from <c>?tab=</c>.</summary>
     public string Tab { get; private set; } = FuelTab;
-    public const string FuelTab = "fuel", ServicesTab = "services", MotTab = "mot";
+    public const string FuelTab = "fuel", ServicesTab = "services", InsuranceTab = "insurance", MotTab = "mot";
+
+    private static bool IsOtherTab(string? tab) => tab is ServicesTab or InsuranceTab or MotTab;
 
     public async Task<IActionResult> OnGetAsync(int id, string? tab)
     {
-        Tab = tab is ServicesTab or MotTab ? tab : FuelTab;
+        Tab = IsOtherTab(tab) ? tab! : FuelTab;
         var vehicle = await db.Vehicles.Where(v => v.Id == id).Select(VehicleView.Projection).FirstOrDefaultAsync();
         if (vehicle is null) return NotFound();
         Vehicle = vehicle;
@@ -77,6 +85,15 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
             .Select(ServiceRecordView.Projection)
             .ToListAsync();
         ServiceSchedule.SetDue(Services, vehicle.ServiceIntervalMonths, vehicle.ServiceIntervalMiles);
+
+        Policies = await db.InsurancePolicies
+            .Where(p => p.Vehicles.Any(v => v.VehicleId == id))
+            .OrderByDescending(p => p.EndDate).ThenByDescending(p => p.Id)
+            .Select(InsurancePolicyView.Projection)
+            .ToListAsync();
+        InsurancePolicyView.MarkCurrent(Policies, Reminders.UkNow());
+        InsuranceSpells = Policies.Sum(p => p.Vehicles.Count(v => v.VehicleId == id));
+        PremiumChartJson = InsuranceCosts.ChartJson(Policies, id);
 
         MotTests = MotTestView.NewestFirst(await db.MotTests
             .Where(t => t.VehicleId == id)
@@ -149,6 +166,6 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
         await db.SaveChangesAsync();
         TempData["Message"] = $"Checked {vehicle.RegistrationNumber} with {found.CheckedWith}: {found.Summary}.";
         if (found.Problems.Count > 0) TempData["Warning"] = string.Join(" ", found.Problems);
-        return RedirectToPage(new { id, tab = tab is ServicesTab or MotTab ? tab : null });
+        return RedirectToPage(new { id, tab = IsOtherTab(tab) ? tab : null });
     }
 }

@@ -186,8 +186,8 @@ don't use) for the application in Auth0.
 can't be deleted while they still own vehicles.
 
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date,
-when the MOT, tax, insurance and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service)),
-and how often it's serviced (every so many months and/or miles).
+when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
+from its policies), and how often it's serviced (every so many months and/or miles).
 
 **Service history** (per vehicle, on its page) – each service's date, mileage, garage and garage location, and
 whether it was under a previous owner (e.g. from the service book). That's ticked for you when the date is before the
@@ -199,6 +199,27 @@ When you add the vehicle's latest service, the next service's due date and milea
 service interval (e.g. serviced 01/10/2026 at 45,000 miles, every 12 months or 10,000 miles → next due 01/10/2027
 or at 55,000 miles). An interval that isn't set leaves that due value alone. Adding an older service, or deleting
 one, doesn't change them; editing the latest one's date or mileage works them out again.
+
+**Insurance** (**Insurance** in the navigation bar) – policies belong to an owner (the policyholder), with the
+vehicles they cover recorded against them. Each policy has its start and end (date and time, as on the schedule: UK
+policies switch over at a set minute, e.g. 00:00 to 23:59 a year later), insurer, policy number, cover (comprehensive;
+third party, fire and theft; or third party only), premium, total excess, named drivers and notes. The Insurance page
+lists them all (or one owner's), newest first, marking the ones in force "Current" and those yet to start "Upcoming".
+A policy's own page shows the vehicles it covers and when. **Switch vehicle** records a change of car part way
+through: the old car's cover ends when the new one's starts, with the insurer's adjustment (a charge, or minus a
+refund). **Add vehicle** puts another car on it alongside (a multi-car policy). **Renew** starts the next policy where
+it ends, for a year, with the same owner, insurer, cover, excess, drivers and the cars on it at its end.
+
+A vehicle's insurance renewal date is the last day of the latest policy it's on when that policy ends (the day
+before, for one ending at 00:00), so its badge, the dashboard and the reminders count down to it, and a car switched
+off a policy (e.g. sold) isn't reminded about it. The vehicle page's **Insurance** tab lists the policies that
+covered it, with links to them. The insurance cost chart (on the Insurance page, and each vehicle's tab) has a line
+per vehicle: each point its time on a policy, costing its share of the premium (by time on the policy, so a car on
+for 8 months of 12 costs two thirds, and two cars on all year half each) plus its own adjustment. It switches between
+that (**Actual**, the default) and the same rate for a year (**Per year**), so a few months on a policy compares
+fairly. An owner holding policies can't be deleted. Restoring a backup made before policies existed works, but its
+typed-in insurance renewal dates are dropped: add the policies instead.
+
 Registration numbers are normalised to upper case and must be unique (per user). Vehicles that existed before
 owners were added are assigned to an "Unassigned" owner; rename it or reassign the vehicles.
 
@@ -230,8 +251,9 @@ Merging a fuel brand moves its stations to the other brand, combining any with t
 
 **Dashboard** – a **Coming up** list of anything due within 30 days (or overdue), then one card per
 vehicle with its due dates, 12-month MPG, spend, odometer and last fill-up.
-**Vehicle page** – due dates (coloured by how soon they are), then two tabs: **Fuel** (last-12-months / all-time stats, an MPG and fuel-price chart, and the full log) and
-**Services** (the service history). The address bar follows the tab (`?tab=services`), so a refresh stays on it.
+**Vehicle page** – due dates (coloured by how soon they are), then tabs: **Fuel** (last-12-months / all-time stats, an MPG and fuel-price chart, and the full log),
+**Services** (the service history), **Insurance** (the policies that covered it, and its cost chart) and **MOT** (with the DVSA set up).
+The address bar follows the tab (`?tab=insurance`), so a refresh stays on it.
 **Fuel Log page** (`/FuelLog`) – all fill-ups, filterable by vehicle and year.
 **On a phone** – in Safari, **Share → Add to Home Screen** gives a "Vehicles" icon (the car from the menu bar)
 that opens it like an app, without the browser's toolbars. Browser tabs and bookmarks show the same icon.
@@ -240,7 +262,8 @@ account menu (top right) under **Theme**. The choice is remembered per browser.
 
 ## Reminders (MOT, tax, insurance and service)
 
-Each vehicle has four optional due dates: MOT, tax, insurance renewal and service, set on its edit form.
+Each vehicle has four optional due dates: MOT, tax and service, set on its edit form, and insurance renewal, the
+last day of its latest insurance policy (see Insurance above).
 They show on the vehicle's page and dashboard card and, when due within 30 days or overdue, in the dashboard's
 **Coming up** list.
 
@@ -254,8 +277,8 @@ mileage go once each, however much its estimated date moves.
 
 **Email reminders** – every morning at 07:00 UK time, each user who has set a reminder email address under
 **Settings** is emailed about anything due in 30 days, and again 7 days before (once each; a date first
-entered closer than that, or already overdue, gets one reminder). Changing a date, e.g. after renewing the
-insurance, starts its reminders afresh.
+entered closer than that, or already overdue, gets one reminder). Changing a date, e.g. adding next year's
+insurance policy, starts its reminders afresh.
 
 **MOT and tax lookups** – the MOT and tax dates can be filled in from the DVLA and DVSA: when a vehicle is
 added without them, from **Check MOT and tax** on the vehicle's page, and every morning before the reminders.
@@ -302,7 +325,7 @@ updated spreadsheet to pick up just the new rows.
 
 Under **Manage**:
 
-- **Backup** downloads all your data (owners, vehicles with their due dates, fuel brands, stations, fill-ups and services) as a
+- **Backup** downloads all your data (owners, vehicles with their due dates, fuel brands, stations, fill-ups, services, insurance policies and MOT tests) as a
   compressed JSON file, `vehicle-manager-backup-<date>.json.gz`. Other users' data isn't included.
 - **Restore** replaces **all** your data with a backup's. It accepts the `.json.gz` file or the plain
   `.json` inside it. The file is checked before anything is changed, and the restore runs in one

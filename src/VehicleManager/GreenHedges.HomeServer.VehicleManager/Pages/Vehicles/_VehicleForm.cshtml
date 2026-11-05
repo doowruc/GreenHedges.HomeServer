@@ -57,6 +57,7 @@
         <div class="form-text mt-0">
             You're emailed a reminder 30 and 7 days before each one, if you've set a reminder address in <a asp-page="/Settings/Index">Settings</a>.
             @lookupNote
+            Insurance renewal comes from the vehicle's insurance policies, on its Insurance tab.
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -68,11 +69,6 @@
         <label asp-for="TaxDueDate" class="form-label"></label>
         <input asp-for="TaxDueDate" class="form-control" />
         <span asp-validation-for="TaxDueDate" class="text-danger small"></span>
-    </div>
-    <div class="col-6 col-md-3">
-        <label asp-for="InsuranceDueDate" class="form-label"></label>
-        <input asp-for="InsuranceDueDate" class="form-control" />
-        <span asp-validation-for="InsuranceDueDate" class="text-danger small"></span>
     </div>
     <div class="col-6 col-md-3">
         <label asp-for="ServiceDueDate" class="form-label"></label>

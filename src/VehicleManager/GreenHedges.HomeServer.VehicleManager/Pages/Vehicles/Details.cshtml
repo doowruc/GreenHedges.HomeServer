@@ -20,7 +20,8 @@
             }
             @if (Model.DueDates.Count == 0 && Model.UnestimatedServiceMileage is null)
             {
-                <span class="text-muted small">No MOT, tax, insurance or service dates. <a asp-page="Edit" asp-route-id="@Model.Vehicle.Id">Add them</a>.</span>
+                <span class="text-muted small">No MOT, tax, insurance or service dates. <a asp-page="Edit" asp-route-id="@Model.Vehicle.Id">Add MOT, tax or service dates</a>
+                    or <a asp-page="/Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id">an insurance policy</a>.</span>
             }
             @foreach (var (check, label) in new[]
             {
@@ -57,6 +58,7 @@
     {
         (DetailsModel.FuelTab, "bi-fuel-pump", "Fuel", Model.Entries.Count),
         (DetailsModel.ServicesTab, "bi-wrench", "Services", Model.Services.Count),
+        (DetailsModel.InsuranceTab, "bi-shield-check", "Insurance", Model.InsuranceSpells),
         (DetailsModel.MotTab, "bi-clipboard-check", "MOT", Model.MotTests.Count)
     }.Where(t => t.Item1 != DetailsModel.MotTab || Model.ShowMotTab))
     {
@@ -157,6 +159,35 @@
         }
     </div>
 </div>
+<div class="tab-pane @PaneClass(DetailsModel.InsuranceTab)" id="tab-insurance" role="tabpanel">
+    @* Like the other tabs: the tab's action on the right. Policies belong to owners and are managed on the Insurance page;
+       this lists the ones that covered this vehicle. *@
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <a asp-page="/Insurance/Index" class="small">All policies</a>
+        <a asp-page="/Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id" class="btn btn-sm btn-primary"><i class="bi bi-shield-plus me-1"></i>Add policy</a>
+    </div>
+    @if (Model.PremiumChartJson is { } premiumChart)
+    {
+        <partial name="_PremiumChart" model="premiumChart" />
+    }
+    <div class="card shadow-sm">
+        <div class="card-header bg-body">
+            <span class="fw-semibold">Insurance (@Model.InsuranceSpells)</span>
+            @if (Model.Vehicle.InsuranceEndDate is { } ends)
+            {
+                <span class="text-muted small ms-2">Its latest policy ends @ends.ToString("dd/MM/yyyy HH:mm"): renewal reminders count down to it.</span>
+            }
+        </div>
+        @if (Model.Policies.Count == 0)
+        {
+            <div class="card-body text-muted">No insurance recorded yet. Add a policy to be reminded when it needs renewing.</div>
+        }
+        else
+        {
+            <div class="card-body py-2"><partial name="_VehicleInsuranceTable" model="(Model.Vehicle.Id, Model.Policies)" /></div>
+        }
+    </div>
+</div>
 @if (Model.ShowMotTab)
 {
     <div class="tab-pane @PaneClass(DetailsModel.MotTab)" id="tab-mot" role="tabpanel">
@@ -220,11 +251,11 @@
 </div>
 
 @section Styles {
-    @if (Model.Entries.Count > 0 || Model.Services.Count > 0) { <partial name="_DataTableStyles" /> }
+    @if (Model.Entries.Count > 0 || Model.Services.Count > 0 || Model.Policies.Count > 0) { <partial name="_DataTableStyles" /> }
 }
 
 @section Scripts {
-    @if (Model.Entries.Count > 0 || Model.Services.Count > 0) { <partial name="_DataTableScripts" /> }
+    @if (Model.Entries.Count > 0 || Model.Services.Count > 0 || Model.Policies.Count > 0) { <partial name="_DataTableScripts" /> }
     <script>
         document.getElementById('vehicle-switcher')?.addEventListener('change', e => location.href = e.target.value);
         document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => tab.addEventListener('shown.bs.tab', () => {
@@ -239,9 +270,13 @@
             });
         }));
     </script>
-    @if (Model.Entries.Count > 0 || Model.ServiceChartJson is not null || Model.MotChartJson is not null)
+    @if (Model.Entries.Count > 0 || Model.ServiceChartJson is not null || Model.MotChartJson is not null || Model.PremiumChartJson is not null)
     {
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+    }
+    @if (Model.PremiumChartJson is not null)
+    {
+        <script src="~/js/premium-chart.js" asp-append-version="true"></script>
     }
     @if (Model.ServiceChartJson is not null || Model.MotChartJson is not null)
     {

@@ -4,15 +4,23 @@
 
 <h1 class="h3 mb-3">Delete owner</h1>
 <div class="card shadow-sm border-danger"><div class="card-body">
-    @if (Model.Vehicles.Count > 0)
+    @if (Model.Vehicles.Count > 0 || Model.PolicyCount > 0)
     {
-        <p><strong>@Model.OwnerName</strong> can't be deleted while they own vehicles. Reassign these first:</p>
-        <ul>
-            @foreach (var v in Model.Vehicles)
-            {
-                <li><a asp-page="/Vehicles/Edit" asp-route-id="@v.Id">@v.DisplayName</a> <span class="reg-plate small">@v.RegistrationNumber</span></li>
-            }
-        </ul>
+        @if (Model.Vehicles.Count > 0)
+        {
+            <p><strong>@Model.OwnerName</strong> can't be deleted while they own vehicles. Reassign these first:</p>
+            <ul>
+                @foreach (var v in Model.Vehicles)
+                {
+                    <li><a asp-page="/Vehicles/Edit" asp-route-id="@v.Id">@v.DisplayName</a> <span class="reg-plate small">@v.RegistrationNumber</span></li>
+                }
+            </ul>
+        }
+        @if (Model.PolicyCount > 0)
+        {
+            <p><strong>@Model.OwnerName</strong> can't be deleted while they hold insurance policies (@Model.PolicyCount).
+               <a asp-page="/Insurance/Index" asp-route-ownerId="@RouteData.Values["id"]">Delete them or give them to someone else</a> first.</p>
+        }
         <a asp-page="Index" class="btn btn-outline-secondary">Back</a>
     }
     else

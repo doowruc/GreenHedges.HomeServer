@@ -134,7 +134,7 @@ public class RemindersTests
         var vehicle = new VehicleView
         {
             Id = 4, Make = "Ford", Model = "Focus", RegistrationNumber = "AB12 CDE",
-            MotDueDate = Today.AddDays(50), InsuranceDueDate = Today.AddDays(5), ServiceDueDate = Today.AddDays(50)
+            MotDueDate = Today.AddDays(50), InsuranceEndDate = Today.AddDays(5).ToDateTime(new TimeOnly(23, 59)), ServiceDueDate = Today.AddDays(50)
         };
         var dueDates = vehicle.DueDates(Today);
         Assert.Equal([DueDateKind.Insurance, DueDateKind.Mot, DueDateKind.Service], dueDates.Select(d => d.Kind));

@@ -72,7 +72,8 @@ so test pages through the in-memory host rather than relying on the browser.
 
 ```
 GreenHedges.HomeServer.VehicleManager/
-  Models/      EF Core entities: Owner, Vehicle, FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, UserSettings (storage only),
+  Models/      EF Core entities: Owner, Vehicle, FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
+               InsurancePolicyVehicle), UserSettings (storage only),
                SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
   Data/        AppDbContext (per-user query filters), DesignTimeDbContextFactory, Migrations/
@@ -83,11 +84,12 @@ GreenHedges.HomeServer.VehicleManager/
                Reminders (when to remind; pure) + ReminderEmailer + ScheduledReminders (Coravel, each morning),
                MileageTrend (recent miles per day from fill-up and MOT odometer readings, for service-by-mileage estimates), ServiceSchedule (next service from intervals),
                VehicleLookup (MOT/tax dates) over DvlaClient (DVLA Vehicle Enquiry) and MotHistoryClient (DVSA MOT History),
-               MotTests (keeps stored MOT tests in step with the DVSA), Telemetry (OpenTelemetry setup, ActivitySource)
-  Pages/       Index (dashboard, with a "Coming up" due-dates list), Owners/*, Vehicles/* (+ Services/* per vehicle), FuelLog/* (log + fill-up pages), Import/*, Backup/* (Index, Restore), Settings/* (user menu), FuelBrands/* (+ Stations/* per brand),
+               MotTests (keeps stored MOT tests in step with the DVSA), InsuranceCosts (vehicles' shares of policies, cost chart), Telemetry (OpenTelemetry setup, ActivitySource)
+  Pages/       Index (dashboard, with a "Coming up" due-dates list), Owners/*, Vehicles/* (+ Services/* per vehicle), Insurance/* (+ Vehicles/* per policy), FuelLog/* (log + fill-up pages), Import/*, Backup/* (Index, Restore), Settings/* (user menu), FuelBrands/* (+ Stations/* per brand),
                Account/* (Login, Logout, SignedOut), Shared/ (layout + partials)
   wwwroot/     css/site.css, js/color-mode.js, js/period-toggle.js, js/data-table.js (DataTables setup), js/typeahead.js (dropdown suggestions),
                js/price-chart.js (station price charts), js/mileage-chart.js (mileage over time: vehicle Services and MOT tabs),
+               js/premium-chart.js (insurance cost per vehicle over time, actual or per year: Insurance page, vehicle Insurance tab),
                js/spend-chart.js (dashboard fuel spending charts), favicon.svg/.ico + icons/ + site.webmanifest (made by
                ../make-icons.py: Bootstrap Icons' car on the navbar's dark grey; re-run it to change them)
   Monitoring/  AppHealth (database probes and job runs; the heartbeat source), VehicleManagerAlertMonitor (the alert rules),
@@ -168,8 +170,8 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   included. Test `BackUpAsync(testUserId)`, or `RunAsync([testUserIds])` for a whole run (it records the run in `AppHealth`).
 
 **Service history**
-- The vehicle page (`Vehicles/Details`) has Fuel, Services and MOT tabs (Bootstrap `nav-tabs`). The active one is rendered
-  server-side from `?tab=fuel|services|mot` (no flicker); the tab links carry it and a script keeps the address bar on the
+- The vehicle page (`Vehicles/Details`) has Fuel, Services, Insurance and MOT tabs (Bootstrap `nav-tabs`). The active one is rendered
+  server-side from `?tab=fuel|services|insurance|mot` (no flicker); the tab links carry it and a script keeps the address bar on the
   selected tab. Service pages redirect and cancel back with `tab=services` (`DetailsModel.ServicesTab`). The vehicle
   switcher's options carry the tab too (rendered server-side, updated by the same script), so switching vehicle keeps it.
 - `ServiceRecord` (date, mileage, garage, optional location, `UnderPreviousOwner` (done before the vehicle was the user's;
@@ -184,8 +186,38 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   interval following the one before it (`ServiceSchedule.SetDue` sets `ServiceRecordView.DueDate`/`DueMileage` from the
   vehicle's current interval; the first service is never late), and "Previous owner".
 
+**Insurance policies** (`/Insurance`, a top-level nav link)
+- `InsurancePolicy` belongs to an `Owner` (the policyholder; FK `Restrict`, so an owner with policies can't be
+  deleted; filtered through the owner): start and end, insurer (`Provider`), policy number, `Cover`, premium, optional
+  total excess, named drivers and notes. Its `Vehicles` are `InsurancePolicyVehicle` rows: a vehicle, `From`/`To`
+  within the policy's dates, and an optional `Adjustment` (charged, or negative refunded, for a mid-term change).
+  They cascade with the policy and with the vehicle (deleting a vehicle takes it off its policies; the policy stays).
+  Both are in the backup (`InsurancePolicies`, `InsurancePolicyVehicles`); restore deletes policies before owners.
+- Times are UK wall-clock times to the minute (`datetime2(0)`, `DateTimeKind.Unspecified`), as on the policy
+  schedule, not UTC like the audit columns: compare them with `Reminders.UkNow()`. Forms use `datetime-local` inputs
+  (`InsurancePolicyInput.InputFormat`); `ApplyTo` drops seconds. The backup writes them as `yyyy-MM-ddTHH:mm` with no
+  offset (`WallClockJsonConverter`, not `BackupFile`'s UTC one).
+- A vehicle's insurance due date is derived, not stored: `VehicleView.InsuranceEndDate` is the latest `To` of its
+  periods that run to their policy's end (in `VehicleView.Projection`), so a car switched off mid-term isn't due;
+  `InsuranceDueDate` = `InsurancePolicyView.LastDay` (its date, or the day before for an end at 00:00).
+- Pages (`Pages/Insurance`): `Index` (all policies or `?ownerId=`, `_InsuranceTable`, the cost chart), `Create`
+  (owner + first vehicle covered for the whole policy; `?vehicleId=` starts from that vehicle's latest policy;
+  `?renew=` starts where that policy ends with the vehicles on it then), `Edit` (moving the start or end moves the
+  periods that started or ended with it; others must still fit), `Delete`, `Details` (the policy and its vehicles).
+  A policy's vehicles are at `/Insurance/{policyId}/Vehicles/...` (`Pages/Insurance/Vehicles`, base
+  `InsurancePeriodPageModel`, which 404s a period not under the policy in the URL; pass `policyId`):
+  `Create` adds one alongside, or with `?replace=` switches from that period (ending it when the new one starts).
+- The vehicle page's Insurance tab (`?tab=insurance`) is read-only: `_VehicleInsuranceTable` (one row per spell on a
+  policy, "Switched off"/"Mid-term" badges) linking to the policies, and Add policy (`/Insurance/Create?vehicleId=`).
+- Costs (`Services/InsuranceCosts`): a vehicle's share of a policy is the premium split by time on it across all its
+  periods, plus its own adjustment; `Yearly` scales to 365.25 days. `ChartJson` (one series per vehicle, each point
+  a period at its start; null under two points) feeds `_PremiumChart` / `wwwroot/js/premium-chart.js` (Actual / Per
+  year buttons, Actual first, not remembered; clicking a point opens its policy).
+- Old backups' `insuranceDueDate` on vehicles is ignored on restore (unknown JSON properties are skipped).
+
 **Due dates, reminders and MOT/tax lookups**
-- `Vehicle` has `MotDueDate`, `TaxDueDate`, `InsuranceDueDate`, `ServiceDueDate` (all optional, in the backup).
+- `Vehicle` has `MotDueDate`, `TaxDueDate`, `ServiceDueDate` (all optional, in the backup); the insurance due date
+  comes from its latest policy (see Insurance policies).
   `VehicleView.DueDates(today)` gives the set ones as `DueDateView`s (badge colour, "in 5 days"/"2 days overdue");
   `Pages/Shared/_DueDates` shows them as badges. "Today" is `Reminders.UkToday()`, not the server's date.
 - Service can also be due at `ServiceDueMileage`: whichever of date and mileage comes first. The mileage's date is

@@ -28,6 +28,9 @@
 .table-data > tfoot.column-sizer td *,
 .table-data > tfoot.column-sizer td *::before { vertical-align: top !important; }   /* icons sit a little low otherwise */
 
+/* An insurance policy's notes stay on one line in its table (the whole note is in the tooltip). */
+.insurance-notes { max-width: 20rem; }
+
 /* DataTables tables sit in a "card-body py-2", like the stat cards. Drop the extra spacing DataTables'
    Bootstrap rows add (a margin above the first row, and grid gutters at the sides) so the padding matches. */
 .data-table .dt-container > .row { --bs-gutter-x: 0; }
