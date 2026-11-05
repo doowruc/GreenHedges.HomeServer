@@ -8,9 +8,18 @@
     if (!menu) return;
     const links = { edit: menu.querySelector('[data-action="edit"]'), delete: menu.querySelector('[data-action="delete"]') };
 
-    const close = () => menu.classList.remove('show');
+    let current = null;   // the row whose menu is open: it keeps its hover highlight (.row-menu-open in site.css)
+
+    const close = () => {
+        menu.classList.remove('show');
+        current?.classList.remove('row-menu-open');
+        current = null;
+    };
 
     const open = (row, x, y) => {
+        close();
+        current = row;
+        row.classList.add('row-menu-open');
         links.edit.href = row.dataset.edit;
         links.delete.href = row.dataset.delete;
         Object.assign(menu.style, { position: 'fixed', inset: 'auto', left: '0', top: '0' });
