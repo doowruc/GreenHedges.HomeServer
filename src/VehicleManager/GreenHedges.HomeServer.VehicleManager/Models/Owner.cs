@@ -15,4 +15,5 @@ public class Owner : AuditedEntity, IUserOwned
     public string Name { get; set; } = string.Empty;
 
     public List<Vehicle> Vehicles { get; set; } = [];
+    public List<InsurancePolicy> InsurancePolicies { get; set; } = [];
 }

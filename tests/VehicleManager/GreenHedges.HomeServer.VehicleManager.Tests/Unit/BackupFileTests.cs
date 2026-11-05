@@ -140,17 +140,23 @@ public class BackupFileTests
         Assert.Contains("MOT test 9 has more than one defect 1.", error);
     }
 
-    private static InsurancePolicyBackup Policy(int vehicleId = 2) => new()
+    private static InsurancePolicyBackup Policy(int ownerId = 1) => new()
     {
-        Id = 8, VehicleId = vehicleId, StartDate = new DateTime(2026, 11, 5, 14, 32, 0), EndDate = new DateTime(2027, 11, 4, 23, 59, 0),
+        Id = 8, OwnerId = ownerId, StartDate = new DateTime(2026, 11, 5, 14, 32, 0), EndDate = new DateTime(2027, 11, 4, 23, 59, 0),
         Provider = " Acme   Insurance ", PolicyNumber = " POL-1 ", Cover = InsuranceCover.ThirdPartyOnly, Premium = 456.78m, Excess = 250m,
         NamedDrivers = " Me,  Partner ", Notes = "Protected NCB"
+    };
+
+    /// <summary>Vehicle 2 switched on to policy 8 mid-term, with a refund.</summary>
+    private static InsurancePolicyVehicleBackup Covered() => new()
+    {
+        InsurancePolicyId = 8, VehicleId = 2, From = new DateTime(2027, 2, 1, 9, 15, 0), To = new DateTime(2027, 11, 4, 23, 59, 0), Adjustment = -12.5m
     };
 
     [Fact]
     public void Insurance_policies_keep_their_uk_times_without_an_offset_and_are_tidied()
     {
-        var json = Json(Sample(b => b with { InsurancePolicies = [Policy()] }));
+        var json = Json(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyVehicles = [Covered()] }));
         Assert.Contains("\"startDate\": \"2026-11-05T14:32\"", json);
         Assert.Contains("\"endDate\": \"2027-11-04T23:59\"", json);
         Assert.Contains("\"cover\": \"ThirdPartyOnly\"", json);
@@ -159,6 +165,9 @@ public class BackupFileTests
         Assert.Equal((new DateTime(2026, 11, 5, 14, 32, 0), new DateTime(2027, 11, 4, 23, 59, 0)), (policy.StartDate, policy.EndDate));
         Assert.Equal(DateTimeKind.Unspecified, policy.StartDate.Kind);
         Assert.Equal(("Acme Insurance", "POL-1", "Me, Partner", 456.78m), (policy.Provider, policy.PolicyNumber, policy.NamedDrivers, policy.Premium));
+        Assert.Contains("\"from\": \"2027-02-01T09:15\"", json);
+        var covered = Assert.Single(Read(json).InsurancePolicyVehicles);
+        Assert.Equal((8, 2, new DateTime(2027, 2, 1, 9, 15, 0), (decimal?)-12.5m), (covered.InsurancePolicyId, covered.VehicleId, covered.From, covered.Adjustment));
     }
 
     [Fact]
@@ -172,7 +181,13 @@ public class BackupFileTests
     [Fact]
     public void Rejects_insurance_policies_that_dont_link_up_or_add_up()
     {
-        Assert.Contains("Insurance policy 8's vehicle (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicies = [Policy(99)] })));
+        Assert.Contains("Insurance policy 8's owner (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicies = [Policy(99)] })));
+        Assert.Contains("Insurance policy 8's vehicle (99) isn't in the backup.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyVehicles = [Covered() with { VehicleId = 99 }] })));
+        Assert.Contains("A vehicle's insurance policy (99) isn't in the backup.",
+            ReadError(Sample(b => b with { InsurancePolicyVehicles = [Covered() with { InsurancePolicyId = 99 }] })));
+        Assert.Contains("Insurance policy 8's cover for vehicle 2 isn't within the policy's dates.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyVehicles = [Covered() with { To = new DateTime(2028, 1, 1) }] })));
         Assert.Contains("Insurance policy 8 doesn't end after it starts.",
             ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { EndDate = new DateTime(2026, 11, 5, 14, 32, 0) }] })));
         Assert.Contains("Insurance policy 8's premium (0) isn't a premium.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { Premium = 0 }] })));

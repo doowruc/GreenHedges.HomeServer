@@ -11,6 +11,14 @@ public class InsurancePolicyInput : IValidatableObject
     public const string InputFormat = "{0:yyyy-MM-ddTHH:mm}";
 
     [Required]
+    [Display(Name = "Owner (policyholder)")]
+    public int? OwnerId { get; set; }
+
+    /// <summary>A new policy's first vehicle, covered for the whole policy (not on edit: see the policy's vehicles).</summary>
+    [Display(Name = "Vehicle")]
+    public int? VehicleId { get; set; }
+
+    [Required]
     [DataType(DataType.DateTime)]
     [Display(Name = "Starts")]
     public DateTime? StartDate { get; set; }
@@ -58,6 +66,7 @@ public class InsurancePolicyInput : IValidatableObject
 
     public static readonly Expression<Func<InsurancePolicy, InsurancePolicyInput>> Projection = p => new InsurancePolicyInput
     {
+        OwnerId = p.OwnerId,
         StartDate = p.StartDate,
         EndDate = p.EndDate,
         Provider = p.Provider,
@@ -70,9 +79,13 @@ public class InsurancePolicyInput : IValidatableObject
         RowVersion = p.RowVersion
     };
 
-    /// <summary>Copies the fields across, tidying spaces and dropping seconds. Call only once the input is valid.</summary>
+    /// <summary>
+    /// Copies the policy's fields across, tidying spaces and dropping seconds. Call only once the input is valid and its
+    /// owner is the user's. Not the vehicle: see <see cref="InsurancePolicyVehicle"/>.
+    /// </summary>
     public void ApplyTo(InsurancePolicy policy)
     {
+        policy.OwnerId = OwnerId!.Value;
         policy.StartDate = ToMinute(StartDate!.Value);
         policy.EndDate = ToMinute(EndDate!.Value);
         policy.Provider = FuelStops.NormaliseName(Provider);

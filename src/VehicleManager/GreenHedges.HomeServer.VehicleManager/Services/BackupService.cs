@@ -59,11 +59,17 @@ public class BackupService(AppDbContext db)
         }).ToListAsync(),
         InsurancePolicies = await db.InsurancePolicies.OrderBy(p => p.Id).Select(p => new InsurancePolicyBackup
         {
-            Id = p.Id, VehicleId = p.VehicleId, StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider,
+            Id = p.Id, OwnerId = p.OwnerId, StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider,
             PolicyNumber = p.PolicyNumber, Cover = p.Cover, Premium = p.Premium, Excess = p.Excess,
             NamedDrivers = p.NamedDrivers, Notes = p.Notes,
             AddedDate = p.AddedDate, AddedBy = p.AddedBy, ModifiedDate = p.ModifiedDate, ModifiedBy = p.ModifiedBy
         }).ToListAsync(),
+        InsurancePolicyVehicles = await db.InsurancePolicyVehicles.OrderBy(v => v.InsurancePolicyId).ThenBy(v => v.From).ThenBy(v => v.Id)
+            .Select(v => new InsurancePolicyVehicleBackup
+            {
+                InsurancePolicyId = v.InsurancePolicyId, VehicleId = v.VehicleId, From = v.From, To = v.To, Adjustment = v.Adjustment,
+                AddedDate = v.AddedDate, AddedBy = v.AddedBy, ModifiedDate = v.ModifiedDate, ModifiedBy = v.ModifiedBy
+            }).ToListAsync(),
         MotTests = await db.MotTests.OrderBy(t => t.Id).Select(t => new MotTestBackup
         {
             Id = t.Id, VehicleId = t.VehicleId, CompletedDate = t.CompletedDate, Passed = t.Passed, ExpiryDate = t.ExpiryDate,
@@ -92,11 +98,12 @@ public class BackupService(AppDbContext db)
 
             // The query filters limit these to the current user's rows. Stops go first, as they
             // stop their stations being deleted, and fill-ups before their vehicles. Sent reminders and
-            // MOT tests (with their defects) and insurance policies go with their vehicles (FK cascade), so restored due dates are reminded about afresh.
+            // MOT tests (with their defects) and insurance policy vehicles go with their vehicles (FK cascade), so restored due dates are reminded about afresh.
             await db.FuelEntryStops.ExecuteDeleteAsync();
             await db.FuelEntries.ExecuteDeleteAsync();
             await db.ServiceRecords.ExecuteDeleteAsync();
             await db.Vehicles.ExecuteDeleteAsync();
+            await db.InsurancePolicies.ExecuteDeleteAsync();   // they stop their owners being deleted
             await db.Owners.ExecuteDeleteAsync();
             await db.FuelStations.ExecuteDeleteAsync();
             await db.FuelBrands.ExecuteDeleteAsync();
@@ -137,11 +144,15 @@ public class BackupService(AppDbContext db)
             {
                 Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner
             }));
-        foreach (var p in backup.InsurancePolicies)
-            vehicles[p.VehicleId].InsurancePolicies.Add(Audited(p, new InsurancePolicy
+        var policies = backup.InsurancePolicies.ToDictionary(p => p.Id, p => Audited(p, new InsurancePolicy
             {
-                StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider, PolicyNumber = p.PolicyNumber, Cover = p.Cover,
+                Owner = owners[p.OwnerId], StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider, PolicyNumber = p.PolicyNumber, Cover = p.Cover,
                 Premium = p.Premium, Excess = p.Excess, NamedDrivers = p.NamedDrivers, Notes = p.Notes
+            }));
+        foreach (var v in backup.InsurancePolicyVehicles)
+            policies[v.InsurancePolicyId].Vehicles.Add(Audited(v, new InsurancePolicyVehicle
+            {
+                Vehicle = vehicles[v.VehicleId], From = v.From, To = v.To, Adjustment = v.Adjustment
             }));
         var motTests = backup.MotTests.ToDictionary(t => t.Id, t => Audited(t, new MotTest
         {
@@ -158,6 +169,7 @@ public class BackupService(AppDbContext db)
 
         db.AddRange(owners.Values);
         db.AddRange(vehicles.Values);
+        db.AddRange(policies.Values);
         db.AddRange(brands.Values);
         db.AddRange(stations.Values);
         db.AddRange(entries.Values);

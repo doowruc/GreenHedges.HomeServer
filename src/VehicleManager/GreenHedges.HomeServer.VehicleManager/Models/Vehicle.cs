@@ -30,7 +30,7 @@ public class Vehicle : AuditedEntity, IUserOwned
     public DateOnly? PurchasedDate { get; set; }
 
     // --- When things are next due. MOT and tax can be looked up (Services/VehicleLookup); service is typed in.
-    //     Insurance renewal comes from the latest InsurancePolicy's end. ---
+    //     Insurance renewal comes from the latest policy the vehicle is on at its end (InsurancePolicyVehicle). ---
     public DateOnly? MotDueDate { get; set; }
     public DateOnly? TaxDueDate { get; set; }
     public DateOnly? ServiceDueDate { get; set; }
@@ -44,5 +44,5 @@ public class Vehicle : AuditedEntity, IUserOwned
     public List<FuelEntry> FuelEntries { get; set; } = [];
     public List<ServiceRecord> ServiceRecords { get; set; } = [];
     public List<MotTest> MotTests { get; set; } = [];
-    public List<InsurancePolicy> InsurancePolicies { get; set; } = [];
+    public List<InsurancePolicyVehicle> InsurancePeriods { get; set; } = [];
 }

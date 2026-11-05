@@ -287,6 +287,9 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("int");
+
                     b.Property<string>("PolicyNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -310,14 +313,66 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2(0)");
 
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "EndDate");
+
+                    b.ToTable("InsurancePolicies");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicyVehicle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("Adjustment")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTime>("From")
+                        .HasColumnType("datetime2(0)");
+
+                    b.Property<int>("InsurancePolicyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("To")
+                        .HasColumnType("datetime2(0)");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("VehicleId", "EndDate");
+                    b.HasIndex("InsurancePolicyId", "From");
 
-                    b.ToTable("InsurancePolicies");
+                    b.HasIndex("VehicleId", "To");
+
+                    b.ToTable("InsurancePolicyVehicles");
                 });
 
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.MotDefect", b =>
@@ -802,11 +857,30 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
 
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicy", b =>
                 {
-                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Vehicle", "Vehicle")
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Owner", "Owner")
                         .WithMany("InsurancePolicies")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicyVehicle", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicy", "Policy")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("InsurancePolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Vehicle", "Vehicle")
+                        .WithMany("InsurancePeriods")
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Policy");
 
                     b.Navigation("Vehicle");
                 });
@@ -881,6 +955,11 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Navigation("Stops");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicy", b =>
+                {
+                    b.Navigation("Vehicles");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.MotTest", b =>
                 {
                     b.Navigation("Defects");
@@ -888,6 +967,8 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
 
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.Owner", b =>
                 {
+                    b.Navigation("InsurancePolicies");
+
                     b.Navigation("Vehicles");
                 });
 
@@ -895,7 +976,7 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                 {
                     b.Navigation("FuelEntries");
 
-                    b.Navigation("InsurancePolicies");
+                    b.Navigation("InsurancePeriods");
 
                     b.Navigation("MotTests");
 

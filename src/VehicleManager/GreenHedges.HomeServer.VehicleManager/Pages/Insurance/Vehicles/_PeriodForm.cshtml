@@ -1,0 +1,33 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model InsurancePeriodInput
+@{ var vehicles = ViewData["Vehicles"] as List<SelectListItem> ?? []; }
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="VehicleId" class="form-label"></label>
+        <select asp-for="VehicleId" asp-items="vehicles" class="form-select">
+            <option value="">Choose…</option>
+        </select>
+        <span asp-validation-for="VehicleId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6"></div>
+    <div class="col-sm-6 col-md-4">
+        <label asp-for="From" class="form-label"></label>
+        <input asp-for="From" asp-format="@InsurancePolicyInput.InputFormat" class="form-control" />
+        <span asp-validation-for="From" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6 col-md-4">
+        <label asp-for="To" class="form-label"></label>
+        <input asp-for="To" asp-format="@InsurancePolicyInput.InputFormat" class="form-control" />
+        <span asp-validation-for="To" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6 col-md-4">
+        <label asp-for="Adjustment" class="form-label"></label>
+        <input asp-for="Adjustment" class="form-control" inputmode="decimal" placeholder="e.g. 25.00 or -40.00" />
+        <span asp-validation-for="Adjustment" class="text-danger small"></span>
+    </div>
+    <div class="col-12 form-text mt-1">
+        UK times, within the policy's dates. The adjustment is what the insurer charged for the change, or minus a refund.
+        A vehicle still on the policy when it ends is reminded to renew it.
+    </div>
+</div>

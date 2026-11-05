@@ -21,7 +21,7 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    VehicleId = table.Column<int>(type: "int", nullable: false),
+                    OwnerId = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2(0)", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2(0)", nullable: false),
                     Provider = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
@@ -41,7 +41,41 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                 {
                     table.PrimaryKey("PK_InsurancePolicies", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_InsurancePolicies_Vehicles_VehicleId",
+                        name: "FK_InsurancePolicies_Owners_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Owners",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InsurancePolicyVehicles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InsurancePolicyId = table.Column<int>(type: "int", nullable: false),
+                    VehicleId = table.Column<int>(type: "int", nullable: false),
+                    From = table.Column<DateTime>(type: "datetime2(0)", nullable: false),
+                    To = table.Column<DateTime>(type: "datetime2(0)", nullable: false),
+                    Adjustment = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: true),
+                    AddedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AddedBy = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    ModifiedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ModifiedBy = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InsurancePolicyVehicles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InsurancePolicyVehicles_InsurancePolicies_InsurancePolicyId",
+                        column: x => x.InsurancePolicyId,
+                        principalTable: "InsurancePolicies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_InsurancePolicyVehicles_Vehicles_VehicleId",
                         column: x => x.VehicleId,
                         principalTable: "Vehicles",
                         principalColumn: "Id",
@@ -49,14 +83,27 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_InsurancePolicies_VehicleId_EndDate",
+                name: "IX_InsurancePolicies_OwnerId_EndDate",
                 table: "InsurancePolicies",
-                columns: new[] { "VehicleId", "EndDate" });
+                columns: new[] { "OwnerId", "EndDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InsurancePolicyVehicles_InsurancePolicyId_From",
+                table: "InsurancePolicyVehicles",
+                columns: new[] { "InsurancePolicyId", "From" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InsurancePolicyVehicles_VehicleId_To",
+                table: "InsurancePolicyVehicles",
+                columns: new[] { "VehicleId", "To" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "InsurancePolicyVehicles");
+
             migrationBuilder.DropTable(
                 name: "InsurancePolicies");
 

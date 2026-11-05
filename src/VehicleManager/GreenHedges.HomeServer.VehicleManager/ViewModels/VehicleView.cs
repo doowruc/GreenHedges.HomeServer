@@ -16,7 +16,7 @@ public class VehicleView
     public DateOnly? PurchasedDate { get; init; }
     public DateOnly? MotDueDate { get; init; }
     public DateOnly? TaxDueDate { get; init; }
-    /// <summary>When the latest insurance policy ends (UK time), if there is one.</summary>
+    /// <summary>When the latest insurance policy the vehicle is on at its end ends (UK time), if there is one.</summary>
     public DateTime? InsuranceEndDate { get; init; }
     /// <summary>The insurance renewal date: the last day the latest policy covers.</summary>
     public DateOnly? InsuranceDueDate => InsuranceEndDate is { } end ? InsurancePolicyView.LastDay(end) : null;
@@ -46,7 +46,8 @@ public class VehicleView
         PurchasedDate = v.PurchasedDate,
         MotDueDate = v.MotDueDate,
         TaxDueDate = v.TaxDueDate,
-        InsuranceEndDate = v.InsurancePolicies.Max(p => (DateTime?)p.EndDate),
+        // A vehicle switched off a policy mid-term isn't due to renew it.
+        InsuranceEndDate = v.InsurancePeriods.Where(p => p.To == p.Policy!.EndDate).Max(p => (DateTime?)p.To),
         ServiceDueDate = v.ServiceDueDate,
         ServiceDueMileage = v.ServiceDueMileage,
         ServiceIntervalMonths = v.ServiceIntervalMonths,

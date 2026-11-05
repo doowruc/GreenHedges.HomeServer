@@ -7,8 +7,8 @@ namespace GreenHedges.HomeServer.VehicleManager.Data;
 
 /// <remarks>
 /// Each signed-in user has their own data. Query filters limit every query to the current user's
-/// owners, vehicles, fuel brands and stations, settings, and (through their vehicle) fill-ups and their stops,
-/// service records, insurance policies, MOT tests and their defects, and sent reminders.
+/// owners, vehicles, fuel brands and stations, settings, (through their owner) insurance policies and their vehicles, and (through their vehicle) fill-ups and their stops,
+/// service records, MOT tests and their defects, and sent reminders.
 /// Saving stamps new user-owned rows with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
@@ -27,6 +27,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
     public DbSet<MotTest> MotTests => Set<MotTest>();
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
+    public DbSet<InsurancePolicyVehicle> InsurancePolicyVehicles => Set<InsurancePolicyVehicle>();
     public DbSet<MotDefect> MotDefects => Set<MotDefect>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -38,6 +39,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
             e.HasMany(o => o.Vehicles)
              .WithOne(v => v.Owner)
              .HasForeignKey(v => v.OwnerId)
+             .OnDelete(DeleteBehavior.Restrict);
+            // Like vehicles: an owner with policies can't be deleted.
+            e.HasMany(o => o.InsurancePolicies)
+             .WithOne(p => p.Owner)
+             .HasForeignKey(p => p.OwnerId)
              .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -55,7 +61,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(s => s.Vehicle)
              .HasForeignKey(s => s.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
-            e.HasMany(v => v.InsurancePolicies)
+            // Deleting a vehicle takes it off its policies; the policies stay with their owner.
+            e.HasMany(v => v.InsurancePeriods)
              .WithOne(p => p.Vehicle)
              .HasForeignKey(p => p.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
@@ -77,14 +84,28 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
 
         modelBuilder.Entity<InsurancePolicy>(e =>
         {
-            e.HasQueryFilter(p => p.Vehicle!.UserId == CurrentUserId);
-            e.HasIndex(p => new { p.VehicleId, p.EndDate });
+            e.HasQueryFilter(p => p.Owner!.UserId == CurrentUserId);
+            e.HasIndex(p => new { p.OwnerId, p.EndDate });
             // UK wall-clock times to the minute, as on the policy schedule.
             e.Property(p => p.StartDate).HasColumnType("datetime2(0)");
             e.Property(p => p.EndDate).HasColumnType("datetime2(0)");
             e.Property(p => p.Cover).HasConversion<string>().HasMaxLength(30);
             e.Property(p => p.Premium).HasPrecision(10, 2);
             e.Property(p => p.Excess).HasPrecision(10, 2);
+            e.HasMany(p => p.Vehicles)
+             .WithOne(v => v.Policy)
+             .HasForeignKey(v => v.InsurancePolicyId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InsurancePolicyVehicle>(e =>
+        {
+            e.HasQueryFilter(v => v.Policy!.Owner!.UserId == CurrentUserId);
+            e.HasIndex(v => new { v.InsurancePolicyId, v.From });
+            e.HasIndex(v => new { v.VehicleId, v.To });
+            e.Property(v => v.From).HasColumnType("datetime2(0)");
+            e.Property(v => v.To).HasColumnType("datetime2(0)");
+            e.Property(v => v.Adjustment).HasPrecision(10, 2);
         });
 
         modelBuilder.Entity<MotTest>(e =>

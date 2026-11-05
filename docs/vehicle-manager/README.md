@@ -200,17 +200,25 @@ service interval (e.g. serviced 01/10/2026 at 45,000 miles, every 12 months or 1
 or at 55,000 miles). An interval that isn't set leaves that due value alone. Adding an older service, or deleting
 one, doesn't change them; editing the latest one's date or mileage works them out again.
 
-**Insurance policies** (per vehicle, on its page's **Insurance** tab) – each policy's start and end (date and time, as
-on the policy schedule: UK policies switch over at a set minute, e.g. 00:00 to 23:59 a year later), insurer, policy
-number, cover (comprehensive; third party, fire and theft; or third party only), premium, total excess, named drivers
-and notes. The vehicle's insurance renewal date is the last day of the policy that ends last (the day before, for one
-ending at 00:00), so its badge, the dashboard and the reminders count down to it; there's no separate date to type in.
-Policies can overlap (e.g. a change of insurer part way through a year); each one in force is marked "Current", and
-one yet to start "Upcoming". A new policy starts where the latest ends, for a year, with its insurer, cover, excess
-and drivers filled in. With two or more policies there's a chart of the premiums over time, which switches between
-what each cost (**Actual**, the default) and the same rate for a year (**Per year**), so a short policy compares
-fairly; the table shows the yearly rate beside a premium that wasn't for about a year. Restoring a backup made before
-policies existed works, but its typed-in insurance renewal dates are dropped: add the policies instead.
+**Insurance** (**Insurance** in the navigation bar) – policies belong to an owner (the policyholder), with the
+vehicles they cover recorded against them. Each policy has its start and end (date and time, as on the schedule: UK
+policies switch over at a set minute, e.g. 00:00 to 23:59 a year later), insurer, policy number, cover (comprehensive;
+third party, fire and theft; or third party only), premium, total excess, named drivers and notes. The Insurance page
+lists them all (or one owner's), newest first, marking the ones in force "Current" and those yet to start "Upcoming".
+A policy's own page shows the vehicles it covers and when. **Switch vehicle** records a change of car part way
+through: the old car's cover ends when the new one's starts, with the insurer's adjustment (a charge, or minus a
+refund). **Add vehicle** puts another car on it alongside (a multi-car policy). **Renew** starts the next policy where
+it ends, for a year, with the same owner, insurer, cover, excess, drivers and the cars on it at its end.
+
+A vehicle's insurance renewal date is the last day of the latest policy it's on when that policy ends (the day
+before, for one ending at 00:00), so its badge, the dashboard and the reminders count down to it, and a car switched
+off a policy (e.g. sold) isn't reminded about it. The vehicle page's **Insurance** tab lists the policies that
+covered it, with links to them. The insurance cost chart (on the Insurance page, and each vehicle's tab) has a line
+per vehicle: each point its time on a policy, costing its share of the premium (by time on the policy, so a car on
+for 8 months of 12 costs two thirds, and two cars on all year half each) plus its own adjustment. It switches between
+that (**Actual**, the default) and the same rate for a year (**Per year**), so a few months on a policy compares
+fairly. An owner holding policies can't be deleted. Restoring a backup made before policies existed works, but its
+typed-in insurance renewal dates are dropped: add the policies instead.
 
 Registration numbers are normalised to upper case and must be unique (per user). Vehicles that existed before
 owners were added are assigned to an "Unassigned" owner; rename it or reassign the vehicles.
@@ -244,7 +252,7 @@ Merging a fuel brand moves its stations to the other brand, combining any with t
 **Dashboard** – a **Coming up** list of anything due within 30 days (or overdue), then one card per
 vehicle with its due dates, 12-month MPG, spend, odometer and last fill-up.
 **Vehicle page** – due dates (coloured by how soon they are), then tabs: **Fuel** (last-12-months / all-time stats, an MPG and fuel-price chart, and the full log),
-**Services** (the service history), **Insurance** (the policies and a premium chart) and **MOT** (with the DVSA set up).
+**Services** (the service history), **Insurance** (the policies that covered it, and its cost chart) and **MOT** (with the DVSA set up).
 The address bar follows the tab (`?tab=insurance`), so a refresh stays on it.
 **Fuel Log page** (`/FuelLog`) – all fill-ups, filterable by vehicle and year.
 **On a phone** – in Safari, **Share → Add to Home Screen** gives a "Vehicles" icon (the car from the menu bar)
@@ -255,7 +263,7 @@ account menu (top right) under **Theme**. The choice is remembered per browser.
 ## Reminders (MOT, tax, insurance and service)
 
 Each vehicle has four optional due dates: MOT, tax and service, set on its edit form, and insurance renewal, the
-last day of its latest insurance policy (see Insurance policies above).
+last day of its latest insurance policy (see Insurance above).
 They show on the vehicle's page and dashboard card and, when due within 30 days or overdue, in the dashboard's
 **Coming up** list.
 

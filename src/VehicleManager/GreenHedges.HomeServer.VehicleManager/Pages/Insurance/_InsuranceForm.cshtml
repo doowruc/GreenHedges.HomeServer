@@ -2,9 +2,41 @@
 @model InsurancePolicyInput
 @{
     var covers = Enum.GetValues<InsuranceCover>().Select(c => new SelectListItem(InsurancePolicyView.CoverNames(c), c.ToString()));
+    // A new policy picks its first vehicle here; a renewal lists the vehicles it carries over; an edit has neither
+    // (vehicles are changed on the policy's page).
+    var vehicles = ViewData["Vehicles"] as List<SelectListItem> ?? [];
+    var owners = ViewData["Owners"] as List<SelectListItem> ?? [];
+    var renewing = ViewData["RenewedVehicles"] as List<InsurancePeriodView>;
+    var showVehicle = ViewData["ChooseVehicle"] is true;
 }
 <input type="hidden" asp-for="RowVersion" />
 <div class="row g-3" id="insurance-fields" data-providers="@ViewData["Providers"]">
+    <div class="col-md-6">
+        <label asp-for="OwnerId" class="form-label"></label>
+        <select asp-for="OwnerId" asp-items="owners" class="form-select">
+            <option value="">Choose…</option>
+        </select>
+        <span asp-validation-for="OwnerId" class="text-danger small"></span>
+    </div>
+    @if (showVehicle)
+    {
+        <div class="col-md-6">
+            <label asp-for="VehicleId" class="form-label"></label>
+            <select asp-for="VehicleId" asp-items="vehicles" class="form-select">
+                <option value="">Choose…</option>
+            </select>
+            <span asp-validation-for="VehicleId" class="text-danger small"></span>
+            <div class="form-text">Covered for the whole policy. Switch or add vehicles on the policy's page.</div>
+        </div>
+    }
+    else if (renewing is not null)
+    {
+        <div class="col-md-6">
+            <div class="form-label">Vehicles</div>
+            <div class="form-control-plaintext py-1">@(renewing.Count == 0 ? "None (add them on the policy's page)" : string.Join(", ", renewing.Select(v => v.VehicleLabel).Distinct()))</div>
+            <div class="form-text">The ones on the policy it renews when it ended.</div>
+        </div>
+    }
     <div class="col-sm-6 col-md-4">
         <label asp-for="StartDate" class="form-label"></label>
         <input asp-for="StartDate" asp-format="@InsurancePolicyInput.InputFormat" class="form-control" />
@@ -16,7 +48,7 @@
         <span asp-validation-for="EndDate" class="text-danger small"></span>
     </div>
     <div class="col-12 form-text mt-1">
-        UK times, as on the policy schedule. The vehicle's insurance renewal reminders count down to the end of its latest policy.
+        UK times, as on the policy schedule. A vehicle's insurance renewal reminders count down to the end of the latest policy it's on.
     </div>
     <div class="col-md-6">
         <label asp-for="Provider" class="form-label"></label>
@@ -58,7 +90,7 @@
 <script src="~/js/typeahead.js" asp-append-version="true"></script>
 <script>
     (() => {
-        // The insurer suggests every insurer used before, on any vehicle.
+        // The insurer suggests every insurer used before.
         const fields = document.getElementById('insurance-fields');
         const providers = JSON.parse(fields.dataset.providers || '[]');
         typeahead(fields, '#Policy_Provider', () => providers);

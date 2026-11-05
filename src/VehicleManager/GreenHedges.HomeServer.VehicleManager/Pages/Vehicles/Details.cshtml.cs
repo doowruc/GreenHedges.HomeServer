@@ -26,9 +26,11 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
     /// <summary>The services of the last 12 months, for the period toggle.</summary>
     public List<ServiceRecordView> ServicesLastYear { get; private set; } = [];
     public List<MotTestView> MotTests { get; private set; } = [];
-    /// <summary>The insurance policies, latest-ending first.</summary>
+    /// <summary>The insurance policies that have covered this vehicle, latest-ending first (with all their vehicles, for its share of each).</summary>
     public List<InsurancePolicyView> Policies { get; private set; } = [];
-    /// <summary>The premiums for wwwroot/js/premium-chart.js, oldest first; null with fewer than two policies.</summary>
+    /// <summary>How many spells the vehicle has had on them (a policy it was switched off and back on to counts twice).</summary>
+    public int InsuranceSpells { get; private set; }
+    /// <summary>This vehicle's insurance costs for wwwroot/js/premium-chart.js (InsuranceCosts.ChartJson); null with fewer than two.</summary>
     public string? PremiumChartJson { get; private set; }
     /// <summary>The MOT tests of the last 12 months, for the period toggle.</summary>
     public List<MotTestView> MotTestsLastYear { get; private set; } = [];
@@ -85,20 +87,13 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
         ServiceSchedule.SetDue(Services, vehicle.ServiceIntervalMonths, vehicle.ServiceIntervalMiles);
 
         Policies = await db.InsurancePolicies
-            .Where(p => p.VehicleId == id)
-            .OrderByDescending(p => p.EndDate).ThenByDescending(p => p.StartDate).ThenByDescending(p => p.Id)
+            .Where(p => p.Vehicles.Any(v => v.VehicleId == id))
+            .OrderByDescending(p => p.EndDate).ThenByDescending(p => p.Id)
             .Select(InsurancePolicyView.Projection)
             .ToListAsync();
         InsurancePolicyView.MarkCurrent(Policies, Reminders.UkNow());
-        PremiumChartJson = Policies.Count < 2 ? null : JsonSerializer.Serialize(Policies.OrderBy(p => p.StartDate).Select(p => new
-        {
-            start = p.StartDate.ToString("yyyy-MM-ddTHH:mm"),
-            end = p.EndDate.ToString("yyyy-MM-ddTHH:mm"),
-            provider = p.Provider,
-            premium = p.Premium,
-            yearly = p.YearlyPremium,
-            days = Math.Round(p.Days)
-        }));
+        InsuranceSpells = Policies.Sum(p => p.Vehicles.Count(v => v.VehicleId == id));
+        PremiumChartJson = InsuranceCosts.ChartJson(Policies, id);
 
         MotTests = MotTestView.NewestFirst(await db.MotTests
             .Where(t => t.VehicleId == id)

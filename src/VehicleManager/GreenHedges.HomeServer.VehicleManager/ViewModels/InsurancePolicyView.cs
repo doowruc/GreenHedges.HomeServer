@@ -6,7 +6,8 @@ namespace GreenHedges.HomeServer.VehicleManager.ViewModels;
 public class InsurancePolicyView
 {
     public int Id { get; init; }
-    public int VehicleId { get; init; }
+    public int OwnerId { get; init; }
+    public string OwnerName { get; init; } = string.Empty;
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public string Provider { get; init; } = string.Empty;
@@ -17,6 +18,9 @@ public class InsurancePolicyView
     public string? NamedDrivers { get; init; }
     public string? Notes { get; init; }
 
+    /// <summary>The vehicles it covers, and when, in order.</summary>
+    public List<InsurancePeriodView> Vehicles { get; init; } = [];
+
     /// <summary>In force now (set by <see cref="MarkCurrent"/>).</summary>
     public bool IsCurrent { get; set; }
 
@@ -25,17 +29,17 @@ public class InsurancePolicyView
 
     public string CoverName => CoverNames(Cover);
 
+    /// <summary>The premium plus any mid-term adjustments (vehicles switched or added).</summary>
+    public decimal TotalCost => Premium + Vehicles.Sum(v => v.Adjustment ?? 0);
+
     /// <summary>How long the policy lasts, in days (a year's policy, 00:00 to 23:59 a year on, is about 365).</summary>
     public double Days => (EndDate - StartDate).TotalDays;
 
-    /// <summary>The premium for a year at the same rate, so policies of different lengths can be compared.</summary>
-    public decimal YearlyPremium => Days <= 0 ? Premium : Math.Round(Premium * (decimal)(DaysPerYear / Days), 2);
+    /// <summary>The vehicles on the policy when it ends: the ones whose renewal it is.</summary>
+    public IEnumerable<InsurancePeriodView> VehiclesAtEnd => Vehicles.Where(v => v.To == EndDate);
 
-    /// <summary>Not about a year long (outside 360–370 days), so its yearly premium differs from what it cost.</summary>
-    public bool IsPartYear => Days is < 360 or > 370;
-
-    /// <summary>Policies 00:00 to 23:59 a year on are 365 days less a minute; allow for leap years.</summary>
-    private const double DaysPerYear = 365.25;
+    /// <summary>Each vehicle once, in the order they joined, e.g. "Ford Focus (AB12 CDE), Kia Ceed (XY34 ZZZ)".</summary>
+    public string VehiclesText => string.Join(", ", Vehicles.Select(v => v.VehicleLabel).Distinct());
 
     public static string CoverNames(InsuranceCover cover) => cover switch
     {
@@ -64,7 +68,8 @@ public class InsurancePolicyView
     public static readonly Expression<Func<InsurancePolicy, InsurancePolicyView>> Projection = p => new InsurancePolicyView
     {
         Id = p.Id,
-        VehicleId = p.VehicleId,
+        OwnerId = p.OwnerId,
+        OwnerName = p.Owner!.Name,
         StartDate = p.StartDate,
         EndDate = p.EndDate,
         Provider = p.Provider,
@@ -73,6 +78,7 @@ public class InsurancePolicyView
         Premium = p.Premium,
         Excess = p.Excess,
         NamedDrivers = p.NamedDrivers,
-        Notes = p.Notes
+        Notes = p.Notes,
+        Vehicles = p.Vehicles.AsQueryable().OrderBy(v => v.From).ThenBy(v => v.Id).Select(InsurancePeriodView.Projection).ToList()
     };
 }

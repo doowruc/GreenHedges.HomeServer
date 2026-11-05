@@ -74,7 +74,7 @@ public class ScheduledRemindersTests(AppFactory app) : DatabaseTest, IClassFixtu
         var (address, _) = await SetUpAsync();
         await using (var db = Db())
         {
-            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(5).AddYears(-1), Today.AddDays(5)));
+            db.InsurancePolicies.Add(TestData.Policy(await db.Vehicles.SingleAsync(), Today.AddDays(5).AddYears(-1), Today.AddDays(5)));
             await db.SaveChangesAsync();
         }
         await RunAsync(UserId, Today);
@@ -83,7 +83,7 @@ public class ScheduledRemindersTests(AppFactory app) : DatabaseTest, IClassFixtu
         // Renewed: the next year's policy gets its own reminders.
         await using (var db = Db())
         {
-            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(6), Today.AddDays(5).AddYears(1)));
+            db.InsurancePolicies.Add(TestData.Policy(await db.Vehicles.SingleAsync(), Today.AddDays(6), Today.AddDays(5).AddYears(1)));
             await db.SaveChangesAsync();
         }
         Assert.Equal(ReminderEmailResult.NothingDue, (await RunAsync(UserId, Today.AddDays(1))).Email);

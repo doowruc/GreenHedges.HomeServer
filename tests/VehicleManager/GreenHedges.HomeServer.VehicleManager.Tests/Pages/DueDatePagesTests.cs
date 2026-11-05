@@ -32,7 +32,7 @@ public class DueDatePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         await using (var db = Db())
         {
             // Insurance renewal comes from the policy ending last: here, at 23:59 in 10 days.
-            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(10).AddYears(-1), Today.AddDays(10)));
+            db.InsurancePolicies.Add(TestData.Policy(await db.Vehicles.SingleAsync(), Today.AddDays(10).AddYears(-1), Today.AddDays(10)));
             await db.SaveChangesAsync();
         }
         var saved = await client.PostFormAsync($"/Vehicles/Edit/{id}", edit, new()

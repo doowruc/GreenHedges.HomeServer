@@ -1,0 +1,44 @@
+@page
+@model GreenHedges.HomeServer.VehicleManager.Pages.Insurance.IndexModel
+@{ ViewData["Title"] = "Insurance"; }
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Insurance</h1>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        @if (Model.OwnerOptions.Count > 1)
+        {
+            <form method="get">
+                <select name="ownerId" class="form-select form-select-sm w-auto" aria-label="Policyholder" asp-items="Model.OwnerOptions" onchange="this.form.submit()">
+                    <option value="">All policyholders</option>
+                </select>
+            </form>
+        }
+        <a asp-page="Create" class="btn btn-sm btn-primary"><i class="bi bi-shield-plus me-1"></i>Add policy</a>
+    </div>
+</div>
+
+@if (Model.ChartJson is { } chart)
+{
+    <partial name="_PremiumChart" model="chart" />
+}
+<div class="card shadow-sm">
+    <div class="card-header bg-body fw-semibold">Policies (@Model.Policies.Count)</div>
+    @if (Model.Policies.Count == 0)
+    {
+        <div class="card-body text-muted">No policies recorded yet. Add one to be reminded when the insurance needs renewing.</div>
+    }
+    else
+    {
+        <div class="card-body py-2"><partial name="_InsuranceTable" model="Model.Policies" /></div>
+    }
+</div>
+
+@section Styles { @if (Model.Policies.Count > 0) { <partial name="_DataTableStyles" /> } }
+@section Scripts {
+    @if (Model.Policies.Count > 0) { <partial name="_DataTableScripts" /> }
+    @if (Model.ChartJson is not null)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+        <script src="~/js/premium-chart.js" asp-append-version="true"></script>
+    }
+}

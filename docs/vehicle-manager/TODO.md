@@ -117,8 +117,9 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
       the Motor Insurance Database has no API for individuals (askMID is a manual check under its user agreement;
       programmatic access is for insurers, brokers and fleets through the MIB), so it's entered by hand; a link to
       askMID on the vehicle page is enough for an occasional check.
-  - [x] Policies (start and end to the minute, insurer, number, cover, premium, excess, named drivers, notes) on an
-        Insurance tab, with a premium chart (actual or per year); the renewal reminder comes from the latest end.
+  - [x] Policies belong to an owner, with the vehicles they cover over time (switching car mid-term, with its
+        adjustment; multi-car policies), on an Insurance page and each vehicle's Insurance tab, with a cost chart per
+        vehicle (actual or per year). A vehicle's renewal reminder comes from the latest policy it's on at the end.
   - [ ] The policy documents, kept on the server's disk with the backups.
   - [ ] Premiums in the running costs, once there are any.
   - [ ] A link to askMID on the vehicle page.

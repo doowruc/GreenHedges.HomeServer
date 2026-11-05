@@ -4,8 +4,9 @@ using GreenHedges.HomeServer.Common.Web.Data;
 namespace GreenHedges.HomeServer.VehicleManager.Models;
 
 /// <summary>
-/// An insurance policy a vehicle has had. The latest one's end sets the vehicle's insurance renewal date. Policies can
-/// overlap (e.g. a change of insurer mid-term). Pages use <c>InsurancePolicyView</c> / <c>InsurancePolicyInput</c>.
+/// An owner's insurance policy. The vehicles it covers, and when, are its <see cref="Vehicles"/> (a car can be switched
+/// mid-term, and a policy can cover several). A vehicle's insurance renewal date is the end of the latest policy it's
+/// still on when the policy ends. Policies can overlap. Pages use <c>InsurancePolicyView</c> / <c>InsurancePolicyInput</c>.
 /// </summary>
 public class InsurancePolicy : AuditedEntity
 {
@@ -16,8 +17,8 @@ public class InsurancePolicy : AuditedEntity
 
     public int Id { get; set; }
 
-    public int VehicleId { get; set; }
-    public Vehicle? Vehicle { get; set; }
+    public int OwnerId { get; set; }
+    public Owner? Owner { get; set; }
 
     /// <summary>When cover starts and ends, in UK time as on the policy schedule (to the minute), not UTC.</summary>
     public DateTime StartDate { get; set; }
@@ -31,7 +32,7 @@ public class InsurancePolicy : AuditedEntity
 
     public InsuranceCover Cover { get; set; } = InsuranceCover.Comprehensive;
 
-    /// <summary>What the policy cost in all.</summary>
+    /// <summary>What the policy cost when taken out; mid-term changes add their <see cref="InsurancePolicyVehicle.Adjustment"/>.</summary>
     public decimal Premium { get; set; }
 
     /// <summary>The total excess on a claim (compulsory plus voluntary).</summary>
@@ -42,4 +43,6 @@ public class InsurancePolicy : AuditedEntity
 
     [StringLength(MaxNotesLength)]
     public string? Notes { get; set; }
+
+    public List<InsurancePolicyVehicle> Vehicles { get; set; } = [];
 }

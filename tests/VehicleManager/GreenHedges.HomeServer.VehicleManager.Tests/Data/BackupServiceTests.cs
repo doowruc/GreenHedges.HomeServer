@@ -15,15 +15,18 @@ public class BackupServiceTests : DatabaseTest
         vehicle.FuelType = FuelType.Diesel;
         vehicle.MotDueDate = new DateOnly(2026, 11, 1);
         vehicle.TaxDueDate = new DateOnly(2027, 3, 1);
-        vehicle.InsurancePolicies.Add(new InsurancePolicy
+        var policyStart = new DateTime(2026, 1, 15, 14, 32, 0);
+        db.InsurancePolicies.Add(new InsurancePolicy
         {
-            StartDate = new DateTime(2026, 1, 15, 14, 32, 0), EndDate = new DateTime(2027, 1, 14, 23, 59, 0), Provider = "Acme Insurance",
+            OwnerId = vehicle.OwnerId, StartDate = policyStart, EndDate = new DateTime(2027, 1, 14, 23, 59, 0), Provider = "Acme Insurance",
             PolicyNumber = "POL-123", Cover = InsuranceCover.ThirdPartyFireAndTheft, Premium = 456.78m, Excess = 350m,
-            NamedDrivers = "Me, Partner", Notes = "Protected no-claims bonus"
+            NamedDrivers = "Me, Partner", Notes = "Protected no-claims bonus",
+            // Put on mid-term, with a charge for it.
+            Vehicles = [new() { Vehicle = vehicle, From = new DateTime(2026, 6, 1, 9, 15, 0), To = new DateTime(2027, 1, 14, 23, 59, 0), Adjustment = 25.50m }]
         });
-        vehicle.InsurancePolicies.Add(new InsurancePolicy
+        db.InsurancePolicies.Add(new InsurancePolicy
         {
-            StartDate = new DateTime(2025, 1, 15, 0, 0, 0), EndDate = new DateTime(2026, 1, 15, 14, 32, 0), Provider = "Other Insurer",
+            OwnerId = vehicle.OwnerId, StartDate = new DateTime(2025, 1, 15, 0, 0, 0), EndDate = policyStart, Provider = "Other Insurer",
             PolicyNumber = "OLD-1", Premium = 400m
         });
         vehicle.ServiceDueDate = new DateOnly(2027, 6, 30);
@@ -57,7 +60,8 @@ public class BackupServiceTests : DatabaseTest
         .. await db.FuelEntries.Select(f => $"fill-up {f.Vehicle!.RegistrationNumber} {f.Date} {f.Litres} {f.CostPerLitre} {f.Notes} {f.AddedBy}").ToListAsync(),
         .. await db.FuelEntryStops.Select(s => $"stop {s.FuelEntry!.Date} {s.Sequence} {s.FuelStation!.FuelBrand!.Name}@{s.FuelStation.Name}").ToListAsync(),
         .. await db.ServiceRecords.Select(s => $"service {s.Vehicle!.RegistrationNumber} {s.Date} {s.Mileage} {s.Garage} {s.GarageLocation} previous={s.UnderPreviousOwner} {s.AddedBy} {s.AddedDate:O}").ToListAsync(),
-        .. await db.InsurancePolicies.Select(p => $"policy {p.Vehicle!.RegistrationNumber} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
+        .. await db.InsurancePolicyVehicles.Select(v => $"insured {v.Vehicle!.RegistrationNumber} on {v.Policy!.PolicyNumber} {v.From:O} {v.To:O} {v.Adjustment} {v.AddedDate:O}").ToListAsync(),
+        .. await db.InsurancePolicies.Select(p => $"policy {p.Owner!.Name} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
                                                   $"{p.Premium} {p.Excess} {p.NamedDrivers} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
         .. await db.MotTests.Select(t => $"mot {t.Vehicle!.RegistrationNumber} {t.CompletedDate:O} passed={t.Passed} {t.ExpiryDate} {t.Odometer} km={t.OdometerInKilometres} " +
                                          $"{t.MotTestNumber} {t.RegistrationAtTest} {t.DataSource} {t.AddedBy} {t.AddedDate:O}").ToListAsync(),

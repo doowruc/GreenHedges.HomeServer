@@ -21,7 +21,7 @@
             @if (Model.DueDates.Count == 0 && Model.UnestimatedServiceMileage is null)
             {
                 <span class="text-muted small">No MOT, tax, insurance or service dates. <a asp-page="Edit" asp-route-id="@Model.Vehicle.Id">Add MOT, tax or service dates</a>
-                    or <a asp-page="Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id">an insurance policy</a>.</span>
+                    or <a asp-page="/Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id">an insurance policy</a>.</span>
             }
             @foreach (var (check, label) in new[]
             {
@@ -58,7 +58,7 @@
     {
         (DetailsModel.FuelTab, "bi-fuel-pump", "Fuel", Model.Entries.Count),
         (DetailsModel.ServicesTab, "bi-wrench", "Services", Model.Services.Count),
-        (DetailsModel.InsuranceTab, "bi-shield-check", "Insurance", Model.Policies.Count),
+        (DetailsModel.InsuranceTab, "bi-shield-check", "Insurance", Model.InsuranceSpells),
         (DetailsModel.MotTab, "bi-clipboard-check", "MOT", Model.MotTests.Count)
     }.Where(t => t.Item1 != DetailsModel.MotTab || Model.ShowMotTab))
     {
@@ -160,39 +160,31 @@
     </div>
 </div>
 <div class="tab-pane @PaneClass(DetailsModel.InsuranceTab)" id="tab-insurance" role="tabpanel">
-    @* Like the other tabs: the tab's action on the right (policies are yearly, so there's no period toggle). *@
-    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-2">
-        <a asp-page="Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id" class="btn btn-sm btn-primary"><i class="bi bi-shield-plus me-1"></i>Add policy</a>
+    @* Like the other tabs: the tab's action on the right. Policies belong to owners and are managed on the Insurance page;
+       this lists the ones that covered this vehicle. *@
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <a asp-page="/Insurance/Index" class="small">All policies</a>
+        <a asp-page="/Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id" class="btn btn-sm btn-primary"><i class="bi bi-shield-plus me-1"></i>Add policy</a>
     </div>
     @if (Model.PremiumChartJson is { } premiumChart)
     {
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <span class="fw-semibold">Premium at each policy</span>
-                @* What it cost, or the same rate for a year (so a short or long policy compares with the rest). *@
-                <div class="nav nav-pills nav-pills-sm" role="group" aria-label="Premium shown">
-                    <button type="button" class="nav-link active" data-premium-view="actual" aria-pressed="true">Actual</button>
-                    <button type="button" class="nav-link" data-premium-view="yearly" aria-pressed="false">Per year</button>
-                </div>
-            </div>
-            <div class="card-body"><div class="chart-box"><canvas id="premium-chart" data-premium-chart="@premiumChart"></canvas></div></div>
-        </div>
+        <partial name="_PremiumChart" model="premiumChart" />
     }
     <div class="card shadow-sm">
         <div class="card-header bg-body">
-            <span class="fw-semibold">Insurance policies (@Model.Policies.Count)</span>
+            <span class="fw-semibold">Insurance (@Model.InsuranceSpells)</span>
             @if (Model.Vehicle.InsuranceEndDate is { } ends)
             {
-                <span class="text-muted small ms-2">The latest ends @ends.ToString("dd/MM/yyyy HH:mm"): renewal reminders count down to it.</span>
+                <span class="text-muted small ms-2">Its latest policy ends @ends.ToString("dd/MM/yyyy HH:mm"): renewal reminders count down to it.</span>
             }
         </div>
         @if (Model.Policies.Count == 0)
         {
-            <div class="card-body text-muted">No policies recorded yet. Add one to be reminded when the insurance needs renewing.</div>
+            <div class="card-body text-muted">No insurance recorded yet. Add a policy to be reminded when it needs renewing.</div>
         }
         else
         {
-            <div class="card-body py-2"><partial name="_InsuranceTable" model="Model.Policies" /></div>
+            <div class="card-body py-2"><partial name="_VehicleInsuranceTable" model="(Model.Vehicle.Id, Model.Policies)" /></div>
         }
     </div>
 </div>
