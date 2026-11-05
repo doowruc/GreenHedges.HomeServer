@@ -21,5 +21,7 @@ public sealed record InsurancePolicyBackup : BackupRow
     public required decimal Premium { get; init; }
     public decimal? Excess { get; init; }
     public string? NamedDrivers { get; set; }
+    public int? NoClaimsYears { get; init; }
+    public bool ProtectedNoClaims { get; init; }
     public string? Notes { get; init; }
 }

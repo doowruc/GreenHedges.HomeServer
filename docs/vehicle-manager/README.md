@@ -203,12 +203,15 @@ one, doesn't change them; editing the latest one's date or mileage works them ou
 **Insurance** (**Insurance** in the navigation bar) – policies belong to an owner (the policyholder), with the
 vehicles they cover recorded against them. Each policy has its start and end (date and time, as on the schedule: UK
 policies switch over at a set minute, e.g. 00:00 to 23:59 a year later), insurer, policy number, cover (comprehensive;
-third party, fire and theft; or third party only), premium, total excess, named drivers and notes. The Insurance page
+third party, fire and theft; or third party only), premium, total excess, no claims bonus (years, and whether it's
+protected), named drivers and notes. A new policy's form starts at 00:00 today and ends at 23:59 the day before a year
+on. The Insurance page
 lists them all (or one owner's), newest first, marking the ones in force "Current" and those yet to start "Upcoming".
 A policy's own page shows the vehicles it covers and when. **Switch vehicle** records a change of car part way
 through: the old car's cover ends when the new one's starts, with the insurer's adjustment (a charge, or minus a
 refund). **Add vehicle** puts another car on it alongside (a multi-car policy). **Renew** starts the next policy where
-it ends, for a year, with the same owner, insurer, cover, excess, drivers and the cars on it at its end.
+it ends (00:00 the next day, after an end at 23:59), for a year, with the same owner, insurer, cover, excess, drivers,
+protection and the cars on it at its end, and a year more no claims bonus (change it if you claimed).
 
 A vehicle's insurance renewal date is the last day of the latest policy it's on when that policy ends (the day
 before, for one ending at 00:00), so its badge, the dashboard and the reminders count down to it, and a car switched

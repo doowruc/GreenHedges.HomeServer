@@ -144,7 +144,7 @@ public class BackupFileTests
     {
         Id = 8, OwnerId = ownerId, StartDate = new DateTime(2026, 11, 5, 14, 32, 0), EndDate = new DateTime(2027, 11, 4, 23, 59, 0),
         Provider = " Acme   Insurance ", PolicyNumber = " POL-1 ", Cover = InsuranceCover.ThirdPartyOnly, Premium = 456.78m, Excess = 250m,
-        NamedDrivers = " Me,  Partner ", Notes = "Protected NCB"
+        NamedDrivers = " Me,  Partner ", NoClaimsYears = 9, ProtectedNoClaims = true, Notes = "Renewed by phone"
     };
 
     /// <summary>Vehicle 2 switched on to policy 8 mid-term, with a refund.</summary>
@@ -165,6 +165,7 @@ public class BackupFileTests
         Assert.Equal((new DateTime(2026, 11, 5, 14, 32, 0), new DateTime(2027, 11, 4, 23, 59, 0)), (policy.StartDate, policy.EndDate));
         Assert.Equal(DateTimeKind.Unspecified, policy.StartDate.Kind);
         Assert.Equal(("Acme Insurance", "POL-1", "Me, Partner", 456.78m), (policy.Provider, policy.PolicyNumber, policy.NamedDrivers, policy.Premium));
+        Assert.Equal(((int?)9, true), (policy.NoClaimsYears, policy.ProtectedNoClaims));
         Assert.Contains("\"from\": \"2027-02-01T09:15\"", json);
         var covered = Assert.Single(Read(json).InsurancePolicyVehicles);
         Assert.Equal((8, 2, new DateTime(2027, 2, 1, 9, 15, 0), (decimal?)-12.5m), (covered.InsurancePolicyId, covered.VehicleId, covered.From, covered.Adjustment));
@@ -190,6 +191,8 @@ public class BackupFileTests
             ReadError(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyVehicles = [Covered() with { To = new DateTime(2028, 1, 1) }] })));
         Assert.Contains("Insurance policy 8 doesn't end after it starts.",
             ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { EndDate = new DateTime(2026, 11, 5, 14, 32, 0) }] })));
+        Assert.Contains("Insurance policy 8's no claims bonus (51 years) isn't 0 to 50 years.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { NoClaimsYears = 51 }] })));
         Assert.Contains("Insurance policy 8's premium (0) isn't a premium.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { Premium = 0 }] })));
         Assert.Contains("Insurance policy 8's policy number is missing.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { PolicyNumber = " " }] })));
         Assert.Contains("Insurance policy 8's insurer is missing.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { Provider = "" }] })));

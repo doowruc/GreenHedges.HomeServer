@@ -189,7 +189,9 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 **Insurance policies** (`/Insurance`, a top-level nav link)
 - `InsurancePolicy` belongs to an `Owner` (the policyholder; FK `Restrict`, so an owner with policies can't be
   deleted; filtered through the owner): start and end, insurer (`Provider`), policy number, `Cover`, premium, optional
-  total excess, named drivers and notes. Its `Vehicles` are `InsurancePolicyVehicle` rows: a vehicle, `From`/`To`
+  total excess, no claims bonus (`NoClaimsYears`, optional, 0 to 50; `ProtectedNoClaims`), named drivers and notes.
+  The create form defaults to 00:00 to 23:59 a year on (`CreateModel.RenewalStart` / `DefaultEnd`); a renewal carries
+  the bonus over a year more. Its `Vehicles` are `InsurancePolicyVehicle` rows: a vehicle, `From`/`To`
   within the policy's dates, and an optional `Adjustment` (charged, or negative refunded, for a mid-term change).
   They cascade with the policy and with the vehicle (deleting a vehicle takes it off its policies; the policy stays).
   Both are in the backup (`InsurancePolicies`, `InsurancePolicyVehicles`); restore deletes policies before owners.

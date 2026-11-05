@@ -29,6 +29,7 @@
             <dt class="col-sm-3">With adjustments</dt><dd class="col-sm-9">@p.TotalCost.ToString("C")</dd>
         }
         <dt class="col-sm-3">Total excess</dt><dd class="col-sm-9">@(p.Excess?.ToString("C") ?? "–")</dd>
+        <dt class="col-sm-3">No claims bonus</dt><dd class="col-sm-9">@(p.NoClaimsYears is { } years ? $"{years} year{(years == 1 ? "" : "s")}" : "–")@(p.ProtectedNoClaims ? " (protected)" : "")</dd>
         <dt class="col-sm-3">Named drivers</dt><dd class="col-sm-9">@(p.NamedDrivers ?? "–")</dd>
         @if (p.Notes is { } notes)
         {

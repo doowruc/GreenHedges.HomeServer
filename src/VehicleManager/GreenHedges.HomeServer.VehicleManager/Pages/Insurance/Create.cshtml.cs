@@ -43,8 +43,9 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
             Policy.OwnerId = from?.OwnerId ?? ownerId;
         }
 
-        // A renewal starts when the policy before ends, with its insurer, cover, excess and drivers; otherwise from now.
-        var start = from is not null ? RenewalStart(from.EndDate) : InsurancePolicyInput.ToMinute(Reminders.UkNow());
+        // A renewal starts when the policy before ends, with its insurer, cover, excess, drivers and no claims bonus (a
+        // year more); otherwise from today. Either way 00:00 to 23:59 a year on, as UK policies usually run.
+        var start = from is not null ? RenewalStart(from.EndDate) : Reminders.UkNow().Date;
         Policy.StartDate = start;
         Policy.EndDate = DefaultEnd(start);
         if (from is not null)
@@ -54,6 +55,8 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
             Policy.Cover = from.Cover;
             Policy.Excess = from.Excess;
             Policy.NamedDrivers = from.NamedDrivers;
+            Policy.NoClaimsYears = from.NoClaimsYears is { } years ? Math.Min(years + 1, InsurancePolicy.MaxNoClaimsYears) : null;
+            Policy.ProtectedNoClaims = from.ProtectedNoClaims;
         }
         await LoadOptionsAsync();
         return Page();
@@ -94,11 +97,12 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
         return RedirectToPage("Details", new { id = policy.Id });
     }
 
-    /// <summary>Where a renewal starts: when the policy before ends, or the minute after an end at 23:59 (cover runs to the end of that minute).</summary>
-    public static DateTime RenewalStart(DateTime previousEnd) =>
-        previousEnd.TimeOfDay == new TimeSpan(23, 59, 0) ? previousEnd.AddMinutes(1) : previousEnd;
+    /// <summary>
+    /// Where a renewal starts: 00:00 on the day the policy before finishes, the next day for one ending at 23:59 (cover
+    /// runs to the end of that minute). An end at another time overlaps a little rather than leaving a gap.
+    /// </summary>
+    public static DateTime RenewalStart(DateTime previousEnd) => previousEnd.AddMinutes(1).Date;
 
-    /// <summary>A year's cover: to 23:59 the day before the anniversary for a policy starting at midnight, else to the same time a year on.</summary>
-    public static DateTime DefaultEnd(DateTime start) =>
-        start.TimeOfDay == TimeSpan.Zero ? start.AddYears(1).AddMinutes(-1) : start.AddYears(1);
+    /// <summary>A year's cover: to 23:59 the day before the anniversary of the start's day.</summary>
+    public static DateTime DefaultEnd(DateTime start) => start.Date.AddYears(1).AddMinutes(-1);
 }

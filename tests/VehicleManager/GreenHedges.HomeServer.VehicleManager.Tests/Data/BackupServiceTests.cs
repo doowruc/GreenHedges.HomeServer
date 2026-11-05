@@ -20,7 +20,7 @@ public class BackupServiceTests : DatabaseTest
         {
             OwnerId = vehicle.OwnerId, StartDate = policyStart, EndDate = new DateTime(2027, 1, 14, 23, 59, 0), Provider = "Acme Insurance",
             PolicyNumber = "POL-123", Cover = InsuranceCover.ThirdPartyFireAndTheft, Premium = 456.78m, Excess = 350m,
-            NamedDrivers = "Me, Partner", Notes = "Protected no-claims bonus",
+            NamedDrivers = "Me, Partner", NoClaimsYears = 7, ProtectedNoClaims = true, Notes = "Renewed by phone",
             // Put on mid-term, with a charge for it.
             Vehicles = [new() { Vehicle = vehicle, From = new DateTime(2026, 6, 1, 9, 15, 0), To = new DateTime(2027, 1, 14, 23, 59, 0), Adjustment = 25.50m }]
         });
@@ -62,7 +62,7 @@ public class BackupServiceTests : DatabaseTest
         .. await db.ServiceRecords.Select(s => $"service {s.Vehicle!.RegistrationNumber} {s.Date} {s.Mileage} {s.Garage} {s.GarageLocation} previous={s.UnderPreviousOwner} {s.AddedBy} {s.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicyVehicles.Select(v => $"insured {v.Vehicle!.RegistrationNumber} on {v.Policy!.PolicyNumber} {v.From:O} {v.To:O} {v.Adjustment} {v.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicies.Select(p => $"policy {p.Owner!.Name} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
-                                                  $"{p.Premium} {p.Excess} {p.NamedDrivers} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
+                                                  $"{p.Premium} {p.Excess} {p.NamedDrivers} ncb={p.NoClaimsYears} protected={p.ProtectedNoClaims} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
         .. await db.MotTests.Select(t => $"mot {t.Vehicle!.RegistrationNumber} {t.CompletedDate:O} passed={t.Passed} {t.ExpiryDate} {t.Odometer} km={t.OdometerInKilometres} " +
                                          $"{t.MotTestNumber} {t.RegistrationAtTest} {t.DataSource} {t.AddedBy} {t.AddedDate:O}").ToListAsync(),
         .. await db.MotDefects.Select(d => $"defect {d.MotTest!.CompletedDate:O} {d.Sequence} {d.Type} {d.Text} dangerous={d.Dangerous} {d.AddedDate:O}").ToListAsync()

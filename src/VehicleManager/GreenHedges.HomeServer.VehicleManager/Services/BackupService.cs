@@ -61,7 +61,7 @@ public class BackupService(AppDbContext db)
         {
             Id = p.Id, OwnerId = p.OwnerId, StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider,
             PolicyNumber = p.PolicyNumber, Cover = p.Cover, Premium = p.Premium, Excess = p.Excess,
-            NamedDrivers = p.NamedDrivers, Notes = p.Notes,
+            NamedDrivers = p.NamedDrivers, NoClaimsYears = p.NoClaimsYears, ProtectedNoClaims = p.ProtectedNoClaims, Notes = p.Notes,
             AddedDate = p.AddedDate, AddedBy = p.AddedBy, ModifiedDate = p.ModifiedDate, ModifiedBy = p.ModifiedBy
         }).ToListAsync(),
         InsurancePolicyVehicles = await db.InsurancePolicyVehicles.OrderBy(v => v.InsurancePolicyId).ThenBy(v => v.From).ThenBy(v => v.Id)
@@ -147,7 +147,8 @@ public class BackupService(AppDbContext db)
         var policies = backup.InsurancePolicies.ToDictionary(p => p.Id, p => Audited(p, new InsurancePolicy
             {
                 Owner = owners[p.OwnerId], StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider, PolicyNumber = p.PolicyNumber, Cover = p.Cover,
-                Premium = p.Premium, Excess = p.Excess, NamedDrivers = p.NamedDrivers, Notes = p.Notes
+                Premium = p.Premium, Excess = p.Excess, NamedDrivers = p.NamedDrivers, NoClaimsYears = p.NoClaimsYears,
+                ProtectedNoClaims = p.ProtectedNoClaims, Notes = p.Notes
             }));
         foreach (var v in backup.InsurancePolicyVehicles)
             policies[v.InsurancePolicyId].Vehicles.Add(Audited(v, new InsurancePolicyVehicle
