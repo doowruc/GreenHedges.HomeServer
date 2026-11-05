@@ -19,7 +19,7 @@ public class BackupService(AppDbContext db)
         CreatedDate = DateTime.UtcNow,
         Owners = await db.Owners.OrderBy(o => o.Id).Select(o => new OwnerBackup
         {
-            Id = o.Id, Name = o.Name,
+            Id = o.Id, Name = o.Name, LicenceIssueDate = o.LicenceIssueDate, DriverNumber = o.DriverNumber,
             AddedDate = o.AddedDate, AddedBy = o.AddedBy, ModifiedDate = o.ModifiedDate, ModifiedBy = o.ModifiedBy
         }).ToListAsync(),
         Vehicles = await db.Vehicles.OrderBy(v => v.Id).Select(v => new VehicleBackup
@@ -121,7 +121,7 @@ public class BackupService(AppDbContext db)
 
     private void AddRows(BackupFile backup)
     {
-        var owners = backup.Owners.ToDictionary(o => o.Id, o => Audited(o, new Owner { Name = o.Name }));
+        var owners = backup.Owners.ToDictionary(o => o.Id, o => Audited(o, new Owner { Name = o.Name, LicenceIssueDate = o.LicenceIssueDate, DriverNumber = o.DriverNumber }));
         var vehicles = backup.Vehicles.ToDictionary(v => v.Id, v => Audited(v, new Vehicle
         {
             Owner = owners[v.OwnerId], Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,

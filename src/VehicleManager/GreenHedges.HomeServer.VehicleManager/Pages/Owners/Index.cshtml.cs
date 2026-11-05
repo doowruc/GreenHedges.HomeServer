@@ -6,7 +6,13 @@ namespace GreenHedges.HomeServer.VehicleManager.Pages.Owners;
 
 public class IndexModel(AppDbContext db) : PageModel
 {
-    public record Row(int Id, string Name, int Vehicles);
+    public record Row(int Id, string Name, int Vehicles, string? DriverNumber, DateOnly? LicenceIssueDate)
+    {
+        /// <summary>Whole years since the licence was first issued, as of <paramref name="today"/>.</summary>
+        public int? YearsHeld(DateOnly today) => LicenceIssueDate is { } issued
+            ? today.Year - issued.Year - (today < issued.AddYears(today.Year - issued.Year) ? 1 : 0)
+            : null;
+    }
 
     public List<Row> Owners { get; private set; } = [];
 
@@ -14,7 +20,7 @@ public class IndexModel(AppDbContext db) : PageModel
     {
         Owners = await db.Owners
             .OrderBy(o => o.Name)
-            .Select(o => new Row(o.Id, o.Name, o.Vehicles.Count))
+            .Select(o => new Row(o.Id, o.Name, o.Vehicles.Count, o.DriverNumber, o.LicenceIssueDate))
             .ToListAsync();
     }
 }

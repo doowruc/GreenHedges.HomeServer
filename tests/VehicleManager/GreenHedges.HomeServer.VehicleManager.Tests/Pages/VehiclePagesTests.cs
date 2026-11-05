@@ -89,6 +89,43 @@ public class VehiclePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
+    public async Task An_owners_driving_licence_is_tidied_checked_and_listed()
+    {
+        int id;
+        await using (var db = Db())
+        {
+            db.Owners.Add(new Owner { Name = "Me" });
+            await db.SaveChangesAsync();
+            id = (await db.Owners.SingleAsync()).Id;
+        }
+        var client = app.ClientFor(UserId);
+        var url = $"/Owners/Edit/{id}";
+        var form = await client.GetAsync(url);
+
+        var bad = await client.PostFormAsync(url, form, new()
+        {
+            ["Owner.DriverNumber"] = "NOT A NUMBER", ["Owner.LicenceIssueDate"] = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")
+        });
+        Assert.Contains("That isn't a driver number", bad.Text);
+        Assert.Contains("The licence can't be issued in the future.", bad.Text);
+
+        var issued = DateOnly.FromDateTime(DateTime.Today).AddYears(-12).AddDays(-1);
+        var saved = await client.PostFormAsync(url, form, new()
+        {
+            ["Owner.DriverNumber"] = " testa 801015 ab9cd ", ["Owner.LicenceIssueDate"] = issued.ToString("yyyy-MM-dd")
+        });
+        Assert.True(saved.Status == HttpStatusCode.Redirect, saved.Errors);
+        await using (var db = Db())
+        {
+            var owner = await db.Owners.SingleAsync();
+            Assert.Equal(("TESTA801015AB9CD", (DateOnly?)issued), (owner.DriverNumber, owner.LicenceIssueDate));
+        }
+        var list = await client.GetAsync("/Owners");
+        Assert.Contains("TESTA801015AB9CD", list.Text);
+        Assert.Contains($"{issued:dd/MM/yyyy} <span class=\"text-muted small\">(12 years)</span>", list.Html);
+    }
+
+    [DatabaseFact]
     public async Task The_vehicle_pages_header_controls_are_small_like_the_Fuel_Logs()
     {
         int id;

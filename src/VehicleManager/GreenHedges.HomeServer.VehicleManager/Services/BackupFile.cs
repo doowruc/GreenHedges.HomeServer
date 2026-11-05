@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using GreenHedges.HomeServer.VehicleManager.Models;
 using GreenHedges.HomeServer.VehicleManager.Pages.Vehicles;
+using GreenHedges.HomeServer.VehicleManager.ViewModels;
 
 namespace GreenHedges.HomeServer.VehicleManager.Services;
 
@@ -131,7 +132,11 @@ public sealed record BackupFile
 
     private void Tidy()
     {
-        foreach (var o in Owners) o.Name = FuelStops.NormaliseName(o.Name);
+        foreach (var o in Owners)
+        {
+            o.Name = FuelStops.NormaliseName(o.Name);
+            o.DriverNumber = OwnerInput.NormaliseDriverNumber(o.DriverNumber);
+        }
         foreach (var v in Vehicles) v.RegistrationNumber = VehicleRules.NormaliseReg(v.RegistrationNumber);
         foreach (var b in FuelBrands) b.Name = FuelStops.NormaliseName(b.Name);
         foreach (var s in FuelStations) s.Name = FuelStops.NormaliseName(s.Name);
@@ -159,7 +164,11 @@ public sealed record BackupFile
         var entryIds = UniqueIds(FuelEntries, f => f.Id, "fill-up", errors);
 
         foreach (var o in Owners)
+        {
             Text(o.Name, 50, $"Owner {o.Id}'s name", errors);
+            if (o.DriverNumber is { } number && !OwnerInput.DriverNumberPattern().IsMatch(number))
+                errors.Add($"Owner {o.Id}'s driver number isn't a driver number.");
+        }
         Unique(Owners, o => o.Name, o => $"There's more than one owner called \"{o.Name}\".", errors);
 
         foreach (var v in Vehicles)

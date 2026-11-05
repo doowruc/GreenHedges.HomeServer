@@ -183,7 +183,9 @@ don't use) for the application in Auth0.
 ## Features
 
 **Owners** – managed from **Owners** in the navigation bar. Names must be unique, and an owner
-can't be deleted while they still own vehicles.
+can't be deleted while they still own vehicles. Each can have their driving licence's driver number (16 characters,
+checked against the GB format and stored without spaces) and its date of first issue; the list shows how many years
+they've held it.
 
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes

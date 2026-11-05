@@ -520,6 +520,13 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<DateTime>("AddedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DriverNumber")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<DateOnly?>("LicenceIssueDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasMaxLength(128)
