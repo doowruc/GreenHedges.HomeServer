@@ -45,7 +45,8 @@ public class IndexModel(AppDbContext db, FuelStatsService stats) : PageModel
             .ToList();
 
         var yearAgo = DateOnly.FromDateTime(DateTime.Today.AddYears(-1));
-        Cards = vehicles.Select(v => new VehicleCard(
+        // Vehicles disposed of keep their spend in the charts, but have no card.
+        Cards = vehicles.Where(v => !v.IsDisposed(today)).Select(v => new VehicleCard(
                 v,
                 stats.Summarise(entries[v.Id]),
                 stats.Summarise(entries[v.Id], yearAgo),

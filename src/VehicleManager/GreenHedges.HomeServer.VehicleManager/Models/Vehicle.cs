@@ -28,6 +28,18 @@ public class Vehicle : AuditedEntity, IUserOwned
 
     public DateOnly? RegistrationDate { get; set; }
     public DateOnly? PurchasedDate { get; set; }
+    public decimal? PurchasePrice { get; set; }
+
+    // --- When and how it left (both or neither), and what it fetched: a sale price, part-exchange value, insurance
+    //     payout or scrap value. From its disposal date it's left out of reminders, lookups and new records (see
+    //     CurrentOn); its history stays. ---
+    public DisposalMethod? DisposalMethod { get; set; }
+    public DateOnly? DisposedDate { get; set; }
+    public decimal? DisposalPrice { get; set; }
+
+    /// <summary>Vehicles not yet disposed of on <paramref name="today"/> (one with a later disposal date still counts).</summary>
+    public static System.Linq.Expressions.Expression<Func<Vehicle, bool>> CurrentOn(DateOnly today) =>
+        v => v.DisposedDate == null || v.DisposedDate > today;
 
     // --- When things are next due. MOT and tax can be looked up (Services/VehicleLookup); service is typed in.
     //     Insurance renewal comes from the latest policy the vehicle is on at its end (InsurancePolicyVehicle). ---

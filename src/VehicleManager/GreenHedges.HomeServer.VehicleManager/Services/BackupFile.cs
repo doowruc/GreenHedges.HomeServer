@@ -172,6 +172,9 @@ public sealed record BackupFile
             Text(v.RegistrationNumber, 15, $"Vehicle {v.Id}'s registration", errors);
             if (v.ServiceDueMileage is <= 0) errors.Add($"Vehicle {v.Id}'s service due mileage ({v.ServiceDueMileage}) isn't a mileage.");
             if (v.ServiceIntervalMonths is <= 0 || v.ServiceIntervalMiles is <= 0) errors.Add($"Vehicle {v.Id}'s service interval isn't positive.");
+            if (v.DisposalMethod is { } method && !Enum.IsDefined(method)) errors.Add($"Vehicle {v.Id}'s disposal ({method}) isn't a way of disposing of a vehicle.");
+            if ((v.DisposalMethod is null) != (v.DisposedDate is null)) errors.Add($"Vehicle {v.Id} has a disposal method or date without the other.");
+            if (v.PurchasePrice is < 0 or >= 10_000_000 || v.DisposalPrice is < 0 or >= 10_000_000) errors.Add($"Vehicle {v.Id}'s purchase or disposal price isn't a price.");
         }
         Unique(Vehicles, v => v.RegistrationNumber, v => $"There's more than one vehicle registered {v.RegistrationNumber}.", errors);
 

@@ -72,7 +72,7 @@ so test pages through the in-memory host rather than relying on the browser.
 
 ```
 GreenHedges.HomeServer.VehicleManager/
-  Models/      EF Core entities: Owner, Vehicle, FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
+  Models/      EF Core entities: Owner, Vehicle (+ DisposalMethod), FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
                InsurancePolicyVehicle), UserSettings (storage only),
                SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
@@ -141,6 +141,13 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 
 **Data rules**
 - Registration numbers are normalised to upper case and must be unique per user (`Pages/Vehicles/VehicleRules.cs`).
+- A vehicle disposed of (`DisposalMethod` + `DisposedDate`, both or neither, set on `Pages/Vehicles/Dispose`, with an
+  optional `DisposalPrice`; `PurchasePrice` is on the vehicle form) is gone from its disposal date on (a later date
+  counts as current until then). Filter queries with `Vehicle.CurrentOn(today)`, or `VehicleView.IsDisposed(today)` in
+  memory. `VehicleView.DueDates` is empty once disposed, so the vehicle page, dashboard and reminder emails drop it;
+  `ScheduledReminders` doesn't look it up; the fill-up and insurance vehicle choices leave it out (except the one
+  already chosen, for editing old records); a renewal doesn't carry it over; a fill-up can't be after it. Its history
+  and the spend charts keep it. The Vehicles list puts it under Previous vehicles.
 - Every vehicle has a required owner (`Owners` table, FK with `Restrict`, so owners with vehicles can't be deleted). Owner names are unique per user, case-insensitive (`Pages/Owners/OwnerRules.cs`).
 - Calculated figures (total cost, real MPG, dash-vs-real, pence per mile) are computed from raw data, never stored. They are properties on `FuelEntryView`; the cost formulas are shared with `FuelEntryInput` via `Services/FuelCalculations.cs`. Average MPG is weighted: total miles ÷ total gallons, not an average of averages.
 - Every `FuelStation` belongs to a `FuelBrand` (required `FuelBrandId`). A fill-up's stops are `FuelEntryStop` rows (ordered by `Sequence`) linking only a station; the brand comes from the station. A split fill-up has one stop per station. `FuelEntryView.Brand`/`.Station` join them with " + " for display. Spreadsheet text "Bx + By" / "Lx + Ly" pairs up by position (`FuelStopInput.FromText`).

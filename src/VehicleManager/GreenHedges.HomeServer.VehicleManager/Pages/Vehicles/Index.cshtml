@@ -9,7 +9,7 @@
 
 @if (Model.Vehicles.Count == 0)
 {
-    <div class="alert alert-info">No vehicles yet. <a asp-page="Create">Add your first vehicle</a>.</div>
+    <div class="alert alert-info">@(Model.Previous.Count == 0 ? "No vehicles yet." : "No current vehicles.") <a asp-page="Create">Add a vehicle</a>.</div>
 }
 else
 {
@@ -43,4 +43,46 @@ else
             </tbody>
         </table>
     </div></div>
+}
+
+@if (Model.Previous.Count > 0)
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-body">
+            <button class="btn btn-link p-0 fw-semibold text-decoration-none section-toggle collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#previous-vehicles" aria-expanded="false" aria-controls="previous-vehicles">
+                <i class="bi bi-chevron-right me-1"></i>Previous vehicles (@Model.Previous.Count)
+            </button>
+        </div>
+        <div class="collapse" id="previous-vehicles"><div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-head">
+                    <tr>
+                        <th>Registration</th><th>Vehicle</th><th>Owner</th><th>Purchased</th><th>Went</th>
+                        <th class="text-end">Paid</th><th class="text-end">Got</th><th class="text-end">Fill-Ups</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var v in Model.Previous)
+                {
+                    <tr>
+                        <td><span class="reg-plate">@v.Vehicle.RegistrationNumber</span></td>
+                        <td><a asp-page="Details" asp-route-id="@v.Vehicle.Id">@v.Vehicle.DisplayName</a></td>
+                        <td>@v.Vehicle.OwnerName</td>
+                        <td>@v.Vehicle.PurchasedDate?.ToString("dd/MM/yyyy")</td>
+                        <td>@v.Vehicle.DisposalText</td>
+                        <td class="text-end">@v.Vehicle.PurchasePrice?.ToString("C0")</td>
+                        <td class="text-end">@v.Vehicle.DisposalPrice?.ToString("C0")</td>
+                        <td class="text-end">@v.FillUps</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Dispose" asp-route-id="@v.Vehicle.Id" class="btn btn-sm btn-outline-secondary" title="Disposal"><i class="bi bi-box-arrow-right"></i></a>
+                            <a asp-page="Edit" asp-route-id="@v.Vehicle.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="Delete" asp-route-id="@v.Vehicle.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div></div>
+    </div>
 }

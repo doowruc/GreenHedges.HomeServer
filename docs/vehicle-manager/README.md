@@ -185,9 +185,18 @@ don't use) for the application in Auth0.
 **Owners** – managed from **Owners** in the navigation bar. Names must be unique, and an owner
 can't be deleted while they still own vehicles.
 
-**Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date,
+**Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
 from its policies), and how often it's serviced (every so many months and/or miles).
+
+**Previous vehicles** – **Dispose of** on a vehicle's page records how it went (sold, part exchanged, written off or
+scrapped), when, and optionally what it fetched (sale price, part-exchange value, insurance payout or scrap value;
+with the purchase price, the page shows what it lost). It can't go before it was bought or before its last fill-up.
+From that date it has no due dates or reminders, isn't looked up with the DVLA or DVSA, has no dashboard card, isn't
+offered for new fill-ups or insurance policies (or carried over on a renewal), and can't have a fill-up after it.
+Its history stays: its page, fill-ups, services, MOTs, policies and the spend charts. The Vehicles list shows it under
+**Previous vehicles** (collapsed). If it's still on a policy past that date, its page says so. **Undo disposal**, on
+the same page, makes it current again.
 
 **Service history** (per vehicle, on its page) – each service's date, mileage, garage and garage location, and
 whether it was under a previous owner (e.g. from the service book). That's ticked for you when the date is before the

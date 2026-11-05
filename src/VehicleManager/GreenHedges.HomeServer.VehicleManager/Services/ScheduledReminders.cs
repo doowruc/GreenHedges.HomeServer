@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Coravel.Invocable;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.Common.Web.Auth;
+using GreenHedges.HomeServer.VehicleManager.Models;
 using GreenHedges.HomeServer.VehicleManager.Data;
 using GreenHedges.HomeServer.VehicleManager.Monitoring;
 
@@ -86,7 +87,8 @@ public class ScheduledReminders(AppDbContext db, IServiceScopeFactory scopes, Ap
         int updated = 0, problems = 0;
         if (lookup.IsAvailable)
         {
-            foreach (var vehicle in await userDb.Vehicles.OrderBy(v => v.Id).ToListAsync())
+            // Not vehicles disposed of: they're no longer the user's to MOT or tax.
+            foreach (var vehicle in await userDb.Vehicles.Where(Vehicle.CurrentOn(today)).OrderBy(v => v.Id).ToListAsync())
             {
                 problems += (await lookup.RefreshAsync(vehicle)).Problems.Count;
                 if (userDb.Entry(vehicle).State == EntityState.Modified) updated++;

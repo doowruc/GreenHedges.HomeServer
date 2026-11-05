@@ -15,6 +15,7 @@ public class BackupServiceTests : DatabaseTest
         vehicle.FuelType = FuelType.Diesel;
         vehicle.MotDueDate = new DateOnly(2026, 11, 1);
         vehicle.TaxDueDate = new DateOnly(2027, 3, 1);
+        (vehicle.PurchasePrice, vehicle.DisposalMethod, vehicle.DisposedDate, vehicle.DisposalPrice) = (12000m, DisposalMethod.PartExchanged, new DateOnly(2027, 2, 1), 5000.50m);
         var policyStart = new DateTime(2026, 1, 15, 14, 32, 0);
         db.InsurancePolicies.Add(new InsurancePolicy
         {
@@ -54,7 +55,8 @@ public class BackupServiceTests : DatabaseTest
     [
         .. await db.Owners.Select(o => $"owner {o.Name} user={o.UserId} {o.AddedBy} {o.AddedDate:O}").ToListAsync(),
         .. await db.Vehicles.Select(v => $"vehicle {v.RegistrationNumber} {v.Owner!.Name} {v.Make} {v.Model} {v.FuelType} user={v.UserId} {v.AddedDate:O} " +
-                                            $"mot={v.MotDueDate} tax={v.TaxDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles}").ToListAsync(),
+                                            $"mot={v.MotDueDate} tax={v.TaxDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles} " +
+                                            $"paid={v.PurchasePrice} went={v.DisposalMethod} {v.DisposedDate} got={v.DisposalPrice}").ToListAsync(),
         .. await db.FuelBrands.Select(b => $"brand {b.Name} user={b.UserId} {b.AddedDate:O} {b.ModifiedDate:O}").ToListAsync(),
         .. await db.FuelStations.Select(s => $"station {s.FuelBrand!.Name}@{s.Name} user={s.UserId}").ToListAsync(),
         .. await db.FuelEntries.Select(f => $"fill-up {f.Vehicle!.RegistrationNumber} {f.Date} {f.Litres} {f.CostPerLitre} {f.Notes} {f.AddedBy}").ToListAsync(),

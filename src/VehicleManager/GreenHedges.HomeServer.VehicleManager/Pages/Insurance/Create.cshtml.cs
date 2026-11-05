@@ -58,7 +58,8 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
             Policy.NoClaimsYears = from.NoClaimsYears is { } years ? Math.Min(years + 1, InsurancePolicy.MaxNoClaimsYears) : null;
             Policy.ProtectedNoClaims = from.ProtectedNoClaims;
         }
-        await LoadOptionsAsync();
+        RenewedVehicles = await StillOwnedAsync(RenewedVehicles, Policy.StartDate.Value);
+        await LoadOptionsAsync(Policy.VehicleId);
         return Page();
     }
 
@@ -69,20 +70,23 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
         {
             var renewed = await Db.InsurancePolicies.Where(p => p.Id == renew).Select(InsurancePolicyView.Projection).FirstOrDefaultAsync();
             if (renewed is null) return NotFound();
-            RenewedVehicles = renewed.VehiclesAtEnd.ToList();
+            RenewedVehicles = Policy.StartDate is { } renewalStart ? await StillOwnedAsync(renewed.VehiclesAtEnd.ToList(), renewalStart) : [];
             vehicleIds = RenewedVehicles.Select(v => v.VehicleId).Distinct().ToList();
         }
         else
         {
             if (Policy.VehicleId is null) ModelState.AddModelError("Policy.VehicleId", "Choose the vehicle it covers.");
-            else if (!await Db.Vehicles.AnyAsync(v => v.Id == Policy.VehicleId)) ModelState.AddModelError("Policy.VehicleId", "Choose one of your vehicles.");
+            else if (await Db.Vehicles.Where(v => v.Id == Policy.VehicleId).Select(v => new { v.DisposedDate }).FirstOrDefaultAsync() is not { } chosen)
+                ModelState.AddModelError("Policy.VehicleId", "Choose one of your vehicles.");
+            else if (chosen.DisposedDate is { } gone && Policy.StartDate is { } start && DateOnly.FromDateTime(start) > gone)
+                ModelState.AddModelError("Policy.VehicleId", $"That vehicle was disposed of on {gone:dd/MM/yyyy}, before the policy starts.");
             vehicleIds = Policy.VehicleId is { } id ? [id] : [];
         }
         if (Policy.OwnerId is { } ownerId && !await Db.Owners.AnyAsync(o => o.Id == ownerId))
             ModelState.AddModelError("Policy.OwnerId", "Choose one of your owners.");
         if (!ModelState.IsValid)
         {
-            await LoadOptionsAsync();
+            await LoadOptionsAsync(Policy.VehicleId);
             return Page();
         }
 
@@ -95,6 +99,15 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
 
         TempData["Message"] = $"Added the {policy.Provider} policy, {policy.StartDate:dd/MM/yyyy HH:mm} to {policy.EndDate:dd/MM/yyyy HH:mm}.";
         return RedirectToPage("Details", new { id = policy.Id });
+    }
+
+    /// <summary>The renewed policy's vehicles that haven't been disposed of before the renewal starts.</summary>
+    private async Task<List<InsurancePeriodView>> StillOwnedAsync(List<InsurancePeriodView> vehicles, DateTime start)
+    {
+        var day = DateOnly.FromDateTime(start);
+        var ids = vehicles.Select(v => v.VehicleId).ToList();
+        var gone = await Db.Vehicles.Where(v => ids.Contains(v.Id) && v.DisposedDate < day).Select(v => v.Id).ToListAsync();
+        return vehicles.Where(v => !gone.Contains(v.VehicleId)).ToList();
     }
 
     /// <summary>

@@ -123,8 +123,9 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
   - [ ] The policy documents, kept on the server's disk with the backups.
   - [ ] Premiums in the running costs, once there are any.
   - [ ] A link to askMID on the vehicle page.
-- [ ] **Vehicle lifecycle: sold/disposed date and an "active" flag.** Hide sold vehicles from the dashboard and the
-      fill-up vehicle dropdown, but keep their history. Optionally record purchase and sale price to show depreciation.
+- [x] **Vehicle lifecycle.** How and when a vehicle went (sold, part exchanged, written off, scrapped) and what it
+      fetched, with its purchase price: from then it's out of reminders, lookups, the dashboard and new fill-ups and
+      policies, under Previous vehicles, with its history kept.
 - [ ] **Partial fill-ups.** A "full tank" flag on `FuelEntry`, so real MPG is worked out from one full fill to the
       next and a partial fill doesn't skew it. Still total miles ÷ total gallons.
 - [ ] **Export.** A ClosedXML `.xlsx` export of the fuel log (filtered by vehicle or year), mirroring the import

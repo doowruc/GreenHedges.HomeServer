@@ -52,6 +52,12 @@
         <input asp-for="PurchasedDate" class="form-control" />
         <span asp-validation-for="PurchasedDate" class="text-danger small"></span>
     </div>
+    <div class="col-md-4">
+        <label asp-for="PurchasePrice" class="form-label"></label>
+        <input asp-for="PurchasePrice" class="form-control" inputmode="decimal" placeholder="Optional" />
+        <span asp-validation-for="PurchasePrice" class="text-danger small"></span>
+        <div class="form-text">With what it fetched when it goes (Dispose of, on its page), shows what it cost to own.</div>
+    </div>
     <div class="col-12">
         <h2 class="h6 mt-2 mb-0">Due dates</h2>
         <div class="form-text mt-0">

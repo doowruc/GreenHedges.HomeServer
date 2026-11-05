@@ -4,11 +4,19 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
     <div>
-        <h1 class="h3 mb-1">@Model.Vehicle.DisplayName <span class="reg-plate fs-6 align-middle">@Model.Vehicle.RegistrationNumber</span></h1>
+        <h1 class="h3 mb-1">@Model.Vehicle.DisplayName <span class="reg-plate fs-6 align-middle">@Model.Vehicle.RegistrationNumber</span>
+            @if (Model.Vehicle.DisposalText is { } disposal)
+            {
+                <span class="badge @(Model.IsDisposed ? "text-bg-secondary" : "text-bg-info") fs-6 align-middle" title="@(Model.IsDisposed ? "No longer owned" : "Still owned until then")">@disposal</span>
+            }
+        </h1>
         <div class="text-muted small">
             @Model.Vehicle.Type · @Model.Vehicle.FuelType · Owned by @Model.Vehicle.OwnerName
             @if (Model.Vehicle.RegistrationDate is { } rd) { <text> · Registered @rd.ToString("dd MMM yyyy")</text> }
             @if (Model.Vehicle.PurchasedDate is { } pd) { <text> · Purchased @pd.ToString("dd MMM yyyy")</text> }
+            @if (Model.Vehicle.PurchasePrice is { } paid) { <text> for @paid.ToString("C0")</text> }
+            @if (Model.Vehicle.DisposalMethod is { } method && Model.Vehicle.DisposalPrice is { } got) { <text> · @VehicleView.DisposalPriceNames(method) @got.ToString("C0")</text> }
+            @if (Model.Vehicle.Depreciation is { } lost) { <text> · @(lost >= 0 ? $"lost {lost:C0}" : $"made {-lost:C0}")</text> }
             @if (Model.AllTime.LatestOdometer is { } odo) { <text> · @odo.ToString("N0") miles</text> }
             @if (Model.Mileage is { } trend) { <text> · about @trend.MilesPerMonth.ToString("N0") miles a month lately</text> }
         </div>
@@ -18,7 +26,7 @@
             {
                 <span class="text-muted small" title="Needs odometer readings (from fill-ups or MOT tests) at least @MileageTrend.MinDays days apart">Service due at @serviceMiles.ToString("N0") miles (not enough odometer readings to estimate when)</span>
             }
-            @if (Model.DueDates.Count == 0 && Model.UnestimatedServiceMileage is null)
+            @if (Model.DueDates.Count == 0 && Model.UnestimatedServiceMileage is null && !Model.IsDisposed)
             {
                 <span class="text-muted small">No MOT, tax, insurance or service dates. <a asp-page="Edit" asp-route-id="@Model.Vehicle.Id">Add MOT, tax or service dates</a>
                     or <a asp-page="/Insurance/Create" asp-route-vehicleId="@Model.Vehicle.Id">an insurance policy</a>.</span>
@@ -43,9 +51,22 @@
             <select id="vehicle-switcher" class="form-select form-select-sm w-auto" aria-label="Switch vehicle" asp-items="Model.VehicleOptions"></select>
         }
         <a asp-page="Edit" asp-route-id="@Model.Vehicle.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <a asp-page="Dispose" asp-route-id="@Model.Vehicle.Id" class="btn btn-sm btn-outline-secondary">@(Model.Vehicle.DisposedDate is null ? "Dispose of" : "Disposal")</a>
         <a asp-page="Delete" asp-route-id="@Model.Vehicle.Id" class="btn btn-sm btn-outline-danger">Delete</a>
     </div>
 </div>
+
+@if (Model.InsuredAfterDisposal.Count > 0)
+{
+    <div class="alert alert-warning">
+        It's still insured after it went:
+        @foreach (var (policyId, provider, to) in Model.InsuredAfterDisposal)
+        {
+            <a asp-page="/Insurance/Details" asp-route-id="@policyId">@provider to @to.ToString("dd/MM/yyyy HH:mm")</a><text>. </text>
+        }
+        Switch it off the policy or edit its cover there.
+    </div>
+}
 
 @{
     bool IsActive(string tab) => Model.Tab == tab;
