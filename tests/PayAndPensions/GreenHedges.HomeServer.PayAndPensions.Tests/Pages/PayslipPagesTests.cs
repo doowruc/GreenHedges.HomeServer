@@ -248,7 +248,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
-    public async Task Each_row_has_a_menu_to_edit_or_delete_it_and_its_month_links_to_edit()
+    public async Task Each_row_can_be_edited_or_deleted_from_its_menu_or_its_buttons()
     {
         var person = await PersonAsync();
         int id;
@@ -261,8 +261,10 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Contains($"data-delete=\"/People/{person.Id}/Payslips/Delete/{id}\"", html);
         Assert.Contains("id=\"row-menu\"", html);
         Assert.Matches("<script src=\"/js/row-menu[^\"]*\\.js", html);
-        Assert.Matches($@"<a [^>]*href=""/People/{person.Id}/Payslips/Edit/{id}""[^>]*>1 Apr</a>", html);
-        Assert.DoesNotContain("bi-trash", System.Text.RegularExpressions.Regex.Match(html, "<table.*?</table>", System.Text.RegularExpressions.RegexOptions.Singleline).Value);
+        var lastCell = System.Text.RegularExpressions.Regex.Match(html, @"<td class=""text-end text-nowrap"">\s*(<a[^>]*title=""Edit"".*?)</td>\s*</tr>",
+            System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value;   // the buttons, at the end of the row
+        Assert.Contains($"href=\"/People/{person.Id}/Payslips/Edit/{id}\"", lastCell);
+        Assert.Contains($"href=\"/People/{person.Id}/Payslips/Delete/{id}\"", lastCell);
     }
 
     /// <summary>The table's headings in order, each marked "|" if a section separator follows it.</summary>
@@ -291,7 +293,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
 
         Assert.Equal(
             ["Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
-             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |"],
+             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |", "Actions"],
             Headings(page));
         Assert.Contains("title=\"5.0% of salary\"", page.Text);         // the employee's pension
         Assert.Contains("title=\"7.5% of salary\"", page.Text);         // the employer's
