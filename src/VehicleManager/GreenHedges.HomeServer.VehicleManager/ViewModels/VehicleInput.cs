@@ -43,10 +43,6 @@ public class VehicleInput
     public DateOnly? TaxDueDate { get; set; }
 
     [DataType(DataType.Date)]
-    [Display(Name = "Insurance renewal")]
-    public DateOnly? InsuranceDueDate { get; set; }
-
-    [DataType(DataType.Date)]
     [Display(Name = "Service due")]
     public DateOnly? ServiceDueDate { get; set; }
 
@@ -79,7 +75,6 @@ public class VehicleInput
         PurchasedDate = v.PurchasedDate,
         MotDueDate = v.MotDueDate,
         TaxDueDate = v.TaxDueDate,
-        InsuranceDueDate = v.InsuranceDueDate,
         ServiceDueDate = v.ServiceDueDate,
         ServiceDueMileage = v.ServiceDueMileage,
         ServiceIntervalMonths = v.ServiceIntervalMonths,
@@ -99,7 +94,6 @@ public class VehicleInput
         vehicle.PurchasedDate = PurchasedDate;
         vehicle.MotDueDate = MotDueDate;
         vehicle.TaxDueDate = TaxDueDate;
-        vehicle.InsuranceDueDate = InsuranceDueDate;
         vehicle.ServiceDueDate = ServiceDueDate;
         vehicle.ServiceDueMileage = ServiceDueMileage;
         vehicle.ServiceIntervalMonths = ServiceIntervalMonths;

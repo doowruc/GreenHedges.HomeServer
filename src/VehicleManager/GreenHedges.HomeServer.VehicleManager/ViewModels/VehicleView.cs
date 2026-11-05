@@ -16,7 +16,10 @@ public class VehicleView
     public DateOnly? PurchasedDate { get; init; }
     public DateOnly? MotDueDate { get; init; }
     public DateOnly? TaxDueDate { get; init; }
-    public DateOnly? InsuranceDueDate { get; init; }
+    /// <summary>When the latest insurance policy ends (UK time), if there is one.</summary>
+    public DateTime? InsuranceEndDate { get; init; }
+    /// <summary>The insurance renewal date: the last day the latest policy covers.</summary>
+    public DateOnly? InsuranceDueDate => InsuranceEndDate is { } end ? InsurancePolicyView.LastDay(end) : null;
     public DateOnly? ServiceDueDate { get; init; }
     public int? ServiceDueMileage { get; init; }
     public int? ServiceIntervalMonths { get; init; }
@@ -43,7 +46,7 @@ public class VehicleView
         PurchasedDate = v.PurchasedDate,
         MotDueDate = v.MotDueDate,
         TaxDueDate = v.TaxDueDate,
-        InsuranceDueDate = v.InsuranceDueDate,
+        InsuranceEndDate = v.InsurancePolicies.Max(p => (DateTime?)p.EndDate),
         ServiceDueDate = v.ServiceDueDate,
         ServiceDueMileage = v.ServiceDueMileage,
         ServiceIntervalMonths = v.ServiceIntervalMonths,

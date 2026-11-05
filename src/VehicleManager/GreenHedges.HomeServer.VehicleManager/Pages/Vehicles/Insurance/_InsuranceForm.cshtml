@@ -1,0 +1,66 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model InsurancePolicyInput
+@{
+    var covers = Enum.GetValues<InsuranceCover>().Select(c => new SelectListItem(InsurancePolicyView.CoverNames(c), c.ToString()));
+}
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3" id="insurance-fields" data-providers="@ViewData["Providers"]">
+    <div class="col-sm-6 col-md-4">
+        <label asp-for="StartDate" class="form-label"></label>
+        <input asp-for="StartDate" asp-format="@InsurancePolicyInput.InputFormat" class="form-control" />
+        <span asp-validation-for="StartDate" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-6 col-md-4">
+        <label asp-for="EndDate" class="form-label"></label>
+        <input asp-for="EndDate" asp-format="@InsurancePolicyInput.InputFormat" class="form-control" />
+        <span asp-validation-for="EndDate" class="text-danger small"></span>
+    </div>
+    <div class="col-12 form-text mt-1">
+        UK times, as on the policy schedule. The vehicle's insurance renewal reminders count down to the end of its latest policy.
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Provider" class="form-label"></label>
+        <input asp-for="Provider" class="form-control" autocomplete="off" />
+        <span asp-validation-for="Provider" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="PolicyNumber" class="form-label"></label>
+        <input asp-for="PolicyNumber" class="form-control" autocomplete="off" />
+        <span asp-validation-for="PolicyNumber" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Cover" class="form-label"></label>
+        <select asp-for="Cover" asp-items="covers" class="form-select"></select>
+        <span asp-validation-for="Cover" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-4">
+        <label asp-for="Premium" class="form-label"></label>
+        <input asp-for="Premium" class="form-control" inputmode="decimal" placeholder="e.g. 450.00" />
+        <span asp-validation-for="Premium" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-4">
+        <label asp-for="Excess" class="form-label"></label>
+        <input asp-for="Excess" class="form-control" inputmode="decimal" placeholder="e.g. 350" />
+        <span asp-validation-for="Excess" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="NamedDrivers" class="form-label"></label>
+        <input asp-for="NamedDrivers" class="form-control" autocomplete="off" />
+        <span asp-validation-for="NamedDrivers" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label"></label>
+        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Notes" class="text-danger small"></span>
+    </div>
+</div>
+
+<script src="~/js/typeahead.js" asp-append-version="true"></script>
+<script>
+    (() => {
+        // The insurer suggests every insurer used before, on any vehicle.
+        const fields = document.getElementById('insurance-fields');
+        const providers = JSON.parse(fields.dataset.providers || '[]');
+        typeahead(fields, '#Policy_Provider', () => providers);
+    })();
+</script>

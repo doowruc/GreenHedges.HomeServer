@@ -20,6 +20,13 @@ public static class TestData
     }
 
     /// <summary>Adds a fill-up at the given stops, e.g. <c>("Shell", "Meadowbank"), ("BP", "Oak Lane")</c>.</summary>
+    /// <summary>A policy from 00:00 on <paramref name="start"/> to 23:59 on <paramref name="end"/>, as UK policies usually run.</summary>
+    public static InsurancePolicy Policy(DateOnly start, DateOnly end, string provider = "Test Insurer", decimal premium = 400m) => new()
+    {
+        StartDate = start.ToDateTime(TimeOnly.MinValue), EndDate = end.ToDateTime(new TimeOnly(23, 59)),
+        Provider = provider, PolicyNumber = "TEST-1", Premium = premium
+    };
+
     public static async Task<FuelEntry> AddFillUpAsync(AppDbContext db, int vehicleId, DateOnly date, params (string Brand, string Station)[] stops)
     {
         var entry = new FuelEntry { VehicleId = vehicleId, Date = date, Litres = 40, CostPerLitre = 1.5m };

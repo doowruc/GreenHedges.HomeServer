@@ -140,6 +140,46 @@ public class BackupFileTests
         Assert.Contains("MOT test 9 has more than one defect 1.", error);
     }
 
+    private static InsurancePolicyBackup Policy(int vehicleId = 2) => new()
+    {
+        Id = 8, VehicleId = vehicleId, StartDate = new DateTime(2026, 11, 5, 14, 32, 0), EndDate = new DateTime(2027, 11, 4, 23, 59, 0),
+        Provider = " Acme   Insurance ", PolicyNumber = " POL-1 ", Cover = InsuranceCover.ThirdPartyOnly, Premium = 456.78m, Excess = 250m,
+        NamedDrivers = " Me,  Partner ", Notes = "Protected NCB"
+    };
+
+    [Fact]
+    public void Insurance_policies_keep_their_uk_times_without_an_offset_and_are_tidied()
+    {
+        var json = Json(Sample(b => b with { InsurancePolicies = [Policy()] }));
+        Assert.Contains("\"startDate\": \"2026-11-05T14:32\"", json);
+        Assert.Contains("\"endDate\": \"2027-11-04T23:59\"", json);
+        Assert.Contains("\"cover\": \"ThirdPartyOnly\"", json);
+
+        var policy = Assert.Single(Read(json).InsurancePolicies);
+        Assert.Equal((new DateTime(2026, 11, 5, 14, 32, 0), new DateTime(2027, 11, 4, 23, 59, 0)), (policy.StartDate, policy.EndDate));
+        Assert.Equal(DateTimeKind.Unspecified, policy.StartDate.Kind);
+        Assert.Equal(("Acme Insurance", "POL-1", "Me, Partner", 456.78m), (policy.Provider, policy.PolicyNumber, policy.NamedDrivers, policy.Premium));
+    }
+
+    [Fact]
+    public void A_vehicles_insurance_renewal_date_from_an_older_backup_is_ignored()
+    {
+        var json = Json(Sample()).Replace("\"make\":", "\"insuranceDueDate\": \"2027-01-15\", \"make\":");
+        Assert.Contains("insuranceDueDate", json);
+        Assert.Single(Read(json).Vehicles);
+    }
+
+    [Fact]
+    public void Rejects_insurance_policies_that_dont_link_up_or_add_up()
+    {
+        Assert.Contains("Insurance policy 8's vehicle (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicies = [Policy(99)] })));
+        Assert.Contains("Insurance policy 8 doesn't end after it starts.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { EndDate = new DateTime(2026, 11, 5, 14, 32, 0) }] })));
+        Assert.Contains("Insurance policy 8's premium (0) isn't a premium.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { Premium = 0 }] })));
+        Assert.Contains("Insurance policy 8's policy number is missing.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { PolicyNumber = " " }] })));
+        Assert.Contains("Insurance policy 8's insurer is missing.", ReadError(Sample(b => b with { InsurancePolicies = [Policy() with { Provider = "" }] })));
+    }
+
     [Fact]
     public void Rejects_a_newer_version() =>
         Assert.Contains("version 2", ReadError(Sample(b => b with { Version = 2 })));

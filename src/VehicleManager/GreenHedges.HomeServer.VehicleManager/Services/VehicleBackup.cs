@@ -15,7 +15,6 @@ public sealed record VehicleBackup : BackupRow
     public DateOnly? PurchasedDate { get; init; }
     public DateOnly? MotDueDate { get; init; }
     public DateOnly? TaxDueDate { get; init; }
-    public DateOnly? InsuranceDueDate { get; init; }
     public DateOnly? ServiceDueDate { get; init; }
     public int? ServiceDueMileage { get; init; }
     public int? ServiceIntervalMonths { get; init; }

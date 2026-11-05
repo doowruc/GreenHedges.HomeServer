@@ -1,0 +1,59 @@
+@model IEnumerable<InsurancePolicyView>
+@{
+    // Rows repeated invisibly in the footer so the columns don't resize as rows come and go (paging, searching),
+    // as in _ServiceTable: the longest premium and excess, and one per distinct set of names and badges.
+    var policies = Model.ToList();
+    var widest = policies.Count == 0 ? [] : policies
+        .DistinctBy(p => (p.Provider, p.PolicyNumber, p.Cover, p.NamedDrivers, p.IsCurrent, p.IsFuture, p.IsPartYear, p.Notes is null))
+        .Append(policies.MaxBy(p => p.Premium.ToString("C").Length + (p.IsPartYear ? p.YearlyPremium.ToString("C").Length : 0))!)
+        .Append(policies.MaxBy(p => p.Excess?.ToString("C").Length ?? 0)!)
+        .Distinct().ToList();
+
+    // Like the fuel log, rows stay on one line; on a phone the table scrolls sideways within its card.
+    async Task Row(InsurancePolicyView p)
+    {
+        <tr>
+            <td data-order="@p.StartDate.ToString("s")">@p.StartDate.ToString("dd/MM/yyyy HH:mm")</td>
+            <td data-order="@p.EndDate.ToString("s")">@p.EndDate.ToString("dd/MM/yyyy HH:mm")</td>
+            <td>@p.Provider</td>
+            <td>@p.PolicyNumber</td>
+            <td>@p.CoverName</td>
+            <td class="text-end" data-order="@p.Premium">
+                @p.Premium.ToString("C")@if (p.IsPartYear) { <span class="text-muted small" title="@p.Days.ToString("N0") days' cover; this is the same rate for a year">(@p.YearlyPremium.ToString("C") a year)</span> }
+            </td>
+            <td class="text-end" data-order="@(p.Excess ?? -1)">@p.Excess?.ToString("C")</td>
+            <td>@p.NamedDrivers</td>
+            <td class="w-100">
+                @if (p.IsCurrent) { <span class="badge text-bg-success">Current</span> }
+                @if (p.IsFuture) { <span class="badge text-bg-info">Upcoming</span> }
+                @* One line, cut short with the whole note in its tooltip (the edit page shows it all too). *@
+                @if (p.Notes is { } notes) { <span class="d-inline-block text-truncate align-bottom insurance-notes" title="@notes">@notes</span> }
+            </td>
+            <td class="text-end">
+                <a asp-page="/Vehicles/Insurance/Edit" asp-route-vehicleId="@p.VehicleId" asp-route-id="@p.Id" class="btn btn-sm btn-link p-0 me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                <a asp-page="/Vehicles/Insurance/Delete" asp-route-vehicleId="@p.VehicleId" asp-route-id="@p.Id" class="btn btn-sm btn-link p-0 text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+            </td>
+        </tr>
+    }
+}
+@* A DataTable when the page includes _DataTableStyles and _DataTableScripts. dt-pending shows only the
+   first page of rows until DataTables has loaded, so the table doesn't jump. *@
+<div class="data-table dt-pending" data-noun="policies">
+<div class="table-responsive">
+<table class="table table-sm table-hover table-data align-middle mb-0">
+    <thead class="table-head">
+        <tr>
+            <th>Starts</th><th>Ends</th><th>Insurer</th><th>Policy number</th><th>Cover</th><th class="text-end">Premium</th>
+            <th class="text-end">Excess</th><th>Named drivers</th><th>Notes</th><th data-orderable="false" data-searchable="false"></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var p in policies) { await Row(p); }
+    </tbody>
+    @* Invisible and zero height (site.css), but they set the column widths. *@
+    <tfoot class="column-sizer" aria-hidden="true">
+    @foreach (var p in widest) { await Row(p); }
+    </tfoot>
+</table>
+</div>
+</div>

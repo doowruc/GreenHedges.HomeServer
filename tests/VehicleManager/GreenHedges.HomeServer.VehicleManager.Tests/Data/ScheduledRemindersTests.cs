@@ -69,21 +69,21 @@ public class ScheduledRemindersTests(AppFactory app) : DatabaseTest, IClassFixtu
     }
 
     [DatabaseFact]
-    public async Task Typed_in_dates_are_reminded_about_and_a_new_date_starts_again()
+    public async Task An_insurance_policys_end_is_reminded_about_and_a_renewal_starts_again()
     {
         var (address, _) = await SetUpAsync();
         await using (var db = Db())
         {
-            (await db.Vehicles.SingleAsync()).InsuranceDueDate = Today.AddDays(5);
+            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(5).AddYears(-1), Today.AddDays(5)));
             await db.SaveChangesAsync();
         }
         await RunAsync(UserId, Today);
         Assert.Contains("Insurance for Test Car", FakeResend.SentTo(address).Single().TextBody);
 
-        // Renewed: the next year's date gets its own reminders.
+        // Renewed: the next year's policy gets its own reminders.
         await using (var db = Db())
         {
-            (await db.Vehicles.SingleAsync()).InsuranceDueDate = Today.AddDays(5).AddYears(1);
+            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(6), Today.AddDays(5).AddYears(1)));
             await db.SaveChangesAsync();
         }
         Assert.Equal(ReminderEmailResult.NothingDue, (await RunAsync(UserId, Today.AddDays(1))).Email);

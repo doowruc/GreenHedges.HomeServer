@@ -8,7 +8,7 @@ namespace GreenHedges.HomeServer.VehicleManager.Data;
 /// <remarks>
 /// Each signed-in user has their own data. Query filters limit every query to the current user's
 /// owners, vehicles, fuel brands and stations, settings, and (through their vehicle) fill-ups and their stops,
-/// service records, MOT tests and their defects, and sent reminders.
+/// service records, insurance policies, MOT tests and their defects, and sent reminders.
 /// Saving stamps new user-owned rows with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
@@ -26,6 +26,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<SentReminder> SentReminders => Set<SentReminder>();
     public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
     public DbSet<MotTest> MotTests => Set<MotTest>();
+    public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
     public DbSet<MotDefect> MotDefects => Set<MotDefect>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -54,6 +55,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(s => s.Vehicle)
              .HasForeignKey(s => s.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(v => v.InsurancePolicies)
+             .WithOne(p => p.Vehicle)
+             .HasForeignKey(p => p.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
             e.HasMany(v => v.MotTests)
              .WithOne(t => t.Vehicle)
              .HasForeignKey(t => t.VehicleId)
@@ -68,6 +73,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
         {
             e.HasQueryFilter(s => s.Vehicle!.UserId == CurrentUserId);
             e.HasIndex(s => new { s.VehicleId, s.Date });
+        });
+
+        modelBuilder.Entity<InsurancePolicy>(e =>
+        {
+            e.HasQueryFilter(p => p.Vehicle!.UserId == CurrentUserId);
+            e.HasIndex(p => new { p.VehicleId, p.EndDate });
+            // UK wall-clock times to the minute, as on the policy schedule.
+            e.Property(p => p.StartDate).HasColumnType("datetime2(0)");
+            e.Property(p => p.EndDate).HasColumnType("datetime2(0)");
+            e.Property(p => p.Cover).HasConversion<string>().HasMaxLength(30);
+            e.Property(p => p.Premium).HasPrecision(10, 2);
+            e.Property(p => p.Excess).HasPrecision(10, 2);
         });
 
         modelBuilder.Entity<MotTest>(e =>

@@ -28,9 +28,15 @@ public class DueDatePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
 
         var edit = await client.GetAsync($"/Vehicles/Edit/{id}");
         Assert.Contains("MOT and tax are checked with the DVLA and DVSA each morning.", edit.Text);
+        Assert.DoesNotContain("Vehicle.InsuranceDueDate", edit.Html);
+        await using (var db = Db())
+        {
+            // Insurance renewal comes from the policy ending last: here, at 23:59 in 10 days.
+            (await db.Vehicles.SingleAsync()).InsurancePolicies.Add(TestData.Policy(Today.AddDays(10).AddYears(-1), Today.AddDays(10)));
+            await db.SaveChangesAsync();
+        }
         var saved = await client.PostFormAsync($"/Vehicles/Edit/{id}", edit, new()
         {
-            ["Vehicle.InsuranceDueDate"] = Today.AddDays(10).ToString("yyyy-MM-dd"),
             ["Vehicle.ServiceDueDate"] = Today.AddDays(-2).ToString("yyyy-MM-dd"),
             ["Vehicle.MotDueDate"] = Today.AddDays(100).ToString("yyyy-MM-dd")
         });

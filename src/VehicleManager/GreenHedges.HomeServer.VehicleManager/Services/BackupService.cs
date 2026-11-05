@@ -26,7 +26,7 @@ public class BackupService(AppDbContext db)
         {
             Id = v.Id, OwnerId = v.OwnerId, Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
             RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
-            MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, InsuranceDueDate = v.InsuranceDueDate, ServiceDueDate = v.ServiceDueDate,
+            MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles,
             AddedDate = v.AddedDate, AddedBy = v.AddedBy, ModifiedDate = v.ModifiedDate, ModifiedBy = v.ModifiedBy
         }).ToListAsync(),
@@ -57,6 +57,13 @@ public class BackupService(AppDbContext db)
             Id = s.Id, VehicleId = s.VehicleId, Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner,
             AddedDate = s.AddedDate, AddedBy = s.AddedBy, ModifiedDate = s.ModifiedDate, ModifiedBy = s.ModifiedBy
         }).ToListAsync(),
+        InsurancePolicies = await db.InsurancePolicies.OrderBy(p => p.Id).Select(p => new InsurancePolicyBackup
+        {
+            Id = p.Id, VehicleId = p.VehicleId, StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider,
+            PolicyNumber = p.PolicyNumber, Cover = p.Cover, Premium = p.Premium, Excess = p.Excess,
+            NamedDrivers = p.NamedDrivers, Notes = p.Notes,
+            AddedDate = p.AddedDate, AddedBy = p.AddedBy, ModifiedDate = p.ModifiedDate, ModifiedBy = p.ModifiedBy
+        }).ToListAsync(),
         MotTests = await db.MotTests.OrderBy(t => t.Id).Select(t => new MotTestBackup
         {
             Id = t.Id, VehicleId = t.VehicleId, CompletedDate = t.CompletedDate, Passed = t.Passed, ExpiryDate = t.ExpiryDate,
@@ -85,7 +92,7 @@ public class BackupService(AppDbContext db)
 
             // The query filters limit these to the current user's rows. Stops go first, as they
             // stop their stations being deleted, and fill-ups before their vehicles. Sent reminders and
-            // MOT tests (with their defects) go with their vehicles (FK cascade), so restored due dates are reminded about afresh.
+            // MOT tests (with their defects) and insurance policies go with their vehicles (FK cascade), so restored due dates are reminded about afresh.
             await db.FuelEntryStops.ExecuteDeleteAsync();
             await db.FuelEntries.ExecuteDeleteAsync();
             await db.ServiceRecords.ExecuteDeleteAsync();
@@ -111,7 +118,7 @@ public class BackupService(AppDbContext db)
         {
             Owner = owners[v.OwnerId], Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
             RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
-            MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, InsuranceDueDate = v.InsuranceDueDate, ServiceDueDate = v.ServiceDueDate,
+            MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles
         }));
         var brands = backup.FuelBrands.ToDictionary(b => b.Id, b => Audited(b, new FuelBrand { Name = b.Name }));
@@ -129,6 +136,12 @@ public class BackupService(AppDbContext db)
             vehicles[s.VehicleId].ServiceRecords.Add(Audited(s, new ServiceRecord
             {
                 Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner
+            }));
+        foreach (var p in backup.InsurancePolicies)
+            vehicles[p.VehicleId].InsurancePolicies.Add(Audited(p, new InsurancePolicy
+            {
+                StartDate = p.StartDate, EndDate = p.EndDate, Provider = p.Provider, PolicyNumber = p.PolicyNumber, Cover = p.Cover,
+                Premium = p.Premium, Excess = p.Excess, NamedDrivers = p.NamedDrivers, Notes = p.Notes
             }));
         var motTests = backup.MotTests.ToDictionary(t => t.Id, t => Audited(t, new MotTest
         {

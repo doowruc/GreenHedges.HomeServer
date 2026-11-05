@@ -8,14 +8,24 @@ namespace GreenHedges.HomeServer.VehicleManager.Tests.Data;
 
 public class BackupServiceTests : DatabaseTest
 {
-    /// <summary>A vehicle with due dates, a service interval, two services and two MOT tests, a single and a split fill-up, and a brand with no stations.</summary>
+    /// <summary>A vehicle with due dates, a service interval, two services, two insurance policies and two MOT tests, a single and a split fill-up, and a brand with no stations.</summary>
     private async Task SeedAsync(AppDbContext db)
     {
         var vehicle = await TestData.AddVehicleAsync(db, "BACK 1");
         vehicle.FuelType = FuelType.Diesel;
         vehicle.MotDueDate = new DateOnly(2026, 11, 1);
         vehicle.TaxDueDate = new DateOnly(2027, 3, 1);
-        vehicle.InsuranceDueDate = new DateOnly(2027, 1, 15);
+        vehicle.InsurancePolicies.Add(new InsurancePolicy
+        {
+            StartDate = new DateTime(2026, 1, 15, 14, 32, 0), EndDate = new DateTime(2027, 1, 14, 23, 59, 0), Provider = "Acme Insurance",
+            PolicyNumber = "POL-123", Cover = InsuranceCover.ThirdPartyFireAndTheft, Premium = 456.78m, Excess = 350m,
+            NamedDrivers = "Me, Partner", Notes = "Protected no-claims bonus"
+        });
+        vehicle.InsurancePolicies.Add(new InsurancePolicy
+        {
+            StartDate = new DateTime(2025, 1, 15, 0, 0, 0), EndDate = new DateTime(2026, 1, 15, 14, 32, 0), Provider = "Other Insurer",
+            PolicyNumber = "OLD-1", Premium = 400m
+        });
         vehicle.ServiceDueDate = new DateOnly(2027, 6, 30);
         vehicle.ServiceDueMileage = 45000;
         vehicle.ServiceIntervalMonths = 12;
@@ -41,12 +51,14 @@ public class BackupServiceTests : DatabaseTest
     [
         .. await db.Owners.Select(o => $"owner {o.Name} user={o.UserId} {o.AddedBy} {o.AddedDate:O}").ToListAsync(),
         .. await db.Vehicles.Select(v => $"vehicle {v.RegistrationNumber} {v.Owner!.Name} {v.Make} {v.Model} {v.FuelType} user={v.UserId} {v.AddedDate:O} " +
-                                            $"mot={v.MotDueDate} tax={v.TaxDueDate} insurance={v.InsuranceDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles}").ToListAsync(),
+                                            $"mot={v.MotDueDate} tax={v.TaxDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles}").ToListAsync(),
         .. await db.FuelBrands.Select(b => $"brand {b.Name} user={b.UserId} {b.AddedDate:O} {b.ModifiedDate:O}").ToListAsync(),
         .. await db.FuelStations.Select(s => $"station {s.FuelBrand!.Name}@{s.Name} user={s.UserId}").ToListAsync(),
         .. await db.FuelEntries.Select(f => $"fill-up {f.Vehicle!.RegistrationNumber} {f.Date} {f.Litres} {f.CostPerLitre} {f.Notes} {f.AddedBy}").ToListAsync(),
         .. await db.FuelEntryStops.Select(s => $"stop {s.FuelEntry!.Date} {s.Sequence} {s.FuelStation!.FuelBrand!.Name}@{s.FuelStation.Name}").ToListAsync(),
         .. await db.ServiceRecords.Select(s => $"service {s.Vehicle!.RegistrationNumber} {s.Date} {s.Mileage} {s.Garage} {s.GarageLocation} previous={s.UnderPreviousOwner} {s.AddedBy} {s.AddedDate:O}").ToListAsync(),
+        .. await db.InsurancePolicies.Select(p => $"policy {p.Vehicle!.RegistrationNumber} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
+                                                  $"{p.Premium} {p.Excess} {p.NamedDrivers} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
         .. await db.MotTests.Select(t => $"mot {t.Vehicle!.RegistrationNumber} {t.CompletedDate:O} passed={t.Passed} {t.ExpiryDate} {t.Odometer} km={t.OdometerInKilometres} " +
                                          $"{t.MotTestNumber} {t.RegistrationAtTest} {t.DataSource} {t.AddedBy} {t.AddedDate:O}").ToListAsync(),
         .. await db.MotDefects.Select(d => $"defect {d.MotTest!.CompletedDate:O} {d.Sequence} {d.Type} {d.Text} dangerous={d.Dangerous} {d.AddedDate:O}").ToListAsync()
