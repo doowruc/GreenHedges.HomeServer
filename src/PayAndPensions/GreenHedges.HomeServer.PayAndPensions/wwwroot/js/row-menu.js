@@ -1,6 +1,7 @@
 // A right-click menu for table rows: rows marked data-row-menu, with data-edit and data-delete URLs, open #row-menu
 // (a Bootstrap .dropdown-menu) at the pointer on a right-click. Clicking elsewhere, scrolling or Escape closes it.
-// Delete goes to its confirmation page, so the menu only links. Touch screens use the row's buttons instead.
+// Delete goes to its confirmation page, so the menu only links. It takes no focus (that would ring Edit): keyboards and
+// touch screens use the row's buttons instead.
 (() => {
     'use strict';
     const menu = document.getElementById('row-menu');
@@ -18,7 +19,6 @@
         const { width, height } = menu.getBoundingClientRect();
         menu.style.left = `${Math.max(0, x + width > window.innerWidth ? x - width : x)}px`;
         menu.style.top = `${Math.max(0, y + height > window.innerHeight ? y - height : y)}px`;
-        links.edit.focus({ preventScroll: true });
     };
 
     document.addEventListener('contextmenu', e => {
