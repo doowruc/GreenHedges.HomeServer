@@ -91,6 +91,15 @@ public class BackupFileTests
             ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { ServiceDueMileage = 0 }] })));
 
     [Fact]
+    public void An_owners_driver_number_is_tidied_and_checked()
+    {
+        var owner = Assert.Single(Read(Json(Sample(b => b with { Owners = [b.Owners[0] with { DriverNumber = "testa 801015 ab9cd" }] }))).Owners);
+        Assert.Equal("TESTA801015AB9CD", owner.DriverNumber);
+        Assert.Contains("Owner 1's driver number isn't a driver number.",
+            ReadError(Sample(b => b with { Owners = [b.Owners[0] with { DriverNumber = "ABC" }] })));
+    }
+
+    [Fact]
     public void Rejects_a_disposal_without_its_date_or_a_negative_price()
     {
         Assert.Contains("Vehicle 2 has a disposal method or date without the other.",

@@ -12,6 +12,7 @@ public class BackupServiceTests : DatabaseTest
     private async Task SeedAsync(AppDbContext db)
     {
         var vehicle = await TestData.AddVehicleAsync(db, "BACK 1");
+        (vehicle.Owner!.DriverNumber, vehicle.Owner.LicenceIssueDate) = ("TESTA801015AB9CD", new DateOnly(2005, 6, 1));
         vehicle.FuelType = FuelType.Diesel;
         vehicle.MotDueDate = new DateOnly(2026, 11, 1);
         vehicle.TaxDueDate = new DateOnly(2027, 3, 1);
@@ -53,7 +54,7 @@ public class BackupServiceTests : DatabaseTest
     /// <summary>Everything the user has, without ids, so a restore can be compared with the original.</summary>
     private static async Task<List<string>> ContentsAsync(AppDbContext db) =>
     [
-        .. await db.Owners.Select(o => $"owner {o.Name} user={o.UserId} {o.AddedBy} {o.AddedDate:O}").ToListAsync(),
+        .. await db.Owners.Select(o => $"owner {o.Name} user={o.UserId} {o.AddedBy} {o.AddedDate:O} licence={o.DriverNumber} {o.LicenceIssueDate}").ToListAsync(),
         .. await db.Vehicles.Select(v => $"vehicle {v.RegistrationNumber} {v.Owner!.Name} {v.Make} {v.Model} {v.FuelType} user={v.UserId} {v.AddedDate:O} " +
                                             $"mot={v.MotDueDate} tax={v.TaxDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles} " +
                                             $"paid={v.PurchasePrice} went={v.DisposalMethod} {v.DisposedDate} got={v.DisposalPrice}").ToListAsync(),

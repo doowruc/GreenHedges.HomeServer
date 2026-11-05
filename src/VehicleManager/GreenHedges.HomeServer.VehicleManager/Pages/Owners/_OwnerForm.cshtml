@@ -6,4 +6,18 @@
         <input asp-for="Name" class="form-control" autofocus />
         <span asp-validation-for="Name" class="text-danger small"></span>
     </div>
+    <div class="col-12">
+        <h2 class="h6 mt-2 mb-0">Driving licence</h2>
+        <div class="form-text mt-0">Optional. The first issue date is on the photocard, and shows how long they've held a licence.</div>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="DriverNumber" class="form-label"></label>
+        <input asp-for="DriverNumber" class="form-control text-uppercase font-monospace" autocomplete="off" placeholder="e.g. MORGA753116SM9IJ" />
+        <span asp-validation-for="DriverNumber" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="LicenceIssueDate" class="form-label"></label>
+        <input asp-for="LicenceIssueDate" class="form-control" />
+        <span asp-validation-for="LicenceIssueDate" class="text-danger small"></span>
+    </div>
 </div>

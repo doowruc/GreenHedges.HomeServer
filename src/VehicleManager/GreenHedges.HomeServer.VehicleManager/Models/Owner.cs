@@ -14,6 +14,15 @@ public class Owner : AuditedEntity, IUserOwned
     [Required, StringLength(50)]
     public string Name { get; set; } = string.Empty;
 
+    // --- Their driving licence (optional): when it was first issued (for how long they've held it, e.g. for insurance
+    //     quotes) and the driver number, 16 characters with no spaces (see OwnerInput.DriverNumberPattern). ---
+    public DateOnly? LicenceIssueDate { get; set; }
+
+    [StringLength(MaxDriverNumberLength)]
+    public string? DriverNumber { get; set; }
+
+    public const int MaxDriverNumberLength = 16;
+
     public List<Vehicle> Vehicles { get; set; } = [];
     public List<InsurancePolicy> InsurancePolicies { get; set; } = [];
 }
