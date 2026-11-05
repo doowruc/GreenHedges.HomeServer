@@ -63,3 +63,7 @@
 /* Typeahead suggestions (wwwroot/js/typeahead.js): a dropdown menu under the input, scrolling if long. */
 .typeahead-menu { position: absolute; margin-top: .125rem; max-height: 16rem; overflow-y: auto; }
 .typeahead-menu .dropdown-item { white-space: normal; }
+
+/* A collapsible section's chevron points down while it's open (e.g. Previous vehicles). */
+.section-toggle .bi-chevron-right { display: inline-block; transition: transform .15s; }
+.section-toggle:not(.collapsed) .bi-chevron-right { transform: rotate(90deg); }

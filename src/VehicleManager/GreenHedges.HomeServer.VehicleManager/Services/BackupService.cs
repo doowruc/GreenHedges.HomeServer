@@ -26,6 +26,7 @@ public class BackupService(AppDbContext db)
         {
             Id = v.Id, OwnerId = v.OwnerId, Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
             RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
+            PurchasePrice = v.PurchasePrice, DisposalMethod = v.DisposalMethod, DisposedDate = v.DisposedDate, DisposalPrice = v.DisposalPrice,
             MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles,
             AddedDate = v.AddedDate, AddedBy = v.AddedBy, ModifiedDate = v.ModifiedDate, ModifiedBy = v.ModifiedBy
@@ -125,6 +126,7 @@ public class BackupService(AppDbContext db)
         {
             Owner = owners[v.OwnerId], Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
             RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
+            PurchasePrice = v.PurchasePrice, DisposalMethod = v.DisposalMethod, DisposedDate = v.DisposedDate, DisposalPrice = v.DisposalPrice,
             MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles
         }));

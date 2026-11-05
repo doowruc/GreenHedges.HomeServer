@@ -1,0 +1,64 @@
+@page "{id:int}"
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model GreenHedges.HomeServer.VehicleManager.Pages.Vehicles.DisposeModel
+@{
+    ViewData["Title"] = "Dispose of vehicle";
+    var methods = Enum.GetValues<DisposalMethod>().Select(m => new SelectListItem(VehicleView.DisposalNames(m), m.ToString()));
+    var priceNames = Enum.GetValues<DisposalMethod>().ToDictionary(m => m.ToString(), m => VehicleView.DisposalPriceNames(m) + " (£)");
+}
+
+<h1 class="h3 mb-3">@(Model.AlreadyDisposed ? "Disposal of" : "Dispose of") @Model.VehicleName</h1>
+<div class="card shadow-sm"><div class="card-body">
+    <p class="text-muted">
+        From this date it has no MOT, tax, insurance or service reminders, isn't looked up with the DVLA or DVSA, and isn't
+        offered for new fill-ups or insurance policies. Its history stays, under Previous vehicles.
+    </p>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Disposal.RowVersion" />
+        <div class="row g-3" id="disposal-fields" data-price-names="@System.Text.Json.JsonSerializer.Serialize(priceNames)">
+            <div class="col-md-4">
+                <label asp-for="Disposal.Method" class="form-label"></label>
+                <select asp-for="Disposal.Method" asp-items="methods" class="form-select">
+                    <option value="">Choose…</option>
+                </select>
+                <span asp-validation-for="Disposal.Method" class="text-danger small"></span>
+            </div>
+            <div class="col-6 col-md-4">
+                <label asp-for="Disposal.Date" class="form-label"></label>
+                <input asp-for="Disposal.Date" class="form-control" />
+                <span asp-validation-for="Disposal.Date" class="text-danger small"></span>
+            </div>
+            <div class="col-6 col-md-4">
+                <label asp-for="Disposal.Price" class="form-label" id="disposal-price-label"></label>
+                <input asp-for="Disposal.Price" class="form-control" inputmode="decimal" placeholder="Optional" />
+                <span asp-validation-for="Disposal.Price" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="Details" asp-route-id="@RouteData.Values["id"]" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+    @if (Model.AlreadyDisposed)
+    {
+        <hr />
+        <form method="post" asp-page-handler="Undo" asp-route-id="@RouteData.Values["id"]">
+            <button type="submit" class="btn btn-outline-danger btn-sm">Undo disposal</button>
+            <span class="form-text ms-2">Makes it a current vehicle again, e.g. if this was recorded by mistake.</span>
+        </form>
+    }
+</div></div>
+
+<script>
+    (() => {
+        // The price is named for how it went: a sale price, part-exchange value, insurance payout or scrap value.
+        const names = JSON.parse(document.getElementById('disposal-fields').dataset.priceNames);
+        const method = document.getElementById('Disposal_Method'), label = document.getElementById('disposal-price-label');
+        const update = () => { label.textContent = names[method.value] ?? 'Price (£)'; };
+        method.addEventListener('change', update);
+        update();
+    })();
+</script>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -34,6 +34,10 @@ public class VehicleInput
     [Display(Name = "Purchased date")]
     public DateOnly? PurchasedDate { get; set; }
 
+    [Range(0, 9_999_999.99)]
+    [Display(Name = "Purchase price (£)")]
+    public decimal? PurchasePrice { get; set; }
+
     [DataType(DataType.Date)]
     [Display(Name = "MOT due")]
     public DateOnly? MotDueDate { get; set; }
@@ -73,6 +77,7 @@ public class VehicleInput
         RegistrationNumber = v.RegistrationNumber,
         RegistrationDate = v.RegistrationDate,
         PurchasedDate = v.PurchasedDate,
+        PurchasePrice = v.PurchasePrice,
         MotDueDate = v.MotDueDate,
         TaxDueDate = v.TaxDueDate,
         ServiceDueDate = v.ServiceDueDate,
@@ -92,6 +97,7 @@ public class VehicleInput
         vehicle.RegistrationNumber = RegistrationNumber;
         vehicle.RegistrationDate = RegistrationDate;
         vehicle.PurchasedDate = PurchasedDate;
+        vehicle.PurchasePrice = PurchasePrice;
         vehicle.MotDueDate = MotDueDate;
         vehicle.TaxDueDate = TaxDueDate;
         vehicle.ServiceDueDate = ServiceDueDate;

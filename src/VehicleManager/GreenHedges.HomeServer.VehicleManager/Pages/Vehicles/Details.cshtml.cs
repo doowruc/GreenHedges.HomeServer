@@ -45,8 +45,14 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
     /// The header offers each check only while its date is missing: the vehicle hasn't been checked yet, or nothing was
     /// found. Otherwise the MOT is checked from the MOT tab. Either service has MOT dates; only the DVLA has tax.
     /// </summary>
-    public bool ShowHeaderMotCheck => CanLookUp && Vehicle.MotDueDate is null;
-    public bool ShowHeaderTaxCheck => lookup.HasTax && Vehicle.TaxDueDate is null;
+    public bool ShowHeaderMotCheck => CanLookUp && Vehicle.MotDueDate is null && !IsDisposed;
+    public bool ShowHeaderTaxCheck => lookup.HasTax && Vehicle.TaxDueDate is null && !IsDisposed;
+
+    /// <summary>It's been disposed of (by today): no due dates, and a "Sold 12/03/2026" badge instead.</summary>
+    public bool IsDisposed { get; private set; }
+
+    /// <summary>Policies it's still on after its disposal date, so it can be switched off them (or they cancelled).</summary>
+    public List<(int PolicyId, string Provider, DateTime To)> InsuredAfterDisposal { get; private set; } = [];
 
     /// <summary>The <c>check</c> values a lookup takes: just the MOT or just the tax (neither means both).</summary>
     public const string CheckMot = "mot", CheckTax = "tax";
@@ -72,6 +78,7 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
         var vehicle = await db.Vehicles.Where(v => v.Id == id).Select(VehicleView.Projection).FirstOrDefaultAsync();
         if (vehicle is null) return NotFound();
         Vehicle = vehicle;
+        IsDisposed = vehicle.IsDisposed(Reminders.UkToday());
 
         Entries = await db.FuelEntries
             .Where(f => f.VehicleId == id)
@@ -94,6 +101,13 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
         InsurancePolicyView.MarkCurrent(Policies, Reminders.UkNow());
         InsuranceSpells = Policies.Sum(p => p.Vehicles.Count(v => v.VehicleId == id));
         PremiumChartJson = InsuranceCosts.ChartJson(Policies, id);
+        if (vehicle.DisposedDate is { } gone)
+        {
+            var dayAfter = gone.AddDays(1).ToDateTime(TimeOnly.MinValue);
+            InsuredAfterDisposal = Policies.SelectMany(p => p.Vehicles.Where(v => v.VehicleId == id && v.To > dayAfter)
+                    .Select(v => (p.Id, p.Provider, v.To)))
+                .ToList();
+        }
 
         MotTests = MotTestView.NewestFirst(await db.MotTests
             .Where(t => t.VehicleId == id)

@@ -69,6 +69,30 @@ public class ScheduledRemindersTests(AppFactory app) : DatabaseTest, IClassFixtu
     }
 
     [DatabaseFact]
+    public async Task A_vehicle_disposed_of_isnt_looked_up_or_reminded_about_from_its_disposal_date()
+    {
+        var (address, _) = await SetUpAsync();
+        await using (var db = Db())
+        {
+            var vehicle = await db.Vehicles.SingleAsync();
+            db.InsurancePolicies.Add(TestData.Policy(vehicle, Today.AddDays(5).AddYears(-1), Today.AddDays(5)));
+            (vehicle.DisposalMethod, vehicle.DisposedDate) = (DisposalMethod.Sold, Today);
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(new ReminderRunResult(0, 0, ReminderEmailResult.NothingDue), await RunAsync(UserId, Today));
+        Assert.Empty(FakeResend.SentTo(address));
+        await using (var db = Db()) Assert.Null((await db.Vehicles.SingleAsync()).MotDueDate);
+
+        // Until the day it goes, it's still reminded about.
+        await using (var db = Db())
+        {
+            (await db.Vehicles.SingleAsync()).DisposedDate = Today.AddDays(1);
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(new ReminderRunResult(1, 0, ReminderEmailResult.Sent), await RunAsync(UserId, Today));
+    }
+
+    [DatabaseFact]
     public async Task An_insurance_policys_end_is_reminded_about_and_a_renewal_starts_again()
     {
         var (address, _) = await SetUpAsync();

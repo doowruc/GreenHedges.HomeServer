@@ -91,6 +91,15 @@ public class BackupFileTests
             ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { ServiceDueMileage = 0 }] })));
 
     [Fact]
+    public void Rejects_a_disposal_without_its_date_or_a_negative_price()
+    {
+        Assert.Contains("Vehicle 2 has a disposal method or date without the other.",
+            ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { DisposalMethod = DisposalMethod.Sold }] })));
+        Assert.Contains("Vehicle 2's purchase or disposal price isn't a price.",
+            ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { PurchasePrice = -1 }] })));
+    }
+
+    [Fact]
     public void Rejects_a_service_for_a_vehicle_that_isnt_in_the_backup_or_without_a_garage()
     {
         var error = ReadError(Sample(b => b with

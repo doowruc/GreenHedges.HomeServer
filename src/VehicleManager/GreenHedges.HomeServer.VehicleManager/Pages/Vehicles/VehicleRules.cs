@@ -22,6 +22,9 @@ internal static class VehicleRules
 
         if (v.RegistrationDate is { } reg && v.PurchasedDate is { } bought && bought < reg)
             state.AddModelError("Vehicle.PurchasedDate", "Purchased date can't be before the registration date.");
+        if (id is not null && v.PurchasedDate is { } purchased
+            && await db.Vehicles.Where(x => x.Id == id).Select(x => x.DisposedDate).FirstOrDefaultAsync() is { } gone && purchased > gone)
+            state.AddModelError("Vehicle.PurchasedDate", $"Purchased date can't be after it went ({gone:dd/MM/yyyy}).");
 
         if (!await db.Owners.AnyAsync(o => o.Id == v.OwnerId))
             state.AddModelError("Vehicle.OwnerId", "Choose an owner.");

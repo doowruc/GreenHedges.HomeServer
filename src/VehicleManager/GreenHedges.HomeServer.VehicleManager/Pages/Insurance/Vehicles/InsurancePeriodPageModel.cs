@@ -29,7 +29,9 @@ public abstract class InsurancePeriodPageModel(AppDbContext db) : PageModel
         if (policy is null) return false;
         PolicyName = $"{policy.Provider} {policy.PolicyNumber}";
         (PolicyStart, PolicyEnd) = (policy.StartDate, policy.EndDate);
-        ViewData["Vehicles"] = await InsuranceFormPageModel.VehicleOptionsAsync(db);
+        // Vehicles disposed of only if they're already on the policy (editing their cover).
+        var onPolicy = await db.InsurancePolicyVehicles.Where(v => v.InsurancePolicyId == PolicyId).Select(v => v.VehicleId).ToListAsync();
+        ViewData["Vehicles"] = await InsuranceFormPageModel.VehicleOptionsAsync(db, onPolicy);
         return true;
     }
 

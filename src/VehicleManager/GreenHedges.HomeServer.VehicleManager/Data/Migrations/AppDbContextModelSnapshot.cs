@@ -739,6 +739,17 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<DateTime>("AddedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DisposalMethod")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("DisposalPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateOnly?>("DisposedDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("FuelType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -767,6 +778,10 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
 
                     b.Property<int>("OwnerId")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("PurchasePrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<DateOnly?>("PurchasedDate")
                         .HasColumnType("date");

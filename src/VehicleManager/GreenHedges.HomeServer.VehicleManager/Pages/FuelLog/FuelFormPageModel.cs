@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using GreenHedges.HomeServer.VehicleManager.Models;
 using GreenHedges.HomeServer.VehicleManager.Data;
 using GreenHedges.HomeServer.VehicleManager.Services;
 using GreenHedges.HomeServer.VehicleManager.ViewModels;
@@ -35,7 +36,9 @@ public abstract class FuelFormPageModel(AppDbContext db, FuelStops stops) : Page
     /// <param name="editingId">The fill-up being edited, so it isn't treated as its own previous fill-up.</param>
     protected async Task LoadLookupsAsync(int? editingId = null)
     {
-        VehicleOptions = await db.Vehicles
+        // Not vehicles disposed of, except the one already chosen (editing an old fill-up).
+        var current = Vehicle.CurrentOn(Reminders.UkToday());
+        VehicleOptions = await db.Vehicles.Where(current).Union(db.Vehicles.Where(v => v.Id == Entry.VehicleId))
             .OrderBy(v => v.Make).ThenBy(v => v.Model)
             .Select(v => new SelectListItem($"{v.Make} {v.Model} ({v.RegistrationNumber})", v.Id.ToString()))
             .ToListAsync();
@@ -61,8 +64,12 @@ public abstract class FuelFormPageModel(AppDbContext db, FuelStops stops) : Page
 
     protected async Task ValidateAsync()
     {
-        if (!await db.Vehicles.AnyAsync(v => v.Id == Entry.VehicleId))
+        var vehicle = await db.Vehicles.Where(v => v.Id == Entry.VehicleId)
+            .Select(v => new { v.DisposalMethod, v.DisposedDate }).FirstOrDefaultAsync();
+        if (vehicle is null)
             ModelState.AddModelError("Entry.VehicleId", "Choose a vehicle.");
+        else if (vehicle.DisposedDate is { } gone && Entry.Date > gone)
+            ModelState.AddModelError("Entry.Date", $"The vehicle was {VehicleView.DisposalNames(vehicle.DisposalMethod!.Value).ToLowerInvariant()} on {gone:dd/MM/yyyy}.");
         if (Entry.VoucherPerLitre is { } voucher && voucher >= Entry.CostPerLitre)
             ModelState.AddModelError("Entry.VoucherPerLitre", "Voucher discount must be less than the price per litre.");
         if (Entry.Date > DateOnly.FromDateTime(DateTime.Today.AddDays(1)))
