@@ -16,13 +16,13 @@ else
     <div class="card shadow-sm">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-head">
-                <tr><th>Name</th><th>Driver Number</th><th>Licence First Issued</th><th class="text-end">Vehicles</th><th></th></tr>
+                <tr><th>Name</th><th>Driver Number</th><th>Licence First Issued</th><th class="text-end">Vehicles</th><th class="text-end">Claims</th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var o in Model.Owners)
             {
                 <tr>
-                    <td>@o.Name</td>
+                    <td><a asp-page="Details" asp-route-id="@o.Id">@o.Name</a></td>
                     <td class="font-monospace">@o.DriverNumber</td>
                     <td>
                         @if (o.LicenceIssueDate is { } issued)
@@ -32,6 +32,7 @@ else
                         }
                     </td>
                     <td class="text-end">@o.Vehicles</td>
+                    <td class="text-end">@o.Claims</td>
                     <td class="text-end text-nowrap">
                         <a asp-page="Edit" asp-route-id="@o.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
                         <a asp-page="Delete" asp-route-id="@o.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>

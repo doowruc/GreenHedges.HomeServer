@@ -79,3 +79,20 @@
         </div></div>
     }
 </div>
+
+@if (Model.Claims.Count > 0)
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-body fw-semibold">Claims (@Model.Claims.Count)</div>
+        <ul class="list-group list-group-flush">
+            @foreach (var c in Model.Claims)
+            {
+                <li class="list-group-item">
+                    @c.Date.ToString("dd/MM/yyyy") · @c.VehicleName <span class="reg-plate small">@c.RegistrationNumber</span> · @c.TypeName
+                    <span class="badge @c.FaultBadge">@c.FaultName</span> · @c.TotalValue.ToString("C")
+                    <a asp-page="/Owners/Details" asp-route-id="@c.OwnerId" class="ms-1">@(c.OwnerName)'s claims</a>
+                </li>
+            }
+        </ul>
+    </div>
+}

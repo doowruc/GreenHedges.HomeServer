@@ -10,11 +10,15 @@ public class DeleteModel(AppDbContext db) : PageModel
 {
     public InsurancePolicyView Policy { get; private set; } = new();
 
+    /// <summary>Claims on the policy: they're kept, without the link to it.</summary>
+    public int ClaimCount { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var policy = await db.InsurancePolicies.Where(p => p.Id == id).Select(InsurancePolicyView.Projection).FirstOrDefaultAsync();
         if (policy is null) return NotFound();
         Policy = policy;
+        ClaimCount = await db.Claims.CountAsync(c => c.InsurancePolicyId == id);
         return Page();
     }
 

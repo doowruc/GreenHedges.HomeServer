@@ -29,6 +29,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
     public DbSet<InsurancePolicyVehicle> InsurancePolicyVehicles => Set<InsurancePolicyVehicle>();
     public DbSet<MotDefect> MotDefects => Set<MotDefect>();
+    public DbSet<Claim> Claims => Set<Claim>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -109,6 +110,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
             e.Property(v => v.From).HasColumnType("datetime2(0)");
             e.Property(v => v.To).HasColumnType("datetime2(0)");
             e.Property(v => v.Adjustment).HasPrecision(10, 2);
+        });
+
+        modelBuilder.Entity<Claim>(e =>
+        {
+            e.HasQueryFilter(c => c.Owner!.UserId == CurrentUserId);
+            e.HasIndex(c => new { c.OwnerId, c.Date });
+            e.Property(c => c.Type).HasConversion<string>().HasMaxLength(20);
+            e.Property(c => c.Fault).HasConversion<string>().HasMaxLength(20);
+            e.Property(c => c.TotalValue).HasPrecision(10, 2);
+            // An owner with claims can't be deleted; a vehicle's go with it; a deleted policy's are kept, unlinked.
+            e.HasOne(c => c.Owner).WithMany(o => o.Claims).HasForeignKey(c => c.OwnerId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(c => c.Vehicle).WithMany().HasForeignKey(c => c.VehicleId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(c => c.InsurancePolicy).WithMany().HasForeignKey(c => c.InsurancePolicyId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<MotTest>(e =>

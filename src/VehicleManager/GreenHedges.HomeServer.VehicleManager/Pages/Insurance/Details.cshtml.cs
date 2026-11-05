@@ -15,12 +15,17 @@ public class DetailsModel(AppDbContext db) : PageModel
     /// <summary>The time now in the UK, for the vehicles' "Current" badges.</summary>
     public DateTime Now { get; } = Reminders.UkNow();
 
+    /// <summary>Claims made on the policy, newest first.</summary>
+    public List<ClaimView> Claims { get; private set; } = [];
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var policy = await db.InsurancePolicies.Where(p => p.Id == id).Select(InsurancePolicyView.Projection).FirstOrDefaultAsync();
         if (policy is null) return NotFound();
         InsurancePolicyView.MarkCurrent([policy], Now);
         Policy = policy;
+        Claims = await db.Claims.Where(c => c.InsurancePolicyId == id).OrderByDescending(c => c.Date)
+            .Select(ClaimView.Projection).ToListAsync();
         return Page();
     }
 }

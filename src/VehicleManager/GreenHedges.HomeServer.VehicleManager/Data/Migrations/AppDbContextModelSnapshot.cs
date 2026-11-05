@@ -22,6 +22,73 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.Claim", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Fault")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("InsurancePolicyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal>("TotalValue")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InsurancePolicyId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.HasIndex("OwnerId", "Date");
+
+                    b.ToTable("Claims");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.FuelBrand", b =>
                 {
                     b.Property<int>("Id")
@@ -842,6 +909,32 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.ToTable("Vehicles");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.Claim", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicy", "InsurancePolicy")
+                        .WithMany()
+                        .HasForeignKey("InsurancePolicyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Owner", "Owner")
+                        .WithMany("Claims")
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InsurancePolicy");
+
+                    b.Navigation("Owner");
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.FuelEntry", b =>
                 {
                     b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Vehicle", "Vehicle")
@@ -995,6 +1088,8 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
 
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.Owner", b =>
                 {
+                    b.Navigation("Claims");
+
                     b.Navigation("InsurancePolicies");
 
                     b.Navigation("Vehicles");

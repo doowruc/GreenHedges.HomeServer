@@ -25,4 +25,5 @@ public class Owner : AuditedEntity, IUserOwned
 
     public List<Vehicle> Vehicles { get; set; } = [];
     public List<InsurancePolicy> InsurancePolicies { get; set; } = [];
+    public List<Claim> Claims { get; set; } = [];
 }

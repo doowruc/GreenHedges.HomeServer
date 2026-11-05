@@ -55,6 +55,7 @@ public static class TestDatabase
         await db.MotTests.IgnoreQueryFilters().Where(t => t.Vehicle!.UserId == userId).ExecuteDeleteAsync();
         await db.ServiceRecords.IgnoreQueryFilters().Where(s => s.Vehicle!.UserId == userId).ExecuteDeleteAsync();
         await db.FuelEntries.IgnoreQueryFilters().Where(f => f.Vehicle!.UserId == userId).ExecuteDeleteAsync();
+        await db.Claims.IgnoreQueryFilters().Where(c => c.Owner!.UserId == userId).ExecuteDeleteAsync();
         await db.InsurancePolicyVehicles.IgnoreQueryFilters().Where(v => v.Policy!.Owner!.UserId == userId).ExecuteDeleteAsync();
         await db.InsurancePolicies.IgnoreQueryFilters().Where(p => p.Owner!.UserId == userId).ExecuteDeleteAsync();
         await db.Vehicles.IgnoreQueryFilters().Where(v => v.UserId == userId).ExecuteDeleteAsync();

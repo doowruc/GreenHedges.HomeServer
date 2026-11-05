@@ -73,7 +73,7 @@ so test pages through the in-memory host rather than relying on the browser.
 ```
 GreenHedges.HomeServer.VehicleManager/
   Models/      EF Core entities: Owner, Vehicle (+ DisposalMethod), FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
-               InsurancePolicyVehicle), UserSettings (storage only),
+               InsurancePolicyVehicle), Claim (+ ClaimType, ClaimFault), UserSettings (storage only),
                SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
   Data/        AppDbContext (per-user query filters), DesignTimeDbContextFactory, Migrations/
@@ -85,7 +85,7 @@ GreenHedges.HomeServer.VehicleManager/
                MileageTrend (recent miles per day from fill-up and MOT odometer readings, for service-by-mileage estimates), ServiceSchedule (next service from intervals),
                VehicleLookup (MOT/tax dates) over DvlaClient (DVLA Vehicle Enquiry) and MotHistoryClient (DVSA MOT History),
                MotTests (keeps stored MOT tests in step with the DVSA), InsuranceCosts (vehicles' shares of policies, cost chart), Telemetry (OpenTelemetry setup, ActivitySource)
-  Pages/       Index (dashboard, with a "Coming up" due-dates list), Owners/*, Vehicles/* (+ Services/* per vehicle), Insurance/* (+ Vehicles/* per policy), FuelLog/* (log + fill-up pages), Import/*, Backup/* (Index, Restore), Settings/* (user menu), FuelBrands/* (+ Stations/* per brand),
+  Pages/       Index (dashboard, with a "Coming up" due-dates list), Owners/* (+ Claims/* per owner), Vehicles/* (+ Services/* per vehicle), Insurance/* (+ Vehicles/* per policy), FuelLog/* (log + fill-up pages), Import/*, Backup/* (Index, Restore), Settings/* (user menu), FuelBrands/* (+ Stations/* per brand),
                Account/* (Login, Logout, SignedOut), Shared/ (layout + partials)
   wwwroot/     css/site.css, js/color-mode.js, js/period-toggle.js, js/data-table.js (DataTables setup), js/typeahead.js (dropdown suggestions),
                js/price-chart.js (station price charts), js/mileage-chart.js (mileage over time: vehicle Services and MOT tabs),
@@ -223,6 +223,16 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   a period at its start; null under two points) feeds `_PremiumChart` / `wwwroot/js/premium-chart.js` (Actual / Per
   year buttons, Actual first, not remembered; clicking a point opens its policy).
 - Old backups' `insuranceDueDate` on vehicles is ignored on restore (unknown JSON properties are skipped).
+
+**Claims** (an owner's, on `Pages/Owners/Details`)
+- `Claim` belongs to an `Owner` (FK `Restrict`, filtered through the owner) and a `Vehicle` (`Cascade`), and optionally
+  an `InsurancePolicy` (`SetNull`: deleting the policy keeps the claim): `Date` (`DateOnly`), `Type` (`ClaimType`,
+  just `Accident`), `Fault` (`ClaimFault`: Owner, OtherParty, Both) and `TotalValue`. In the backup (`Claims`); restore
+  deletes them before vehicles and owners.
+- Pages at `/Owners/{ownerId}/Claims/...` (`Pages/Owners/Claims`, base `ClaimPageModel`, which 404s a claim not under
+  the owner in the URL; pass `ownerId`). Any vehicle can be chosen (previous ones too); the policy must be the owner's
+  and cover the date (`InsurancePolicyView.LastDay` for its last day). The form's script suggests the policy covering
+  the vehicle on the date from `ViewData["PolicyCover"]`, until one is picked by hand.
 
 **Due dates, reminders and MOT/tax lookups**
 - `Vehicle` has `MotDueDate`, `TaxDueDate`, `ServiceDueDate` (all optional, in the backup); the insurance due date

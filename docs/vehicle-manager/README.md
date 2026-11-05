@@ -187,6 +187,14 @@ can't be deleted while they still own vehicles. Each can have their driving lice
 checked against the GB format and stored without spaces) and its date of first issue; the list shows how many years
 they've held it.
 
+**Claims** (on an owner's page: click their name in **Owners**) – each insurance claim the owner made: the vehicle
+(any of yours, previous ones too), the date, the type (accident, for now), who was at fault (the owner, the other
+party, or both), its total value, and the policy it was on. The policy is optional, for claims from before the
+policies recorded; it must be the owner's and cover the date, and the form picks the one that covered the vehicle then.
+The page counts the claims in the last 5 years and how many were at fault (what insurers ask), and a policy's page lists
+its claims. An owner with claims can't be deleted; deleting a vehicle deletes its claims (dispose of it instead to keep
+them); deleting a policy keeps its claims, without the policy.
+
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
 from its policies), and how often it's serviced (every so many months and/or miles).

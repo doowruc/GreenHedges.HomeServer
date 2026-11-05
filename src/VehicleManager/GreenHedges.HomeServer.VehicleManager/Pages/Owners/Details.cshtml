@@ -1,0 +1,85 @@
+@page "{id:int}"
+@model GreenHedges.HomeServer.VehicleManager.Pages.Owners.DetailsModel
+@{ ViewData["Title"] = Model.Name; }
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">@Model.Name</h1>
+        <div class="text-muted small">
+            @if (Model.DriverNumber is { } number) { <text>Driver number <span class="font-monospace">@number</span></text> }
+            @if (Model.LicenceIssueDate is { } issued)
+            {
+                <text>@(Model.DriverNumber is null ? "" : " · ")Licence first issued @issued.ToString("dd/MM/yyyy") (@Model.YearsHeld year@(Model.YearsHeld == 1 ? "" : "s"))</text>
+            }
+            @if (Model.DriverNumber is null && Model.LicenceIssueDate is null) { <text>No driving licence details. <a asp-page="Edit" asp-route-id="@Model.Id">Add them</a>.</text> }
+        </div>
+    </div>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <a asp-page="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+        <a asp-page="Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+        <partial name="_BackButton" model='new BackButton(Url.Page("Index")!, History: true)' />
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="fw-semibold">Claims (@Model.Claims.Count)
+            @if (Model.Claims.Count > 0)
+            {
+                <span class="text-muted small fw-normal ms-2">@Model.RecentClaims in the last @DetailsModel.ClaimYears years, @Model.RecentAtFault at fault</span>
+            }
+        </span>
+        <a asp-page="Claims/Create" asp-route-ownerId="@Model.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Add claim</a>
+    </div>
+    @if (Model.Claims.Count == 0)
+    {
+        <div class="card-body text-muted">No claims.</div>
+    }
+    else
+    {
+        <div class="card-body py-2"><div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-head">
+                <tr><th>Date</th><th>Vehicle</th><th>Type</th><th>At Fault</th><th class="text-end">Total Value</th><th>Policy</th><th></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.Claims)
+            {
+                <tr>
+                    <td class="text-nowrap">@c.Date.ToString("dd/MM/yyyy")</td>
+                    <td class="text-nowrap"><a asp-page="/Vehicles/Details" asp-route-id="@c.VehicleId">@c.VehicleName</a> <span class="reg-plate small">@c.RegistrationNumber</span></td>
+                    <td>@c.TypeName</td>
+                    <td><span class="badge @c.FaultBadge">@c.FaultName</span></td>
+                    <td class="text-end">@c.TotalValue.ToString("C")</td>
+                    <td>@if (c.PolicyId is { } policyId) { <a asp-page="/Insurance/Details" asp-route-id="@policyId">@c.PolicyLabel</a> }</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-page="Claims/Edit" asp-route-ownerId="@Model.Id" asp-route-id="@c.Id" class="btn btn-sm btn-link p-0 me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a asp-page="Claims/Delete" asp-route-ownerId="@Model.Id" asp-route-id="@c.Id" class="btn btn-sm btn-link p-0 text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        </div></div>
+    }
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-body fw-semibold">Vehicles (@Model.Vehicles.Count)</div>
+    @if (Model.Vehicles.Count == 0)
+    {
+        <div class="card-body text-muted">No vehicles.</div>
+    }
+    else
+    {
+        <ul class="list-group list-group-flush">
+            @foreach (var v in Model.Vehicles)
+            {
+                <li class="list-group-item">
+                    <a asp-page="/Vehicles/Details" asp-route-id="@v.Id">@v.DisplayName</a> <span class="reg-plate small">@v.RegistrationNumber</span>
+                    @if (v.IsDisposed(Model.Today)) { <span class="badge text-bg-secondary ms-1">@v.DisposalText</span> }
+                </li>
+            }
+        </ul>
+    }
+</div>

@@ -91,6 +91,24 @@ public class BackupFileTests
             ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { ServiceDueMileage = 0 }] })));
 
     [Fact]
+    public void Rejects_claims_that_dont_link_up()
+    {
+        static ClaimBackup Claim(int ownerId = 1, int vehicleId = 2, int? policyId = 8) => new()
+        {
+            Id = 3, OwnerId = ownerId, VehicleId = vehicleId, InsurancePolicyId = policyId, Date = new DateOnly(2027, 3, 1),
+            Fault = ClaimFault.Owner, TotalValue = 1200m
+        };
+        var claim = Assert.Single(Read(Json(Sample(b => b with { InsurancePolicies = [Policy()], Claims = [Claim()] }))).Claims);
+        Assert.Equal((8, ClaimFault.Owner, 1200m), (claim.InsurancePolicyId!.Value, claim.Fault, claim.TotalValue));
+
+        Assert.Contains("Claim 3's owner (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicies = [Policy()], Claims = [Claim(ownerId: 99)] })));
+        Assert.Contains("Claim 3's vehicle (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicies = [Policy()], Claims = [Claim(vehicleId: 99)] })));
+        Assert.Contains("Claim 3's insurance policy (99) isn't in the backup.", ReadError(Sample(b => b with { Claims = [Claim(policyId: 99)] })));
+        Assert.Contains("Claim 3's total value (-1) isn't a value.",
+            ReadError(Sample(b => b with { Claims = [Claim(policyId: null) with { TotalValue = -1 }] })));
+    }
+
+    [Fact]
     public void An_owners_driver_number_is_tidied_and_checked()
     {
         var owner = Assert.Single(Read(Json(Sample(b => b with { Owners = [b.Owners[0] with { DriverNumber = "testa 801015 ab9cd" }] }))).Owners);
