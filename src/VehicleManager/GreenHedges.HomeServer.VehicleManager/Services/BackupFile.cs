@@ -218,6 +218,8 @@ public sealed record BackupFile
             if (!Enum.IsDefined(p.Cover)) errors.Add($"Insurance policy {p.Id}'s cover ({p.Cover}) isn't a kind of cover.");
             if (p.Premium is <= 0 or >= 1_000_000) errors.Add($"Insurance policy {p.Id}'s premium ({p.Premium}) isn't a premium.");
             if (p.Excess is < 0 or >= 1_000_000) errors.Add($"Insurance policy {p.Id}'s excess ({p.Excess}) isn't an excess.");
+            if (p.NoClaimsYears is < 0 or > InsurancePolicy.MaxNoClaimsYears)
+                errors.Add($"Insurance policy {p.Id}'s no claims bonus ({p.NoClaimsYears} years) isn't 0 to {InsurancePolicy.MaxNoClaimsYears} years.");
             Text(p.Provider, InsurancePolicy.MaxProviderLength, $"Insurance policy {p.Id}'s insurer", errors);
             Text(p.PolicyNumber, InsurancePolicy.MaxPolicyNumberLength, $"Insurance policy {p.Id}'s policy number", errors);
             if (p.NamedDrivers is { Length: > InsurancePolicy.MaxNamedDriversLength })

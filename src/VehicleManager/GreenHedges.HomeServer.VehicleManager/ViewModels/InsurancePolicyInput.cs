@@ -50,6 +50,13 @@ public class InsurancePolicyInput : IValidatableObject
     [Display(Name = "Named drivers")]
     public string? NamedDrivers { get; set; }
 
+    [Range(0, InsurancePolicy.MaxNoClaimsYears)]
+    [Display(Name = "No claims bonus (years)")]
+    public int? NoClaimsYears { get; set; }
+
+    [Display(Name = "Protected no claims bonus")]
+    public bool ProtectedNoClaims { get; set; }
+
     [StringLength(InsurancePolicy.MaxNotesLength)]
     public string? Notes { get; set; }
 
@@ -75,6 +82,8 @@ public class InsurancePolicyInput : IValidatableObject
         Premium = p.Premium,
         Excess = p.Excess,
         NamedDrivers = p.NamedDrivers,
+        NoClaimsYears = p.NoClaimsYears,
+        ProtectedNoClaims = p.ProtectedNoClaims,
         Notes = p.Notes,
         RowVersion = p.RowVersion
     };
@@ -94,6 +103,8 @@ public class InsurancePolicyInput : IValidatableObject
         policy.Premium = Premium!.Value;
         policy.Excess = Excess;
         policy.NamedDrivers = string.IsNullOrWhiteSpace(NamedDrivers) ? null : FuelStops.NormaliseName(NamedDrivers);
+        policy.NoClaimsYears = NoClaimsYears;
+        policy.ProtectedNoClaims = ProtectedNoClaims;
         policy.Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim();
     }
 

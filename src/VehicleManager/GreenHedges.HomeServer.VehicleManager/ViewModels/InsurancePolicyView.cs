@@ -16,6 +16,8 @@ public class InsurancePolicyView
     public decimal Premium { get; init; }
     public decimal? Excess { get; init; }
     public string? NamedDrivers { get; init; }
+    public int? NoClaimsYears { get; init; }
+    public bool ProtectedNoClaims { get; init; }
     public string? Notes { get; init; }
 
     /// <summary>The vehicles it covers, and when, in order.</summary>
@@ -78,6 +80,8 @@ public class InsurancePolicyView
         Premium = p.Premium,
         Excess = p.Excess,
         NamedDrivers = p.NamedDrivers,
+        NoClaimsYears = p.NoClaimsYears,
+        ProtectedNoClaims = p.ProtectedNoClaims,
         Notes = p.Notes,
         Vehicles = p.Vehicles.AsQueryable().OrderBy(v => v.From).ThenBy(v => v.Id).Select(InsurancePeriodView.Projection).ToList()
     };

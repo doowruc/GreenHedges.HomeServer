@@ -64,7 +64,9 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         fields["Policy.Cover"] = nameof(InsuranceCover.ThirdPartyFireAndTheft);
         fields["Policy.Excess"] = "350";
         fields["Policy.NamedDrivers"] = "Me, Partner";
-        fields["Policy.Notes"] = "Protected no-claims bonus";
+        fields["Policy.NoClaimsYears"] = "1";
+        fields["Policy.ProtectedNoClaims"] = "true";
+        fields["Policy.Notes"] = "Renewed by phone";
         var policyId = PolicyIdFrom(await AddPolicyAsync(client, fields));
 
         await using (var db = Db())
@@ -72,6 +74,7 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
             var policy = await db.InsurancePolicies.Include(p => p.Vehicles).SingleAsync();
             Assert.Equal((ownerId, start, end, "Acme Insurance", "POL-1", InsuranceCover.ThirdPartyFireAndTheft, 456.78m, (decimal?)350m, "Me, Partner"),
                 (policy.OwnerId, policy.StartDate, policy.EndDate, policy.Provider, policy.PolicyNumber, policy.Cover, policy.Premium, policy.Excess, policy.NamedDrivers));
+            Assert.Equal(((int?)1, true), (policy.NoClaimsYears, policy.ProtectedNoClaims));
             var covered = Assert.Single(policy.Vehicles);
             Assert.Equal((vehicleId, start, end), (covered.VehicleId, covered.From, covered.To));
         }
@@ -80,7 +83,8 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Contains($"Added the Acme Insurance policy, {start:dd/MM/yyyy HH:mm} to {end:dd/MM/yyyy HH:mm}.", policyPage.Text);
         Assert.Contains("Test Owner's policy", policyPage.Text);
         Assert.Contains("Test Car", policyPage.Text);
-        Assert.Contains("Protected no-claims bonus", policyPage.Text);
+        Assert.Contains("Renewed by phone", policyPage.Text);
+        Assert.Contains("1 year (protected)", policyPage.Text);
 
         var vehicle = await client.GetAsync($"/Vehicles/Details/{vehicleId}?tab=insurance");
         Assert.Contains($"Insurance {Today.AddDays(20):dd/MM/yyyy} · in 20 days", vehicle.Text);
@@ -221,6 +225,8 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
             var policy = TestData.Policy(await db.Vehicles.SingleAsync(v => v.Id == vehicleId), new DateOnly(2025, 11, 5), new DateOnly(2026, 11, 4), "Acme Insurance");
             policy.Cover = InsuranceCover.ThirdPartyOnly;
             policy.NamedDrivers = "Me";
+            policy.NoClaimsYears = 4;
+            policy.ProtectedNoClaims = true;
             db.InsurancePolicies.Add(policy);
             await db.SaveChangesAsync();
         }
@@ -232,7 +238,19 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Matches($@"<option selected=""selected"" value=""{vehicleId}"">", form.Html);
         Assert.Matches($@"<option selected=""selected"" value=""{ownerId}"">", form.Html);
         Assert.Matches(@"<option selected=""selected"" value=""ThirdPartyOnly"">", form.Html);
+        Assert.Matches(@"id=""Policy_NoClaimsYears""[^>]*value=""5""", form.Html);   // a year more
+        Assert.Matches(@"<input[^>]*checked=""checked""[^>]*id=""Policy_ProtectedNoClaims""|id=""Policy_ProtectedNoClaims""[^>]*checked=""checked""", form.Html);
         Assert.Matches(@"id=""Policy_PolicyNumber""[^>]*value=""""", form.Html);
+    }
+
+    [DatabaseFact]
+    public async Task A_new_policy_defaults_to_midnight_today_until_2359_a_year_on()
+    {
+        await AddVehicleAsync();
+        var form = await app.ClientFor(UserId).GetAsync("/Insurance/Create");
+        Assert.Contains($"value=\"{At(Today, 0, 0).ToString(Format)}\"", form.Html);
+        Assert.Contains($"value=\"{At(Today.AddYears(1).AddDays(-1), 23, 59).ToString(Format)}\"", form.Html);
+        Assert.Matches(@"id=""Policy_NoClaimsYears""[^>]*value=""""", form.Html);
     }
 
     [DatabaseFact]

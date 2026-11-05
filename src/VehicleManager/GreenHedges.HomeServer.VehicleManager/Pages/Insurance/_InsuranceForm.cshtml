@@ -75,6 +75,17 @@
         <input asp-for="Excess" class="form-control" inputmode="decimal" placeholder="e.g. 350" />
         <span asp-validation-for="Excess" class="text-danger small"></span>
     </div>
+    <div class="col-6 col-md-4">
+        <label asp-for="NoClaimsYears" class="form-label"></label>
+        <input asp-for="NoClaimsYears" class="form-control" inputmode="numeric" placeholder="e.g. 5" />
+        <span asp-validation-for="NoClaimsYears" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-8 d-flex align-items-end">
+        <div class="form-check mb-2">
+            <input asp-for="ProtectedNoClaims" class="form-check-input" />
+            <label asp-for="ProtectedNoClaims" class="form-check-label"></label>
+        </div>
+    </div>
     <div class="col-12">
         <label asp-for="NamedDrivers" class="form-label"></label>
         <input asp-for="NamedDrivers" class="form-control" autocomplete="off" />

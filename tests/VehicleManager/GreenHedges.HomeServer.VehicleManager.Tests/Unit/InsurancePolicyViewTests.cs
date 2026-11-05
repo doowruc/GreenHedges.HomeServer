@@ -76,7 +76,8 @@ public class InsurancePolicyViewTests
 
     [Theory]
     [InlineData("2026-11-04T23:59", "2026-11-05T00:00", "2027-11-04T23:59")]   // the usual: midnight to 23:59 a year on
-    [InlineData("2026-11-05T14:32", "2026-11-05T14:32", "2027-11-05T14:32")]   // to the minute it started
+    [InlineData("2026-11-05T00:00", "2026-11-05T00:00", "2027-11-04T23:59")]   // one ending at midnight
+    [InlineData("2026-11-05T14:32", "2026-11-05T00:00", "2027-11-04T23:59")]   // an odd time: overlapping, not a gap
     public void A_renewal_starts_when_the_last_policy_ends_and_runs_a_year(string previousEnd, string start, string end)
     {
         var renewal = CreateModel.RenewalStart(DateTime.Parse(previousEnd));

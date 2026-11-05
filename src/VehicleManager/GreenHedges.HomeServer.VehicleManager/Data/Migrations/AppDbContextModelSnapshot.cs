@@ -283,6 +283,9 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<int?>("NoClaimsYears")
+                        .HasColumnType("int");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -298,6 +301,9 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<decimal>("Premium")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<bool>("ProtectedNoClaims")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Provider")
                         .IsRequired()

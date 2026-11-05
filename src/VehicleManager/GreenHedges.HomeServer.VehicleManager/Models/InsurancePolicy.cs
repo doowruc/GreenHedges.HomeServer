@@ -14,6 +14,7 @@ public class InsurancePolicy : AuditedEntity
     public const int MaxPolicyNumberLength = 50;
     public const int MaxNamedDriversLength = 500;
     public const int MaxNotesLength = 1000;
+    public const int MaxNoClaimsYears = 50;
 
     public int Id { get; set; }
 
@@ -40,6 +41,10 @@ public class InsurancePolicy : AuditedEntity
 
     [StringLength(MaxNamedDriversLength)]
     public string? NamedDrivers { get; set; }
+
+    /// <summary>Years of no claims bonus the policy was priced on, and whether it's protected (a claim won't lose it).</summary>
+    public int? NoClaimsYears { get; set; }
+    public bool ProtectedNoClaims { get; set; }
 
     [StringLength(MaxNotesLength)]
     public string? Notes { get; set; }
