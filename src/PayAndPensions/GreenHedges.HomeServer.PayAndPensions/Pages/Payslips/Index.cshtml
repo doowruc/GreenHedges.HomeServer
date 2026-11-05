@@ -55,14 +55,13 @@ else
 {
     <div class="card shadow-sm">
         <div class="table-responsive">
-            @* Sections, each ending in a separator (.section-end): edit and delete, first so they're there without
-               scrolling; the payslip; earnings; deductions; the employer's and
+            @* Sections, each ending in a separator (.section-end): the payslip; earnings; deductions; the employer's and
                when the pension arrived; gross and deductions; net; the worked-out figures. A payslip's notes are a
-               tooltip on its month, and a pension or bonus amount's share of salary a tooltip on the amount. *@
+               tooltip on its month, and a pension or bonus amount's share of salary a tooltip on the amount. Each
+               row's edit and delete buttons are in the last column, and in its right-click menu (js/row-menu.js). *@
             <table class="table table-sm table-hover align-middle mb-0 payslip-table">
                 <thead class="table-head">
                     <tr>
-                        <th class="section-end"><span class="visually-hidden">Actions</span></th>
                         <th>Month</th>
                         <th class="@(Model.ManyEmployers ? null : "section-end")">Paid</th>
                         @if (Model.ManyEmployers) { <th class="section-end">Employer</th> }
@@ -79,17 +78,15 @@ else
                         <th class="text-end">Take-home</th>
                         <th class="text-end">Year to date</th>
                         <th class="text-end section-end" title="12 ÷ tax month × year to date">Predicted</th>
+                        <th><span class="visually-hidden">Actions</span></th>
                     </tr>
                 </thead>
                 <tbody class="amount">
                 @foreach (var r in Model.Rows)
                 {
                     var f = r.Figures;
-                    <tr>
-                        <td class="text-nowrap section-end">
-                            <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
-                            <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
-                        </td>
+                    <tr data-row-menu data-edit="@Url.Page("Edit", new { personId = Model.PersonId, id = r.Id })"
+                        data-delete="@Url.Page("Delete", new { personId = Model.PersonId, id = r.Id })">
                         <td class="text-nowrap"><span title="Tax month @r.TaxMonth">@r.TaxMonth @TaxYears.MonthName(r.TaxMonth)[..3]</span>@if (r.Notes is not null) {<i class="bi bi-sticky ms-1 text-body-secondary has-tip-icon" title="@r.Notes" aria-label="Notes: @r.Notes"></i>}</td>
                         <td class="text-nowrap @(Model.ManyEmployers ? null : "section-end")">@r.PayDate.ToString("dd/MM/yy")</td>
                         @if (Model.ManyEmployers) { <td class="section-end">@r.Employer</td> }
@@ -112,12 +109,21 @@ else
                         <td class="text-end">@Percent(f.TakeHomePercent)</td>
                         <td class="text-end">@Money(f.YearToDateGross)</td>
                         <td class="text-end section-end">@Money(f.PredictedAnnualGross)</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </td>
                     </tr>
                 }
                 </tbody>
             </table>
         </div>
     </div>
+    <p class="form-text mt-1 mb-0">Right-click a payslip to edit or delete it, or use its buttons at the end of the row.</p>
+    <ul class="dropdown-menu shadow" id="row-menu" role="menu">
+        <li><a class="dropdown-item" data-action="edit" role="menuitem"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+        <li><a class="dropdown-item text-danger" data-action="delete" role="menuitem"><i class="bi bi-trash me-2"></i>Delete</a></li>
+    </ul>
 
     @if (t is not null)
     {
@@ -156,3 +162,7 @@ else
     }
 }
 <a asp-page="/People/Index" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>People</a>
+
+@section Scripts {
+    <script src="~/js/row-menu.js" asp-append-version="true"></script>
+}

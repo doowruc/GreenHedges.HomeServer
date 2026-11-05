@@ -247,6 +247,26 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Contains("First tax year, 2022-23", latest.Html);
     }
 
+    [DatabaseFact]
+    public async Task Each_row_can_be_edited_or_deleted_from_its_menu_or_its_buttons()
+    {
+        var person = await PersonAsync();
+        int id;
+        await using (var db = Db())
+            id = (await TestData.AddPayslipAsync(db, person, 2026, 1, ("Salary", 3000m))).Id;
+
+        var html = (await app.ClientFor(UserId).GetAsync($"/People/{person.Id}/Payslips?year=2026")).Html;
+
+        Assert.Contains($"data-edit=\"/People/{person.Id}/Payslips/Edit/{id}\"", html);
+        Assert.Contains($"data-delete=\"/People/{person.Id}/Payslips/Delete/{id}\"", html);
+        Assert.Contains("id=\"row-menu\"", html);
+        Assert.Matches("<script src=\"/js/row-menu[^\"]*\\.js", html);
+        var lastCell = System.Text.RegularExpressions.Regex.Match(html, @"<td class=""text-end text-nowrap"">\s*(<a[^>]*title=""Edit"".*?)</td>\s*</tr>",
+            System.Text.RegularExpressions.RegexOptions.Singleline).Groups[1].Value;   // the buttons, at the end of the row
+        Assert.Contains($"href=\"/People/{person.Id}/Payslips/Edit/{id}\"", lastCell);
+        Assert.Contains($"href=\"/People/{person.Id}/Payslips/Delete/{id}\"", lastCell);
+    }
+
     /// <summary>The table's headings in order, each marked "|" if a section separator follows it.</summary>
     private static List<string> Headings(PageResponse page) =>
         System.Text.RegularExpressions.Regex.Matches(
@@ -272,8 +292,8 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         var page = await client.GetAsync(url);
 
         Assert.Equal(
-            ["Actions |", "Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
-             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |"],
+            ["Month", "Paid |", "Salary |", "Tax", "Pension |", "Employer pension |", "Gross", "Deductions |", "Net |",
+             "Annual salary", "Rise", "Take-home", "Year to date", "Predicted |", "Actions"],
             Headings(page));
         Assert.Contains("title=\"5.0% of salary\"", page.Text);         // the employee's pension
         Assert.Contains("title=\"7.5% of salary\"", page.Text);         // the employer's
@@ -286,7 +306,7 @@ public class PayslipPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         await using (var db = Db())
             await db.Payslips.Where(s => s.TaxMonth == 2).ExecuteUpdateAsync(s => s.SetProperty(p => p.PensionReceivedDate, new DateOnly(2026, 6, 9)));
         var headings = Headings(await client.GetAsync(url));
-        Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[5..9]);
+        Assert.Equal(["Pension |", "Employer pension", "Pension received |", "Gross"], headings[4..8]);
     }
 
     [DatabaseFact]
