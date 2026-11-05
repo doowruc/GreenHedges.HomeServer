@@ -25,3 +25,9 @@
 
 /* The navbar's people switcher (Shared/Components/PersonSwitcher): pills, side by side even in the collapsed menu. */
 .person-switcher { flex-direction: row; gap: .25rem; }
+
+/* The payslips table's right-click menu (js/row-menu.js): its row keeps the hover highlight while it's open, and its
+   items get a clear one (Bootstrap's is a faint grey), red for Delete. */
+.table-hover > tbody > tr.row-menu-open > * { --bs-table-bg-state: var(--bs-table-hover-bg); color: var(--bs-table-hover-color); }
+#row-menu .dropdown-item:hover { background: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis); }
+#row-menu .dropdown-item.text-danger:hover { background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis) !important; }
