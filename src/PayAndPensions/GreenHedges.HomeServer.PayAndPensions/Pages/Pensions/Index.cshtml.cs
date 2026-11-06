@@ -7,7 +7,7 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.Pensions;
 
 public class IndexModel(AppDbContext db) : PersonPageModel(db)
 {
-    public record Row(int Id, string Name, string Provider, string? Website, PensionType Type, string? PolicyNumber, int Payslips);
+    public record Row(int Id, string Name, string Provider, string? Website, PensionType Type, string? PolicyNumber, int Payslips, int Statements);
 
     public List<Row> Pensions { get; private set; } = [];
 
@@ -19,7 +19,7 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
         if (!await LoadPersonAsync()) return NotFound();
         Pensions = await Db.Pensions.Where(pn => pn.PersonId == PersonId)
             .OrderBy(pn => pn.Name)
-            .Select(pn => new Row(pn.Id, pn.Name, pn.PensionProvider!.Name, pn.PensionProvider.Website, pn.Type, pn.PolicyNumber, pn.Payslips.Count))
+            .Select(pn => new Row(pn.Id, pn.Name, pn.PensionProvider!.Name, pn.PensionProvider.Website, pn.Type, pn.PolicyNumber, pn.Payslips.Count, pn.StatementTypes.Sum(t => t.Statements.Count)))
             .ToListAsync();
         HasProviders = await Db.PensionProviders.AnyAsync();
         return Page();

@@ -52,7 +52,9 @@ earnings columns, so the columns can't be fixed in the schema.
 | `Payslip` | Person, employer, tax year (stored as its start year), tax month, pay date, **pension received** date (the workbook's Transfer Date), **pension** (where its pension lines go; optional, only with a pension line), notes. Unique per person, tax year and month |
 | `PayslipLine` | Payslip, pay element, amount (`decimal(19,2)`) |
 | `PensionProvider` | The pension company: name, website. Belongs to the user (`IUserOwned`), not a person, as both of us can have pensions with the same provider |
-| `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other). Payslips point at the pension their pension lines go to |
+| `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other), optional **start date**. Payslips point at the pension their pension lines go to |
+| `StatementType` | Belongs to a pension: name (e.g. "Investment report", "Annual illustration"), **has projections** |
+| `PensionStatement` | Belongs to a statement type: date (one per type), label (e.g. "Spring 2026"), value, and with projections the projected fund at retirement and annual income; notes |
 
 Every table inherits `AuditedEntity`. Child tables are filtered through their person; providers through the user.
 
@@ -62,6 +64,10 @@ and the predicted annual figure; bonus as % of annual salary; and per tax year: 
 change on the year before, and **higher-rate pension relief** (20% of the year's employee pension contributions, the
 extra relief reclaimed through Self Assessment), leaving out pension paid by salary sacrifice, which comes off before
 tax and so already has full relief.
+
+**Statements, derived** (per type, oldest first, as the pensions workbook did): the change on the previous statement
+(the first's from 0 at the pension's start), growth (change ÷ previous), below the type's highest, days since the
+start and the value per day, days since the previous and the change per day, and monthly income (annual ÷ 12).
 
 **Room for later:** each payslip with pension lines points at the pension they go to, so payslip contributions can
 feed its history without typing them twice, and the pension received date becomes the date a contribution reached it. Documents attach to a payslip (payslip PDF) or a person's tax year (P60, P11D).
@@ -134,6 +140,10 @@ One branch and PR each:
 2. **Payslips to pensions:** an optional pension on each payslip with a pension line (the latest payslip's by default),
    a Pension column on the payslips table when a year has more than one, and setting it on a range of payslips at once.
    Done.
+3. **Statements:** each pension's statement types (named, with or without projections) and statements, a table per
+   type with the workbook's worked-out figures, and the pension's start date. Done.
+4. **Pasting statements in:** a type's history pasted from a spreadsheet's columns, with a preview, to bring in the
+   pensions workbook once.
 
-**Later:** documents (payslip PDFs, P60s, P11Ds); pension values (designed from the pensions workbook when we get
+**Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.

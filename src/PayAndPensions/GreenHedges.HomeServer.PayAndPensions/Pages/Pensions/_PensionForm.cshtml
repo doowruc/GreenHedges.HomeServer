@@ -24,4 +24,9 @@
         <select asp-for="Pension.Type" asp-items="Html.GetEnumSelectList<PensionType>()" class="form-select"></select>
         <span asp-validation-for="Pension.Type" class="text-danger small"></span>
     </div>
+    <div class="col-md-6">
+        <label asp-for="Pension.StartDate" class="form-label"></label>
+        <input asp-for="Pension.StartDate" type="date" class="form-control" />
+        <div class="form-text">When it started: its statements' days-since-start figures count from it.</div>
+    </div>
 </div>

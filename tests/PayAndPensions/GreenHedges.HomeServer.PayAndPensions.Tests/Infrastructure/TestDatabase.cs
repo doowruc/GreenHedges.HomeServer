@@ -51,8 +51,10 @@ public static class TestDatabase
         await using var db = As(null);
         await db.PayslipLines.IgnoreQueryFilters().Where(l => l.Payslip!.Person!.UserId == userId).ExecuteDeleteAsync();
         await db.Payslips.IgnoreQueryFilters().Where(s => s.Person!.UserId == userId).ExecuteDeleteAsync();
-        // Employers and pay elements go with their person.
+        await db.PensionStatements.IgnoreQueryFilters().Where(st => st.StatementType!.Pension!.Person!.UserId == userId).ExecuteDeleteAsync();
+        // Employers, pay elements and pensions (with their statement types) go with their person.
         await db.People.IgnoreQueryFilters().Where(p => p.UserId == userId).ExecuteDeleteAsync();
+        await db.PensionProviders.IgnoreQueryFilters().Where(pp => pp.UserId == userId).ExecuteDeleteAsync();
     }
 
     private static DbContextOptions<AppDbContext> OptionsFor(string connectionString) =>

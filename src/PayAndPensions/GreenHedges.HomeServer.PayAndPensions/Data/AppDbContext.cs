@@ -7,7 +7,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data;
 
 /// <remarks>
 /// Each signed-in user has their own data. Query filters limit every query to the current user's people and pension
-/// providers, and (through their person) employers, pay elements, payslips, payslip lines and pensions.
+/// providers, and (through their person) employers, pay elements, payslips, payslip lines, pensions, statement types
+/// and statements.
 /// Saving stamps new people and pension providers with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
@@ -22,6 +23,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<PayslipLine> PayslipLines => Set<PayslipLine>();
     public DbSet<PensionProvider> PensionProviders => Set<PensionProvider>();
     public DbSet<Pension> Pensions => Set<Pension>();
+    public DbSet<StatementType> StatementTypes => Set<StatementType>();
+    public DbSet<PensionStatement> PensionStatements => Set<PensionStatement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,6 +74,31 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(s => s.Pension)
              .HasForeignKey(s => s.PensionId)
              .OnDelete(DeleteBehavior.Restrict);
+            // Its statement types go with it, but not while they have statements (Restrict below): a pension's history
+            // is never deleted along with something else either.
+            e.HasMany(pn => pn.StatementTypes)
+             .WithOne(t => t.Pension)
+             .HasForeignKey(t => t.PensionId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StatementType>(e =>
+        {
+            e.HasQueryFilter(t => t.Pension!.Person!.UserId == CurrentUserId);
+            e.HasIndex(t => new { t.PensionId, t.Name }).IsUnique();
+            e.HasMany(t => t.Statements)
+             .WithOne(st => st.StatementType)
+             .HasForeignKey(st => st.StatementTypeId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PensionStatement>(e =>
+        {
+            e.HasQueryFilter(st => st.StatementType!.Pension!.Person!.UserId == CurrentUserId);
+            e.Property(st => st.Value).HasPrecision(19, 2);
+            e.Property(st => st.ProjectedFund).HasPrecision(19, 2);
+            e.Property(st => st.ProjectedAnnualIncome).HasPrecision(19, 2);
+            e.HasIndex(st => new { st.StatementTypeId, st.Date }).IsUnique();
         });
 
         modelBuilder.Entity<Employer>(e =>

@@ -298,6 +298,9 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -365,6 +368,70 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.ToTable("PensionProviders");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionStatement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("ProjectedAnnualIncome")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<decimal?>("ProjectedFund")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("StatementTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(19, 2)
+                        .HasColumnType("decimal(19,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StatementTypeId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("PensionStatements");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Person", b =>
                 {
                     b.Property<int>("Id")
@@ -411,6 +478,55 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("People");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.StatementType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("HasProjections")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PensionId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PensionId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("StatementTypes");
                 });
 
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Employer", b =>
@@ -499,6 +615,28 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionStatement", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.StatementType", "StatementType")
+                        .WithMany("Statements")
+                        .HasForeignKey("StatementTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("StatementType");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.StatementType", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.Pension", "Pension")
+                        .WithMany("StatementTypes")
+                        .HasForeignKey("PensionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pension");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Employer", b =>
                 {
                     b.Navigation("Payslips");
@@ -517,6 +655,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Pension", b =>
                 {
                     b.Navigation("Payslips");
+
+                    b.Navigation("StatementTypes");
                 });
 
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionProvider", b =>
@@ -533,6 +673,11 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.Navigation("Payslips");
 
                     b.Navigation("Pensions");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.StatementType", b =>
+                {
+                    b.Navigation("Statements");
                 });
 #pragma warning restore 612, 618
         }
