@@ -295,7 +295,7 @@ Merging a fuel brand moves its stations to the other brand, combining any with t
 **Dashboard** – a **Coming up** list of anything due within 30 days (or overdue), then one card per
 vehicle with its due dates, 12-month MPG, spend, odometer and last fill-up.
 **Vehicle page** – due dates (coloured by how soon they are), then tabs: **Fuel** (last-12-months / all-time stats, an MPG and fuel-price chart, and the full log),
-**Services** (the service history), **Insurance** (the policies that covered it, its cost chart, and its values, to edit or delete) and **MOT** (with the DVSA set up).
+**Services** (the service history), **MOT** (with the DVSA set up) and **Insurance** (the policies that covered it, its cost chart, and its values, to edit or delete).
 The address bar follows the tab (`?tab=insurance`), so a refresh stays on it.
 **Fuel Log page** (`/FuelLog`) – all fill-ups, filterable by vehicle and year.
 **On a phone** – in Safari, **Share → Add to Home Screen** gives a "Vehicles" icon (the car from the menu bar)

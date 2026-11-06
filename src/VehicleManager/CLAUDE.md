@@ -179,8 +179,8 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   included. Test `BackUpAsync(testUserId)`, or `RunAsync([testUserIds])` for a whole run (it records the run in `AppHealth`).
 
 **Service history**
-- The vehicle page (`Vehicles/Details`) has Fuel, Services, Insurance and MOT tabs (Bootstrap `nav-tabs`). The active one is rendered
-  server-side from `?tab=fuel|services|insurance|mot` (no flicker); the tab links carry it and a script keeps the address bar on the
+- The vehicle page (`Vehicles/Details`) has Fuel, Services, MOT and Insurance tabs (Bootstrap `nav-tabs`). The active one is rendered
+  server-side from `?tab=fuel|services|mot|insurance` (no flicker); the tab links carry it and a script keeps the address bar on the
   selected tab. Service pages redirect and cancel back with `tab=services` (`DetailsModel.ServicesTab`). The vehicle
   switcher's options carry the tab too (rendered server-side, updated by the same script), so switching vehicle keeps it.
 - `ServiceRecord` (date, mileage, garage, optional location, `UnderPreviousOwner` (done before the vehicle was the user's;
