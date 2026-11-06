@@ -195,6 +195,12 @@ The page counts the claims in the last 5 years and how many were at fault (what 
 its claims. An owner with claims can't be deleted; deleting a vehicle deletes its claims (dispose of it instead to keep
 them); deleting a policy keeps its claims, without the policy.
 
+**Pre-renewal** (from an owner's page, or the Insurance page) – what a renewal quote asks for, for one policyholder:
+the renewal date (when their current policy finishes, or a date you choose), the claims to declare if the insurer asks
+about the last 3, 4 or 5 years (a claim counts if it's within that many years before the renewal date; one exactly that
+long before doesn't), how many full years they'll have held their licence by then, and their driver number, in full, in
+its usual 5/6/5 groups and in the five sections comparison sites ask for, each with a copy button.
+
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
 from its policies), and how often it's serviced (every so many months and/or miles).
