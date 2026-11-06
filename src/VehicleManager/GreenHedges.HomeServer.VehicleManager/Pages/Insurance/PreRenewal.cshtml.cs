@@ -13,7 +13,7 @@ namespace GreenHedges.HomeServer.VehicleManager.Pages.Insurance;
 /// What to have to hand for a renewal quote, for one owner (<c>?ownerId=</c>, else the first): the renewal date (from
 /// their current policy, or <c>?date=</c>), the claims to declare for 3, 4 and 5 year cut-offs, how long they've held a
 /// licence by then, and their driver number ready to copy; and the same for each owner who's a named driver on the policy.
-/// Below them, the vehicles on the policy, with the values typed in from valuation sites and a form to add one.
+/// Below them, the vehicles on the policy, with the values typed in from valuation sites (by type and grade) and a form to add one.
 /// </summary>
 public class PreRenewalModel(AppDbContext db) : PageModel
 {
@@ -53,14 +53,11 @@ public class PreRenewalModel(AppDbContext db) : PageModel
     public InsurancePolicyView? BasisPolicy { get; private set; }
 
     /// <summary>
-    /// A vehicle to value: the latest value and the one before, and the mileage to look it up at (the latest reading
-    /// moved on to today; null without readings).
+    /// A vehicle to value: the mileage to look it up at (the latest reading moved on to today; null without readings),
+    /// its values by type and grade (null without any), and the latest value (the form starts from its type, grade and source).
     /// </summary>
     public record VehicleRow(int VehicleId, string Name, string RegistrationNumber, int? SuggestedMileage,
-        VehicleValuationView? Latest, VehicleValuationView? Previous)
-    {
-        public decimal? Change => Latest is not null && Previous is not null ? Latest.Value - Previous.Value : null;
-    }
+        ValuationSummary? Summary, VehicleValuationView? Latest);
 
     /// <summary>The vehicles on <see cref="BasisPolicy"/> at its end (without one, the owner's), less those disposed of.</summary>
     public List<VehicleRow> Vehicles { get; private set; } = [];
@@ -144,9 +141,9 @@ public class PreRenewalModel(AppDbContext db) : PageModel
         var readings = await MileageTrend.ReadingsAsync(db, ids);
         Vehicles = vehicles.Select(v =>
         {
-            var history = values[v.Id].Take(2).ToList();
+            var history = values[v.Id].ToList();
             return new VehicleRow(v.Id, $"{v.Make} {v.Model}".Trim(), v.RegistrationNumber,
-                MileageTrend.SuggestedMileage(readings[v.Id], today), history.ElementAtOrDefault(0), history.ElementAtOrDefault(1));
+                MileageTrend.SuggestedMileage(readings[v.Id], today), ValuationSummary.For(history), history.FirstOrDefault());
         }).ToList();
     }
 }

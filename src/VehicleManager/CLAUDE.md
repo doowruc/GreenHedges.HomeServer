@@ -252,7 +252,9 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   results, and the sites' terms rule out scraping). `Vehicles` is `BasisPolicy.VehiclesAtEnd` (else the owner's),
   less those disposed of, each shown by `_PreRenewalVehicle` with its own form posting to `?handler=Value&vehicleId=`
   (one `Valuation` input; a failed post sets `ValuationVehicleId` so only that form shows the posted values and
-  errors). The mileage is `MileageTrend.SuggestedMileage` (latest reading moved on to today, nearest 100). Values
+  errors). The mileage is `MileageTrend.SuggestedMileage` (latest reading moved on to today, nearest 100). The table
+  is `Services/ValuationSummary` (unit tested): by type and grade, each source's latest value in the latest round
+  (values within `RoundDays`, 30, up to the newest), their average, and the previous round's average. Values
   are listed, edited and deleted on the vehicle's Insurance tab (`_ValuationTable`; `/Vehicles/{vehicleId}/Valuations/...`,
   base `ValuationPageModel`); a value can't be after the vehicle's disposal.
 

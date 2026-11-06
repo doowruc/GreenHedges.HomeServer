@@ -205,8 +205,10 @@ and licence are there too.
 Below them come the vehicles on the policy (those still on it at its end; with no policy, the owner's current ones),
 for the current value quotes ask for: the mileage now (the latest odometer reading moved on at its recent rate, to the
 nearest 100), copy buttons for it and the registration, links to the Parkers, Auto Trader and What Car? valuation
-pages, the latest value typed in and the one before it (with the change), and a form to save a new one: date,
-mileage, value, type (private, retail, trade or part exchange), an optional grade (poor, average or good) and source.
+pages, a form to save a value (date, mileage, value, type: private, retail, trade or part exchange; an optional
+grade: poor, average or good; and source), and a table of the latest values by type and grade: each site's figure,
+their average, and the previous round's average with the change. A round is the values within 30 days of its newest
+one, so this year's lookups are compared with last year's.
 
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
