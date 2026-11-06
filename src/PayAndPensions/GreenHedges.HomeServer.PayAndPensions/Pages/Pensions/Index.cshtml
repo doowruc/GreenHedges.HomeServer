@@ -24,7 +24,7 @@ else if (Model.Pensions.Count == 0)
     <div class="card shadow-sm">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-head">
-                <tr><th>Name</th><th>Provider</th><th>Type</th><th>Policy number</th><th></th></tr>
+                <tr><th>Name</th><th>Provider</th><th>Type</th><th>Policy number</th><th class="text-end">Payslips</th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var pn in Model.Pensions)
@@ -37,7 +37,9 @@ else if (Model.Pensions.Count == 0)
                     </td>
                     <td>@Label(pn.Type)</td>
                     <td>@pn.PolicyNumber</td>
+                    <td class="text-end">@pn.Payslips</td>
                     <td class="text-end text-nowrap">
+                        <a asp-page="Assign" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Assign to payslips"><i class="bi bi-link-45deg"></i></a>
                         <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
                         <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
                     </td>

@@ -23,6 +23,10 @@ public class PayslipInput
     [StringLength(500)]
     public string? Notes { get; set; }
 
+    /// <summary>Comes back from the form, so it's checked against the person's own pensions.</summary>
+    [Display(Name = "Pension")]
+    public int? PensionId { get; set; }
+
     /// <summary>One per pay element shown on the form, in the form's order; blank amounts aren't saved.</summary>
     public List<PayslipLineInput> Lines { get; set; } = [];
 
@@ -37,6 +41,7 @@ public class PayslipInput
         payslip.TaxMonth = TaxMonth;
         payslip.PayDate = PayDate;
         payslip.PensionReceivedDate = PensionReceivedDate;
+        payslip.PensionId = PensionId;
         payslip.Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim();
     }
 }

@@ -1,0 +1,64 @@
+@page "/People/{personId:int}/Pensions/Assign/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Pensions.AssignModel
+@{ ViewData["Title"] = "Assign pension to payslips"; }
+
+<h1 class="h3 mb-3">Assign @Model.PensionName to @Model.PersonName's payslips</h1>
+<div class="card shadow-sm"><div class="card-body">
+    @if (Model.YearOptions.Count == 0)
+    {
+        <p>@Model.PersonName has no payslips yet.</p>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
+        <p class="text-body-secondary">Sets the pension on every payslip in the range with a pension amount, replacing any
+            pension it has now. You'll see how many first.</p>
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="row g-3 align-items-end">
+                <div class="col-sm-6 col-lg-3">
+                    <label asp-for="FromMonth" class="form-label">From</label>
+                    <div class="input-group">
+                        <select asp-for="FromMonth" asp-items="AssignModel.MonthOptions" class="form-select" aria-label="From tax month"></select>
+                        <select asp-for="FromYear" asp-items="Model.YearOptions" class="form-select" aria-label="From tax year"></select>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-lg-3">
+                    <label asp-for="ToMonth" class="form-label">To</label>
+                    <div class="input-group">
+                        <select asp-for="ToMonth" asp-items="AssignModel.MonthOptions" class="form-select" aria-label="To tax month"></select>
+                        <select asp-for="ToYear" asp-items="Model.YearOptions" class="form-select" aria-label="To tax year"></select>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-outline-primary">Check</button>
+                </div>
+            </div>
+
+            @if (Model.Matching is { } matching)
+            {
+                <div class="alert @(matching == Model.AlreadySet ? "alert-info" : "alert-warning") mt-4 mb-0">
+                    @if (matching == 0)
+                    {
+                        <p class="mb-0">No payslips with a pension amount from @Model.Range.</p>
+                    }
+                    else if (matching == Model.AlreadySet)
+                    {
+                        <p class="mb-0">All @matching payslips with a pension amount from @Model.Range already have @Model.PensionName.</p>
+                    }
+                    else
+                    {
+                        var changing = matching - Model.AlreadySet;
+                        <p>This sets <strong>@Model.PensionName</strong> on <strong>@changing</strong> @(changing == 1 ? "payslip" : "payslips")
+                            from @Model.Range@(Model.Elsewhere > 0 ? $", replacing another pension on {Model.Elsewhere}" : "")@(Model.AlreadySet > 0 ? $" ({Model.AlreadySet} already have it)" : "").</p>
+                        <input type="hidden" asp-for="Expected" value="@changing" />
+                        <button type="submit" name="Confirm" value="true" class="btn btn-primary">Assign to @changing @(changing == 1 ? "payslip" : "payslips")</button>
+                    }
+                </div>
+            }
+            <div class="mt-4">
+                <a asp-page="Index" asp-route-personId="@Model.PersonId" class="btn btn-outline-secondary">Back</a>
+            </div>
+        </form>
+    }
+</div></div>

@@ -21,6 +21,9 @@ public class Pension : AuditedEntity
     public string? PolicyNumber { get; set; }
 
     public PensionType Type { get; set; }
+
+    /// <summary>The payslips whose pension lines go to it.</summary>
+    public List<Payslip> Payslips { get; set; } = [];
 }
 
 public enum PensionType

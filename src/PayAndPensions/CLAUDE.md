@@ -61,7 +61,8 @@ GreenHedges.HomeServer.PayAndPensions/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
-               PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
+               PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel; Assign sets one on a range
+               of payslips), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
                PensionProviders/* (at /PensionProviders: not a person's), Account/* (sign in/out), Shared/ (layout;
@@ -82,7 +83,12 @@ GreenHedges.HomeServer.PayAndPensions/
   ignoring case, with spaces tidied (`Names`).
 - **Pensions:** a person's pension with one of the user's providers (several people can share a provider): name, type
   (`PensionType`, stored as text), optional policy number. A provider's website is an http(s) address (https:// is
-  added if typed without). A provider can't be deleted while pensions are with it (FK `Restrict`).
+  added if typed without). A provider can't be deleted while pensions are with it, nor a pension while payslips go to
+  it (FK `Restrict`).
+- **A payslip's pension** (optional) is where its pension lines go, employee's and employer's: only on a payslip with
+  a pension line (`PayElement.IsPension`: Pension category, not an earning). The payslips table has a Pension column
+  when a year's payslips with pension lines differ (or some have none). `Pensions/Assign` sets one on a range of
+  tax months at once, replacing others: it says how many first, and checks again if that changed before confirming.
 - **Pay history is never deleted along with something else.** Deleting a person takes their employers, pay
   elements and pensions (FK cascade), but not while they have payslips; an employer with payslips, or a pay element on a payslip,
   can't be deleted either (FK `Restrict`, and the Delete pages say so). Unused pay elements are hidden instead.
@@ -105,9 +111,9 @@ GreenHedges.HomeServer.PayAndPensions/
   `ConnectionStrings:PayAndPensions`, its file `payandpensions-latest.bak`, the off-site prefix `payandpensions`. All off
   until configured; backups at 03:45. No scheduled jobs of its own, so the monitor only checks the database and
   backups. The tests turn the monitor on (`AppFactory`), with nothing to send to.
-- **Payslip form:** one amount per pay element; blank means no line. Element and employer ids come back from the form,
-  so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same amounts,
-  pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the
+- **Payslip form:** one amount per pay element; blank means no line. Element, employer and pension ids come back from
+  the form, so they're checked against the person's own. A new payslip starts from the latest one (next tax month, same
+  employer, pension and amounts, pay date a month on), leaving hidden elements off. The pay date must be in the tax year. An edit always saves the
   payslip row as changed, so its `RowVersion` guards the lines too.
 - **Import** (`Services/Import/`, `Pages/Import/`): upload, preview, import; nothing is kept between the steps but
   the workbook itself, base64 in the preview's form (limit 2 MB), so the import reads exactly what was previewed.

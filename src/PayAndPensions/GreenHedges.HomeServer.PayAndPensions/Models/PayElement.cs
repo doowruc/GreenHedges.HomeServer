@@ -36,6 +36,13 @@ public class PayElement : AuditedEntity
     public bool SalarySacrifice { get; set; }
 
     public List<PayslipLine> Lines { get; set; } = [];
+
+    /// <summary>
+    /// Whether a line of this kind and category is pension paid in: the employee's or the employer's. Only a payslip
+    /// with one has a <see cref="Payslip.PensionId"/>.
+    /// </summary>
+    public static bool IsPension(PayElementKind kind, PayCategory category) =>
+        category == PayCategory.Pension && kind != PayElementKind.Earning;
 }
 
 public enum PayElementKind
