@@ -73,7 +73,8 @@ so test pages through the in-memory host rather than relying on the browser.
 ```
 GreenHedges.HomeServer.VehicleManager/
   Models/      EF Core entities: Owner, Vehicle (+ DisposalMethod), FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
-               InsurancePolicyVehicle, InsurancePolicyDriver), Claim (+ ClaimType, ClaimFault), UserSettings (storage only),
+               InsurancePolicyVehicle, InsurancePolicyDriver), Claim (+ ClaimType, ClaimFault),
+               VehicleValuation (+ ValuationType, ValuationGrade, ValuationSource), UserSettings (storage only),
                SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
   Data/        AppDbContext (per-user query filters), DesignTimeDbContextFactory, Migrations/
@@ -245,6 +246,15 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   and `Grouped` split a driver number. Copy buttons are `data-copy` with an inline script.
 - `People` is the policyholder then the named-driver owners of `BasisPolicy` (the current policy, else the latest
   started), each shown by `_PreRenewalPerson` (licence and claims) against the same renewal date.
+- Vehicle values: `VehicleValuation` rows (date, mileage, value, `ValuationType`, optional `ValuationGrade`,
+  `ValuationSource`; filtered and cascading through the vehicle; in the backup as `VehicleValuations`) are typed in by
+  hand from the free sites in `Services/ValuationSites` (no API: the paid ones are for businesses or limit keeping
+  results, and the sites' terms rule out scraping). `Vehicles` is `BasisPolicy.VehiclesAtEnd` (else the owner's),
+  less those disposed of, each shown by `_PreRenewalVehicle` with its own form posting to `?handler=Value&vehicleId=`
+  (one `Valuation` input; a failed post sets `ValuationVehicleId` so only that form shows the posted values and
+  errors). The mileage is `MileageTrend.SuggestedMileage` (latest reading moved on to today, nearest 100). Values
+  are listed, edited and deleted on the vehicle's Insurance tab (`_ValuationTable`; `/Vehicles/{vehicleId}/Valuations/...`,
+  base `ValuationPageModel`); a value can't be after the vehicle's disposal.
 
 **Due dates, reminders and MOT/tax lookups**
 - `Vehicle` has `MotDueDate`, `TaxDueDate`, `ServiceDueDate` (all optional, in the backup); the insurance due date

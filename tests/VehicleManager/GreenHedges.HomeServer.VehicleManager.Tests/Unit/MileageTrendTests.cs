@@ -69,4 +69,19 @@ public class MileageTrendTests
     [Fact]
     public void A_far_off_mileage_is_capped() =>
         Assert.Equal(Latest.AddDays(36500), new MileageTrend(Latest, 0, 0.001).DateAt(9_999_999));
+
+    [Fact]
+    public void Suggests_the_mileage_for_a_valuation_from_the_latest_reading_and_the_trend()
+    {
+        // 30 miles a day since the latest reading of 40,000: 100 days on is 43,000; rounded to the nearest 100.
+        (DateOnly, int)[] readings = [(Latest.AddDays(-100), 37000), (Latest, 40000)];
+        Assert.Equal(43000, MileageTrend.SuggestedMileage(readings, Latest.AddDays(100)));
+        Assert.Equal(40200, MileageTrend.SuggestedMileage(readings, Latest.AddDays(6)));   // 40,180
+        Assert.Equal(40000, MileageTrend.SuggestedMileage(readings, Latest));   // the reading itself, unrounded
+        Assert.Equal(40000, MileageTrend.SuggestedMileage(readings, Latest.AddDays(-5)));
+
+        // Without a trend (readings too close together), the latest reading as it is.
+        Assert.Equal(40123, MileageTrend.SuggestedMileage([(Latest.AddDays(-3), 40000), (Latest, 40123)], Latest.AddDays(50)));
+        Assert.Null(MileageTrend.SuggestedMileage([], Latest));
+    }
 }

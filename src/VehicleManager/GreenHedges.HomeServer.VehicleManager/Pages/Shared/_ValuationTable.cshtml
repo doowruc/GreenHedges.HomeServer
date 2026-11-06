@@ -1,0 +1,32 @@
+@model List<VehicleValuationView>
+@* A vehicle's values, newest first (the vehicle page's Insurance tab). *@
+<div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+        <thead class="table-head">
+            <tr>
+                <th>Date</th>
+                <th class="text-end">Mileage</th>
+                <th class="text-end">Value</th>
+                <th>Type</th>
+                <th>Source</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var v in Model)
+            {
+                <tr data-valuation="@v.Id">
+                    <td>@v.Date.ToString("dd/MM/yyyy")</td>
+                    <td class="text-end">@v.Mileage.ToString("N0")</td>
+                    <td class="text-end">@v.Value.ToString("C0")</td>
+                    <td>@v.Label</td>
+                    <td>@v.SourceName</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-page="/Vehicles/Valuations/Edit" asp-route-vehicleId="@v.VehicleId" asp-route-id="@v.Id" class="btn btn-sm btn-link p-0 me-2" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a asp-page="/Vehicles/Valuations/Delete" asp-route-vehicleId="@v.VehicleId" asp-route-id="@v.Id" class="btn btn-sm btn-link p-0 text-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -208,6 +208,20 @@
             <div class="card-body py-2"><partial name="_VehicleInsuranceTable" model="(Model.Vehicle.Id, Model.Policies)" /></div>
         }
     </div>
+    <div class="card shadow-sm mt-4" id="vehicle-values">
+        <div class="card-header bg-body">
+            <span class="fw-semibold">Values (@Model.Valuations.Count)</span>
+            <span class="text-muted small ms-2">Typed in from valuation sites on the <a asp-page="/Insurance/PreRenewal" asp-route-ownerId="@Model.Vehicle.OwnerId">pre-renewal page</a>.</span>
+        </div>
+        @if (Model.Valuations.Count == 0)
+        {
+            <div class="card-body text-muted">No values yet.</div>
+        }
+        else
+        {
+            <div class="card-body py-2"><partial name="_ValuationTable" model="Model.Valuations" /></div>
+        }
+    </div>
 </div>
 @if (Model.ShowMotTab)
 {

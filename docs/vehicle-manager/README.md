@@ -202,6 +202,11 @@ long before doesn't), how many full years they'll have held their licence by the
 its usual 5/6/5 groups and in the five sections comparison sites ask for, each with a copy button. The same follows
 for each owner who is a named driver on their current policy (or latest, if none is in force), so a partner's claims
 and licence are there too.
+Below them come the vehicles on the policy (those still on it at its end; with no policy, the owner's current ones),
+for the current value quotes ask for: the mileage now (the latest odometer reading moved on at its recent rate, to the
+nearest 100), copy buttons for it and the registration, links to the Parkers, Auto Trader and What Car? valuation
+pages, the latest value typed in and the one before it (with the change), and a form to save a new one: date,
+mileage, value, type (private, retail, trade or part exchange), an optional grade (poor, average or good) and source.
 
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
@@ -283,7 +288,7 @@ Merging a fuel brand moves its stations to the other brand, combining any with t
 **Dashboard** – a **Coming up** list of anything due within 30 days (or overdue), then one card per
 vehicle with its due dates, 12-month MPG, spend, odometer and last fill-up.
 **Vehicle page** – due dates (coloured by how soon they are), then tabs: **Fuel** (last-12-months / all-time stats, an MPG and fuel-price chart, and the full log),
-**Services** (the service history), **Insurance** (the policies that covered it, and its cost chart) and **MOT** (with the DVSA set up).
+**Services** (the service history), **Insurance** (the policies that covered it, its cost chart, and its values, to edit or delete) and **MOT** (with the DVSA set up).
 The address bar follows the tab (`?tab=insurance`), so a refresh stays on it.
 **Fuel Log page** (`/FuelLog`) – all fill-ups, filterable by vehicle and year.
 **On a phone** – in Safari, **Share → Add to Home Screen** gives a "Vehicles" icon (the car from the menu bar)

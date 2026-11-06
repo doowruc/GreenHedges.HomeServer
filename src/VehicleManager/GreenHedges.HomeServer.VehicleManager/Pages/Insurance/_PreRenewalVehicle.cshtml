@@ -1,0 +1,128 @@
+@model GreenHedges.HomeServer.VehicleManager.Pages.Insurance.PreRenewalModel.VehicleRow
+@{
+    // One vehicle on the pre-renewal page: its latest values, the valuation sites and a form to add a value.
+    // The form shows the posted values and errors when it's the one that failed (ViewData["Posted"]).
+    var posted = ViewData["Posted"] as VehicleValuationInput;
+    var input = posted ?? new() { Date = Reminders.UkToday(), Mileage = Model.SuggestedMileage, Type = Model.Latest?.Type, Grade = Model.Latest?.Grade, Source = Model.Latest?.Source };
+    var ownerId = ViewData["OwnerId"];
+    var date = (DateOnly?)ViewData["Date"];
+    var id = $"v{Model.VehicleId}";
+    string? Error(string field) => posted is null ? null
+        : ViewData.ModelState[$"Valuation.{field}"]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+<div class="card shadow-sm mb-3" id="vehicle-@Model.VehicleId" data-vehicle="@Model.VehicleId">
+    <div class="card-header bg-body d-flex flex-wrap align-items-center gap-2">
+        <a asp-page="/Vehicles/Details" asp-route-id="@Model.VehicleId" asp-route-tab="insurance" class="fw-semibold">@Model.Name</a>
+        <span class="reg-plate">@Model.RegistrationNumber</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="@Model.RegistrationNumber" title="Copy the registration"><i class="bi bi-copy"></i></button>
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Mileage now</dt>
+                    <dd class="col-sm-7">
+                        @if (Model.SuggestedMileage is { } miles)
+                        {
+                            <span data-pre-renewal="mileage">@miles.ToString("N0")</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1" data-copy="@miles" title="Copy the mileage"><i class="bi bi-copy"></i></button>
+                            <div class="text-muted small">Estimated from the latest odometer readings.</div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No odometer readings.</span>
+                        }
+                    </dd>
+                    <dt class="col-sm-5">Latest value</dt>
+                    <dd class="col-sm-7" data-pre-renewal="latest-value">
+                        @if (Model.Latest is { } latest)
+                        {
+                            <span class="fs-5 fw-semibold">@latest.Value.ToString("C0")</span>
+                            <div class="small">@latest.Label, @latest.SourceName</div>
+                            <div class="text-muted small">@latest.Date.ToString("dd/MM/yyyy") at @latest.Mileage.ToString("N0") miles</div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None yet.</span>
+                        }
+                    </dd>
+                    @if (Model.Previous is { } previous)
+                    {
+                        <dt class="col-sm-5">Before that</dt>
+                        <dd class="col-sm-7" data-pre-renewal="previous-value">
+                            @previous.Value.ToString("C0") <span class="small">(@previous.Label, @previous.SourceName)</span>
+                            <div class="text-muted small">@previous.Date.ToString("dd/MM/yyyy") at @previous.Mileage.ToString("N0") miles</div>
+                            @if (Model.Change is { } change)
+                            {
+                                <div class="small @(change < 0 ? "text-danger" : "text-success")" data-pre-renewal="change">@(change < 0 ? "Down" : "Up") @Math.Abs(change).ToString("C0")</div>
+                            }
+                        </dd>
+                    }
+                </dl>
+                <div class="mt-3 small">
+                    Look it up:
+                    @foreach (var site in ValuationSites.All)
+                    {
+                        <a href="@site.Url" target="_blank" rel="noopener noreferrer" class="ms-2">@site.Name <i class="bi bi-box-arrow-up-right"></i></a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <form method="post" asp-page-handler="Value" asp-route-vehicleId="@Model.VehicleId" novalidate>
+                    <input type="hidden" name="ownerId" value="@ownerId" />
+                    @if (date is { } d) { <input type="hidden" name="date" value="@d.ToString("yyyy-MM-dd")" /> }
+                    <div class="row g-2">
+                        <div class="col-sm-4">
+                            <label for="@id-date" class="form-label small mb-1">Date</label>
+                            <input id="@id-date" name="Valuation.Date" type="date" class="form-control form-control-sm @(Error("Date") is null ? "" : "is-invalid")" value="@input.Date?.ToString("yyyy-MM-dd")" required />
+                            <div class="invalid-feedback">@Error("Date")</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="@id-mileage" class="form-label small mb-1">Mileage</label>
+                            <input id="@id-mileage" name="Valuation.Mileage" type="number" min="0" step="1" class="form-control form-control-sm @(Error("Mileage") is null ? "" : "is-invalid")" value="@input.Mileage" required />
+                            <div class="invalid-feedback">@Error("Mileage")</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="@id-value" class="form-label small mb-1">Value (£)</label>
+                            <input id="@id-value" name="Valuation.Value" type="number" min="0.01" step="0.01" class="form-control form-control-sm @(Error("Value") is null ? "" : "is-invalid")" value="@input.Value" required />
+                            <div class="invalid-feedback">@Error("Value")</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="@id-type" class="form-label small mb-1">Value type</label>
+                            <select id="@id-type" name="Valuation.Type" class="form-select form-select-sm @(Error("Type") is null ? "" : "is-invalid")" required>
+                                <option value="">Choose…</option>
+                                @foreach (var type in Enum.GetValues<ValuationType>())
+                                {
+                                    <option value="@type" selected="@(input.Type == type)">@VehicleValuationView.TypeNames(type)</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">@Error("Type")</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="@id-grade" class="form-label small mb-1">Grade</label>
+                            <select id="@id-grade" name="Valuation.Grade" class="form-select form-select-sm">
+                                <option value="">None</option>
+                                @foreach (var grade in Enum.GetValues<ValuationGrade>())
+                                {
+                                    <option value="@grade" selected="@(input.Grade == grade)">@grade</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label for="@id-source" class="form-label small mb-1">Source</label>
+                            <select id="@id-source" name="Valuation.Source" class="form-select form-select-sm @(Error("Source") is null ? "" : "is-invalid")" required>
+                                <option value="">Choose…</option>
+                                @foreach (var source in Enum.GetValues<ValuationSource>())
+                                {
+                                    <option value="@source" selected="@(input.Source == source)">@VehicleValuationView.SourceNames(source)</option>
+                                }
+                            </select>
+                            <div class="invalid-feedback">@Error("Source")</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary mt-3">Save value</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

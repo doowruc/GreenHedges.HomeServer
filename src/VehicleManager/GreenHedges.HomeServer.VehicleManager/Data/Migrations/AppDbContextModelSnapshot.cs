@@ -955,6 +955,70 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.ToTable("Vehicles");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.VehicleValuation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Grade")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Mileage")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Value")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleId", "Date");
+
+                    b.ToTable("VehicleValuations");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.Claim", b =>
                 {
                     b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.InsurancePolicy", "InsurancePolicy")
@@ -1126,6 +1190,17 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.VehicleValuation", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.VehicleManager.Models.Vehicle", "Vehicle")
+                        .WithMany("Valuations")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.VehicleManager.Models.FuelBrand", b =>
                 {
                     b.Navigation("Stations");
@@ -1171,6 +1246,8 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Navigation("MotTests");
 
                     b.Navigation("ServiceRecords");
+
+                    b.Navigation("Valuations");
                 });
 #pragma warning restore 612, 618
         }

@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
     public DbSet<SentReminder> SentReminders => Set<SentReminder>();
     public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
+    public DbSet<VehicleValuation> VehicleValuations => Set<VehicleValuation>();
     public DbSet<MotTest> MotTests => Set<MotTest>();
     public DbSet<InsurancePolicy> InsurancePolicies => Set<InsurancePolicy>();
     public DbSet<InsurancePolicyVehicle> InsurancePolicyVehicles => Set<InsurancePolicyVehicle>();
@@ -66,6 +67,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(s => s.Vehicle)
              .HasForeignKey(s => s.VehicleId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(v => v.Valuations)
+             .WithOne(s => s.Vehicle)
+             .HasForeignKey(s => s.VehicleId)
+             .OnDelete(DeleteBehavior.Cascade);
             // Deleting a vehicle takes it off its policies; the policies stay with their owner.
             e.HasMany(v => v.InsurancePeriods)
              .WithOne(p => p.Vehicle)
@@ -85,6 +90,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
         {
             e.HasQueryFilter(s => s.Vehicle!.UserId == CurrentUserId);
             e.HasIndex(s => new { s.VehicleId, s.Date });
+        });
+
+        modelBuilder.Entity<VehicleValuation>(e =>
+        {
+            e.HasQueryFilter(v => v.Vehicle!.UserId == CurrentUserId);
+            e.HasIndex(v => new { v.VehicleId, v.Date });
+            e.Property(v => v.Value).HasPrecision(10, 2);
+            e.Property(v => v.Type).HasConversion<string>().HasMaxLength(20);
+            e.Property(v => v.Grade).HasConversion<string>().HasMaxLength(20);
+            e.Property(v => v.Source).HasConversion<string>().HasMaxLength(20);
         });
 
         modelBuilder.Entity<InsurancePolicy>(e =>

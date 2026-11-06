@@ -59,6 +59,34 @@ public sealed record MileageTrend(DateOnly LatestDate, int LatestOdometer, doubl
             .ToListAsync())
         .ToLookup(t => t.VehicleId, t => (Reminders.UkDate(t.CompletedDate), Miles(t.Odometer, t.OdometerInKilometres)));
 
+    /// <summary>
+    /// The mileage to value a vehicle at on <paramref name="date"/>: the latest reading moved on to that date at the
+    /// trend's rate, rounded to the nearest 100; the latest reading itself without a trend (or for a date not after it);
+    /// null without any readings.
+    /// </summary>
+    public static int? SuggestedMileage(IEnumerable<(DateOnly Date, int Odometer)> readings, DateOnly date)
+    {
+        var list = readings.ToList();
+        if (list.Count == 0) return null;
+        var trend = From(list);
+        var latest = list.OrderBy(r => r.Date).ThenBy(r => r.Odometer).Last();
+        if (trend is null || date <= trend.LatestDate) return latest.Odometer;
+        var estimate = trend.LatestOdometer + trend.MilesPerDay * (date.DayNumber - trend.LatestDate.DayNumber);
+        return (int)(Math.Round(estimate / 100, MidpointRounding.AwayFromZero) * 100);
+    }
+
+    /// <summary>The odometer readings (fill-ups' and MOT tests', in miles) of the current user's <paramref name="vehicleIds"/>.</summary>
+    public static async Task<ILookup<int, (DateOnly Date, int Odometer)>> ReadingsAsync(AppDbContext db, IReadOnlyCollection<int> vehicleIds)
+    {
+        var fillUps = await db.FuelEntries.Where(f => vehicleIds.Contains(f.VehicleId) && f.Odometer != null)
+            .Select(f => new { f.VehicleId, f.Date, Odometer = f.Odometer!.Value }).ToListAsync();
+        var motTests = await db.MotTests.Where(t => vehicleIds.Contains(t.VehicleId) && t.Odometer != null)
+            .Select(t => new { t.VehicleId, t.CompletedDate, Odometer = t.Odometer!.Value, t.OdometerInKilometres }).ToListAsync();
+        return fillUps.Select(f => (f.VehicleId, Reading: (f.Date, f.Odometer)))
+            .Concat(motTests.Select(t => (t.VehicleId, Reading: (Reminders.UkDate(t.CompletedDate), Miles(t.Odometer, t.OdometerInKilometres)))))
+            .ToLookup(r => r.VehicleId, r => r.Reading);
+    }
+
     /// <summary>An odometer reading in miles: one in kilometres is converted.</summary>
     public static int Miles(int odometer, bool inKilometres) =>
         inKilometres ? (int)Math.Round(odometer / 1.609344) : odometer;
