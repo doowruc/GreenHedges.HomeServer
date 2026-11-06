@@ -29,6 +29,8 @@ public class Pension : AuditedEntity
     public List<Payslip> Payslips { get; set; } = [];
 
     public List<StatementType> StatementTypes { get; set; } = [];
+
+    public List<PensionTransaction> Transactions { get; set; } = [];
 }
 
 public enum PensionType

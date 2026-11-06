@@ -55,6 +55,7 @@ earnings columns, so the columns can't be fixed in the schema.
 | `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other), optional **start date**. Payslips point at the pension their pension lines go to |
 | `StatementType` | Belongs to a pension: name (e.g. "Investment report", "Annual illustration"), **has projections** |
 | `PensionStatement` | Belongs to a statement type: date (one per type), label (e.g. "Spring 2026"), value, and with projections the projected fund at retirement and annual income; notes |
+| `PensionTransaction` | Belongs to a pension: a line of the provider's transaction history, as its CSV export has it (trade and settle dates, reference, description, unit price in pence, units, value in £, money in positive), with a **kind** (Contribution, Transfer in, Interest, Fee, Rebate, Purchase, Sale, Other) and **fund**, both worked out on import and changeable |
 
 Every table inherits `AuditedEntity`. Child tables are filtered through their person; providers through the user.
 
@@ -144,6 +145,12 @@ One branch and PR each:
    type with the workbook's worked-out figures, and the pension's start date. Done.
 4. **Pasting statements in:** a type's history pasted from a spreadsheet's columns, with a preview, to bring in the
    pensions workbook once. Done.
+5. **Transactions:** a pension's transaction history imported from the provider's CSV exports (several files at once,
+   overlaps and lines already there left out), each line's kind and fund worked out and changeable, and a page per
+   tax year with totals per kind and the money paid in. Done.
+6. **Contributions to payslips:** at each import, match contributions to the payslips whose pension amounts (employee's
+   and employer's, over one or more months) add up to them, and set those payslips' pension received date.
+7. **Units held:** each fund's units and value, from the purchases and sales.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.

@@ -7,8 +7,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data;
 
 /// <remarks>
 /// Each signed-in user has their own data. Query filters limit every query to the current user's people and pension
-/// providers, and (through their person) employers, pay elements, payslips, payslip lines, pensions, statement types
-/// and statements.
+/// providers, and (through their person) employers, pay elements, payslips, payslip lines, pensions, statement types,
+/// statements and transactions.
 /// Saving stamps new people and pension providers with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
@@ -25,6 +25,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<Pension> Pensions => Set<Pension>();
     public DbSet<StatementType> StatementTypes => Set<StatementType>();
     public DbSet<PensionStatement> PensionStatements => Set<PensionStatement>();
+    public DbSet<PensionTransaction> PensionTransactions => Set<PensionTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,6 +81,21 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(t => t.Pension)
              .HasForeignKey(t => t.PensionId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(pn => pn.Transactions)
+             .WithOne(tx => tx.Pension)
+             .HasForeignKey(tx => tx.PensionId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Not unique: an export can have two identical lines (the import counts them).
+        modelBuilder.Entity<PensionTransaction>(e =>
+        {
+            e.HasQueryFilter(tx => tx.Pension!.Person!.UserId == CurrentUserId);
+            e.Property(tx => tx.Kind).HasConversion<string>().HasMaxLength(30);
+            e.Property(tx => tx.Value).HasPrecision(19, 2);
+            e.Property(tx => tx.UnitPrice).HasPrecision(19, 6);
+            e.Property(tx => tx.Quantity).HasPrecision(19, 6);
+            e.HasIndex(tx => new { tx.PensionId, tx.TradeDate });
         });
 
         modelBuilder.Entity<StatementType>(e =>

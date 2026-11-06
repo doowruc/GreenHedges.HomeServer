@@ -79,6 +79,18 @@ public static class TestData
     }
 
     /// <summary>A statement of <paramref name="type"/>.</summary>
+    public static async Task<PensionTransaction> AddTransactionAsync(AppDbContext db, Pension pension, DateOnly date, decimal value,
+        TransactionKind kind = TransactionKind.Contribution, string reference = "FPC1", string description = "SIPP Contribution")
+    {
+        var transaction = new PensionTransaction
+        {
+            PensionId = pension.Id, TradeDate = date, SettleDate = date, Reference = reference, Description = description, Kind = kind, Value = value
+        };
+        db.PensionTransactions.Add(transaction);
+        await db.SaveChangesAsync();
+        return transaction;
+    }
+
     public static async Task<PensionStatement> AddStatementAsync(AppDbContext db, StatementType type, DateOnly date, decimal value,
         string? label = null, decimal? projectedFund = null, decimal? projectedAnnualIncome = null)
     {

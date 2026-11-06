@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.PayAndPensions.Data;
+using GreenHedges.HomeServer.PayAndPensions.Services;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Pages;
 
 /// <summary>
-/// Base for one pension's pages (its statements and statement types), routed under
+/// Base for one pension's pages (its statements, statement types and transactions), routed under
 /// <c>/People/{personId}/Pensions/{pensionId}/…</c>. Links and redirects between them must pass both ids.
 /// </summary>
 public abstract class PensionPageModel(AppDbContext db) : PersonPageModel(db)
@@ -32,4 +33,8 @@ public abstract class PensionPageModel(AppDbContext db) : PersonPageModel(db)
 
     protected RedirectToPageResult RedirectToStatements() =>
         RedirectToPage("/Statements/Index", new { personId = PersonId, pensionId = PensionId });
+
+    /// <summary>To the transactions, in the tax year of <paramref name="date"/> (the latest when null).</summary>
+    protected RedirectToPageResult RedirectToTransactions(DateOnly? date = null) =>
+        RedirectToPage("/Transactions/Index", new { personId = PersonId, pensionId = PensionId, year = date is { } d ? TaxYears.Of(d) : (int?)null });
 }

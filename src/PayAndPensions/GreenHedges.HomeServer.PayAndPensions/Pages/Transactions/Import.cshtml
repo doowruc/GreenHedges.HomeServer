@@ -1,0 +1,110 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Transactions/Import"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Transactions.ImportModel
+@{
+    ViewData["Title"] = $"Import {Model.PensionName} transactions";
+    string Label<T>(T value) where T : struct, Enum =>
+        Html.GetEnumSelectList<T>().First(i => i.Value == Convert.ToInt32(value).ToString()).Text;
+    var rows = Model.NewRows;
+}
+
+<h1 class="h3 mb-3">Import @Model.PensionName transactions</h1>
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+}
+
+@if (rows is null)
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <p>
+            Upload the transaction history @Model.ProviderName exports (.csv): one or more files at once, e.g. a file for
+            each year. Each needs a heading row with <strong>Trade date</strong> and <strong>Value</strong>; the lines
+            above it (the account's details) are ignored and never kept.
+        </p>
+        <p class="text-body-secondary">Nothing is saved until you've seen what it would import. Transactions the
+            pension already has are left out, so files can overlap, and the latest can be imported again as it grows.
+            Each transaction's kind is worked out from its description; you can change it afterwards.</p>
+        <form method="post" asp-page-handler="Preview" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label for="uploads" class="form-label">Files</label>
+                    <input id="uploads" name="uploads" type="file" accept=".csv,text/csv" multiple class="form-control" required />
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Preview</button>
+                    <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div></div>
+}
+else
+{
+    <form method="post" asp-page-handler="Import">
+        @for (var i = 0; i < Model.Files.Count; i++)
+        {
+            <input type="hidden" name="Files[@i]" value="@Model.Files[i]" />
+            <input type="hidden" name="FileNames[@i]" value="@Model.FileNames[i]" />
+        }
+
+        <div class="card shadow-sm mb-3"><div class="card-body" data-summary>
+            <ul class="mb-0">
+                @foreach (var f in Model.Summaries)
+                {
+                    if (f.Error is not null)
+                    {
+                        <li class="text-danger-emphasis">@f.Name can't be read: @f.Error</li>
+                    }
+                    else
+                    {
+                        <li>@f.Name: @f.Lines @(f.Lines == 1 ? "transaction" : "transactions").</li>
+                        @foreach (var reason in f.Skipped)
+                        {
+                            <li class="text-warning-emphasis">@f.Name, @reason[..1].ToLowerInvariant()@reason[1..] It's skipped.</li>
+                        }
+                    }
+                }
+                <li><strong>@rows.Count</strong> new @(rows.Count == 1 ? "transaction" : "transactions") to import.</li>
+                @if (Model.AlreadyThere > 0)
+                {
+                    <li>@Model.AlreadyThere the pension already has, which are left out.</li>
+                }
+            </ul>
+        </div></div>
+
+        @if (rows.Count > 0)
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0" data-new-transactions>
+                        <thead class="table-head">
+                            <tr><th>Date</th><th>Kind</th><th>Description</th><th>Fund</th><th class="text-end">Units</th><th class="text-end">Value</th></tr>
+                        </thead>
+                        <tbody class="amount">
+                        @foreach (var r in rows)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@r.TradeDate.ToString("dd/MM/yy")</td>
+                                <td class="text-nowrap">@Label(r.Kind)</td>
+                                <td><span title="@r.Reference">@r.Description</span></td>
+                                <td>@r.Fund</td>
+                                <td class="text-end">@r.Quantity?.ToString("#,##0.######")</td>
+                                <td class="text-end">@r.Value.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="d-flex gap-2">
+            @if (rows.Count > 0)
+            {
+                <button type="submit" class="btn btn-primary">Import @rows.Count @(rows.Count == 1 ? "transaction" : "transactions")</button>
+            }
+            <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Choose other files</a>
+            <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+}

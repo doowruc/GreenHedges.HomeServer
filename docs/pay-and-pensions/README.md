@@ -15,7 +15,8 @@ and the pension each payslip's pension amounts go to: chosen on the payslip (a n
 a range of payslips at once from the pension's **Assign** button, to fill in the history. Each pension's
 **statements**, under its own statement types (e.g. a quarterly investment report and an annual illustration with
 projections), a table per type with the change, growth and per-day figures worked out; a type's history can be
-pasted in from a spreadsheet (below).
+pasted in from a spreadsheet (below). And each pension's **transactions**, imported from the provider's CSV
+exports (below), by tax year with totals per kind.
 
 ## Pasting statements in
 
@@ -25,7 +26,20 @@ their heading row (a title row above is fine) and copy, then paste. Columns are 
 **Annual** (or Annual income); any others, such as the sheet's own Change, are ignored. The preview shows what it
 would import, with the change and growth worked out to check against the sheet's; rows it can't read, and why; and
 dates the type already has (left alone, so pasting again adds only new ones). A first row with a value of 0 is taken
-as the pension's start, and offered as its start date. And, as Vehicle Manager,
+as the pension's start, and offered as its start date.
+
+## Importing transactions
+
+On a pension's **Transactions** page, **Import**. Choose one or more of the provider's transaction history exports
+(.csv; one a year, say, as an export covers up to 12 months). Each needs a heading row with **Trade date** and
+**Value**; the lines above it (the account's name and number) are ignored and never kept. Columns are found by
+heading: Trade date, Settle date, Reference, Description, Unit cost (p), Quantity and Value (£). The preview shows the
+transactions that are new, with each one's kind (contribution, transfer in, interest, fee, rebate, purchase or sale)
+and fund worked out from its description; lines it can't read, and why; and how many the pension already has, which
+are left out, so files can overlap and the latest can be imported again as it grows. A kind or fund that's wrong can
+be changed on the transaction afterwards.
+
+And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).
 

@@ -52,20 +52,21 @@ figures, and never a real spreadsheet.
 GreenHedges.HomeServer.PayAndPensions/
   Models/      EF Core entities: Person (the user-owned root), Employer, PayElement (+ PayElementKind, PayCategory),
                Payslip, PayslipLine, PensionProvider (user-owned, shared by the people), Pension (+ PensionType),
-               StatementType (a pension's kinds of statement), PensionStatement
+               StatementType (a pension's kinds of statement), PensionStatement, PensionTransaction (+ TransactionKind)
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
                each tax year's totals, as the spreadsheets worked them out; pure, unit tested), StatementCalculations
                (each statement's change, growth and per-day figures; pure, unit tested),
                Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it; StatementPaste reads
-               statements pasted from one; pure, unit tested),
+               statements pasted from one; TransactionCsv reads a provider's transaction export and picks the new
+               lines; pure, unit tested),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
                PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel; Assign sets one on a range
-               of payslips), Statements/* and StatementTypes/* (a pension's, at /People/{id}/Pensions/{pensionId}/…,
+               of payslips), Statements/*, StatementTypes/* and Transactions/* (a pension's, at /People/{id}/Pensions/{pensionId}/…,
                through PensionPageModel), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
@@ -74,7 +75,7 @@ GreenHedges.HomeServer.PayAndPensions/
                PensionsMenuViewComponent, the Pensions menu: providers, then each person's pensions), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
                on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager), js/tooltips.js (every
-               title="…" becomes a Bootstrap tooltip: pages just write title), js/row-menu.js (the payslips table's
+               title="…" becomes a Bootstrap tooltip: pages just write title), js/row-menu.js (the payslips and transactions tables'
                right-click menu, beside each row's buttons: rows with data-row-menu, data-edit and data-delete), favicon.svg/.ico + icons/ + site.webmanifest
                (made by ../make-icons.py from Bootstrap Icons' cash-stack on the navbar's dark grey; re-run it to change
                them: needs rsvg-convert, brew install librsvg)
@@ -102,6 +103,16 @@ GreenHedges.HomeServer.PayAndPensions/
   with or without £ and commas. Unreadable rows are skipped with the reason; dates the type has are left alone; a 0
   first row is offered as the pension's start date (when it has none). Paste, preview, import: only the text is kept
   between steps, so the import reads what was previewed. Log counts only.
+- **Transactions** (`Transactions/Import`, `TransactionCsv`): a pension's lines from the provider's CSV exports,
+  several files at once. The lines above the heading row (Trade date and Value) hold the client's name and number:
+  never store, log or show them. Columns by heading; UK dates; amounts with commas; "n/a" is none; UTF-8 or
+  Windows-1252 (£ is one byte). A line's **kind** and **fund** are worked out from its reference and description and
+  can be changed (Edit); nothing else can, as an export has no id: a transaction is its trade date, reference,
+  description and value, and a file adds each as many times as any one file has it, less those already there (so
+  overlapping files count once, but two identical lines in one file both count). Upload, preview, import: only the
+  files are kept between steps (base64, 2 MB together). Log counts only. The list is by tax year, latest first, with
+  totals per kind, paid in (contributions and transfers in) and the change in cash. A pension (or person) with
+  transactions can't be deleted (FK `Restrict`).
 - **A payslip's pension** (optional) is where its pension lines go, employee's and employer's: only on a payslip with
   a pension line (`PayElement.IsPension`: Pension category, not an earning). The payslips table has a Pension column
   when a year's payslips with pension lines differ (or some have none). `Pensions/Assign` sets one on a range of

@@ -1,0 +1,115 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Transactions"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Transactions.IndexModel
+@using GreenHedges.HomeServer.PayAndPensions.Services
+@{
+    var year = Model.Year!.Value;
+    ViewData["Title"] = $"{Model.PensionName} transactions {TaxYears.Label(year)}";
+    string Label<T>(T value) where T : struct, Enum =>
+        Html.GetEnumSelectList<T>().First(i => i.Value == Convert.ToInt32(value).ToString()).Text;
+    static string Money(decimal? value) => value is { } v ? v.ToString("N2") : "";
+    static string Number(decimal? value) => value is { } v ? v.ToString("#,##0.######") : "";
+
+    async Task YearButton(int? to, string icon, string label)
+    {
+        if (to is { } y)
+        {
+            <a asp-route-year="@y" class="btn btn-outline-secondary" title="@TaxYears.Label(y)" aria-label="@label, @TaxYears.Label(y)"><i class="bi @icon"></i></a>
+        }
+        else
+        {
+            <span class="btn btn-outline-secondary disabled" aria-hidden="true"><i class="bi @icon"></i></span>
+        }
+    }
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">@Model.PensionName transactions</h1>
+        <div class="text-body-secondary">@Model.PersonName's pension with @Model.ProviderName</div>
+    </div>
+    <div class="d-flex gap-2">
+        <form method="get" class="input-group input-group-sm flex-nowrap w-auto">
+            @{ await YearButton(Model.FirstYear, "bi-chevron-double-left", "First tax year"); }
+            @{ await YearButton(Model.PreviousYear, "bi-chevron-left", "Previous tax year"); }
+            <label for="year" class="visually-hidden">Tax year</label>
+            <select id="year" name="year" class="form-select" onchange="this.form.submit()">
+                @foreach (var y in Model.Years)
+                {
+                    <option value="@y" selected="@(y == year)">@TaxYears.Label(y)</option>
+                }
+            </select>
+            @{ await YearButton(Model.NextYear, "bi-chevron-right", "Next tax year"); }
+            @{ await YearButton(Model.LastYear, "bi-chevron-double-right", "Latest tax year"); }
+            <noscript><button type="submit" class="btn btn-outline-secondary">Show</button></noscript>
+        </form>
+        <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
+    </div>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="alert alert-info">No transactions for @TaxYears.Label(year). <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Import</a>
+        the provider's transaction history (CSV).</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" data-transactions>
+                <thead class="table-head">
+                    <tr>
+                        <th>Date</th><th>Kind</th><th>Description</th><th>Fund</th>
+                        <th class="text-end">Units</th><th class="text-end">Price (p)</th><th class="text-end">Value</th>
+                        <th><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="amount">
+                @foreach (var r in Model.Rows)
+                {
+                    <tr data-row-menu data-edit="@Url.Page("Edit", new { personId = Model.PersonId, pensionId = Model.PensionId, id = r.Id })"
+                        data-delete="@Url.Page("Delete", new { personId = Model.PersonId, pensionId = Model.PensionId, id = r.Id })">
+                        <td class="text-nowrap">@r.TradeDate.ToString("dd/MM/yy")</td>
+                        <td class="text-nowrap">@Label(r.Kind)</td>
+                        <td><span title="@r.Reference">@r.Description</span></td>
+                        <td>@r.Fund</td>
+                        <td class="text-end">@Number(r.Quantity)</td>
+                        <td class="text-end">@Number(r.UnitPrice)</td>
+                        <td class="text-end @(r.Value < 0 ? "text-danger-emphasis" : null)">@Money(r.Value)</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="form-text mt-1 mb-0">Right-click a transaction to change its kind or fund, or delete it, or use its buttons at the end of the row.</p>
+    <ul class="dropdown-menu shadow" id="row-menu" role="menu">
+        <li><a class="dropdown-item" data-action="edit" role="menuitem"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+        <li><a class="dropdown-item text-danger" data-action="delete" role="menuitem"><i class="bi bi-trash me-2"></i>Delete</a></li>
+    </ul>
+
+    <h2 class="h5 mt-4">@TaxYears.Label(year) totals <span class="text-body-secondary small">(@Model.Rows.Count @(Model.Rows.Count == 1 ? "transaction" : "transactions"))</span></h2>
+    <div class="card shadow-sm totals-card" data-totals>
+        <table class="table table-sm mb-0 amount">
+            <tbody>
+            @foreach (var t in Model.Totals)
+            {
+                <tr><th scope="row" class="fw-normal">@Label(t.Kind) <span class="text-body-secondary small">(@t.Count)</span></th><td class="text-end">£@Money(t.Value)</td></tr>
+            }
+            <tr class="fw-semibold"><th scope="row" title="Contributions and transfers in">Paid in</th><td class="text-end">£@Money(Model.PaidIn)</td></tr>
+            <tr><th scope="row" class="fw-normal" title="Every line together">Change in cash</th><td class="text-end">£@Money(Model.CashChange)</td></tr>
+            </tbody>
+        </table>
+    </div>
+}
+<div class="d-flex gap-2 mt-3">
+    <a asp-page="/Pensions/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>@Model.PersonName's pensions</a>
+    <a asp-page="/Statements/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-text me-1"></i>Statements</a>
+</div>
+
+@section Scripts {
+    <script src="~/js/row-menu.js" asp-append-version="true"></script>
+}

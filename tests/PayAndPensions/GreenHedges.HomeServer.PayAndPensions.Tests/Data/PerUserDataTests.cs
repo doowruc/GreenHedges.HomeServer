@@ -24,7 +24,8 @@ public class PerUserDataTests : DatabaseTest
             var person = await TestData.AddPersonAsync(db);
             personId = person.Id;
             await TestData.AddPayslipAsync(db, person, 2026, 1, ("Salary", 3000m), ("Tax", 400m));
-            await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db));
+            var pension = await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db));
+            await TestData.AddTransactionAsync(db, pension, new DateOnly(2026, 5, 1), 100m);
         }
 
         await using var other = TestDatabase.As(NewUser());
@@ -35,6 +36,7 @@ public class PerUserDataTests : DatabaseTest
         Assert.False(await other.PayslipLines.AnyAsync());
         Assert.False(await other.PensionProviders.AnyAsync());
         Assert.False(await other.Pensions.AnyAsync());
+        Assert.False(await other.PensionTransactions.AnyAsync());
         Assert.Equal(0, await other.People.Where(p => p.Id == personId).ExecuteDeleteAsync());
         Assert.Equal(0, await other.PayslipLines.ExecuteUpdateAsync(s => s.SetProperty(l => l.Amount, 0m)));
     }
