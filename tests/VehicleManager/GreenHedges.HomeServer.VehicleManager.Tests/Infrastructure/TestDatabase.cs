@@ -93,6 +93,27 @@ public static class TestDatabase
         return database.ConnectionString;
     }
 
+    /// <summary>
+    /// A new, empty test database of its own (not migrated), e.g. to apply migrations step by step to rows put in
+    /// between. Dispose the result to drop it.
+    /// </summary>
+    public static ScratchDatabase NewScratchDatabase()
+    {
+        if (ServerConnectionString is null)
+            throw new InvalidOperationException("No SQL Server for the tests: set ConnectionStrings:VehicleManagerTests.");
+        var server = new SqlConnectionStringBuilder(ServerConnectionString) { InitialCatalog = "master" };
+        var name = $"{DatabasePrefix}{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}"[..(DatabasePrefix.Length + 24)];
+        var database = new SqlConnectionStringBuilder(server.ConnectionString) { InitialCatalog = name };
+        return new ScratchDatabase(database.ConnectionString, () => Drop(server.ConnectionString, name));
+    }
+
+    public sealed class ScratchDatabase(string connectionString, Action drop) : IDisposable
+    {
+        public string ConnectionString => connectionString;
+        public AppDbContext Context() => new(OptionsFor(connectionString), new TestCurrentUser(null));
+        public void Dispose() => drop();
+    }
+
     /// <summary>Drops test databases older than <see cref="StaleAfter"/>, left by earlier runs.</summary>
     private static void DropStaleDatabases(string masterConnectionString)
     {

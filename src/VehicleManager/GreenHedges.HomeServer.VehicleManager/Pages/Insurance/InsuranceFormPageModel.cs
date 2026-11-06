@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.VehicleManager.Services;
+using GreenHedges.HomeServer.VehicleManager.ViewModels;
 using GreenHedges.HomeServer.VehicleManager.Models;
 using GreenHedges.HomeServer.VehicleManager.Data;
 
@@ -25,6 +26,25 @@ public abstract class InsuranceFormPageModel(AppDbContext db) : PageModel
         ViewData["Vehicles"] = await VehicleOptionsAsync(db, vehicleId is { } id ? [id] : null);
         var used = await db.InsurancePolicies.Select(p => p.Provider).Distinct().ToListAsync();
         ViewData["Providers"] = JsonSerializer.Serialize(used.Distinct(StringComparer.OrdinalIgnoreCase).Order());
+    }
+
+    /// <summary>
+    /// Checks the named drivers are the user's owners, dropping the policyholder (they're not their own named driver).
+    /// </summary>
+    protected async Task ValidateDriversAsync(InsurancePolicyInput input)
+    {
+        input.DriverIds = input.DriverIds.Distinct().Where(id => id != input.OwnerId).ToList();
+        var ids = input.DriverIds;
+        if (await db.Owners.CountAsync(o => ids.Contains(o.Id)) != ids.Count)
+            ModelState.AddModelError("Policy.DriverIds", "Choose named drivers from your owners.");
+    }
+
+    /// <summary>Makes the policy's owner named drivers <paramref name="ownerIds"/> (call after <see cref="ValidateDriversAsync"/>; load its drivers first).</summary>
+    protected static void SetDrivers(InsurancePolicy policy, IReadOnlyCollection<int> ownerIds)
+    {
+        policy.Drivers.RemoveAll(d => !ownerIds.Contains(d.OwnerId));
+        foreach (var id in ownerIds.Where(id => policy.Drivers.All(d => d.OwnerId != id)))
+            policy.Drivers.Add(new InsurancePolicyDriver { OwnerId = id });
     }
 
     /// <summary>

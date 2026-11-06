@@ -199,7 +199,9 @@ them); deleting a policy keeps its claims, without the policy.
 the renewal date (when their current policy finishes, or a date you choose), the claims to declare if the insurer asks
 about the last 3, 4 or 5 years (a claim counts if it's within that many years before the renewal date; one exactly that
 long before doesn't), how many full years they'll have held their licence by then, and their driver number, in full, in
-its usual 5/6/5 groups and in the five sections comparison sites ask for, each with a copy button.
+its usual 5/6/5 groups and in the five sections comparison sites ask for, each with a copy button. The same follows
+for each owner who is a named driver on their current policy (or latest, if none is in force), so a partner's claims
+and licence are there too.
 
 **Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
@@ -229,7 +231,8 @@ one, doesn't change them; editing the latest one's date or mileage works them ou
 vehicles they cover recorded against them. Each policy has its start and end (date and time, as on the schedule: UK
 policies switch over at a set minute, e.g. 00:00 to 23:59 a year later), insurer, policy number, cover (comprehensive;
 third party, fire and theft; or third party only), premium, total excess, no claims bonus (years, and whether it's
-protected), named drivers and notes. A new policy's form starts at 00:00 today and ends at 23:59 the day before a year
+protected), named drivers (ticked from your other owners, plus any others typed in) and notes. A renewal keeps the
+named drivers. A new policy's form starts at 00:00 today and ends at 23:59 the day before a year
 on. The Insurance page
 lists them all (or one owner's), newest first, marking the ones in force "Current" and those yet to start "Upcoming".
 A policy's own page shows the vehicles it covers and when. **Switch vehicle** records a change of car part way

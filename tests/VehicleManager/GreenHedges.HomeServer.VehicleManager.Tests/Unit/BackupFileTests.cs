@@ -91,6 +91,17 @@ public class BackupFileTests
             ReadError(Sample(b => b with { Vehicles = [b.Vehicles[0] with { ServiceDueMileage = 0 }] })));
 
     [Fact]
+    public void Rejects_named_drivers_that_dont_link_up()
+    {
+        static InsurancePolicyDriverBackup Driver(int ownerId, int policyId = 8) => new() { InsurancePolicyId = policyId, OwnerId = ownerId };
+        Assert.Contains("Insurance policy 8's named driver (99) isn't in the backup.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyDrivers = [Driver(99)] })));
+        Assert.Contains("A named driver's insurance policy (99) isn't in the backup.", ReadError(Sample(b => b with { InsurancePolicyDrivers = [Driver(1, 99)] })));
+        Assert.Contains("Insurance policy 8's policyholder is also a named driver on it.",
+            ReadError(Sample(b => b with { InsurancePolicies = [Policy()], InsurancePolicyDrivers = [Driver(1)] })));
+    }
+
+    [Fact]
     public void Rejects_claims_that_dont_link_up()
     {
         static ClaimBackup Claim(int ownerId = 1, int vehicleId = 2, int? policyId = 8) => new()

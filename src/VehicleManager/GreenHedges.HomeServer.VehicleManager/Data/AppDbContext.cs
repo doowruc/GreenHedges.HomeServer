@@ -30,6 +30,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<InsurancePolicyVehicle> InsurancePolicyVehicles => Set<InsurancePolicyVehicle>();
     public DbSet<MotDefect> MotDefects => Set<MotDefect>();
     public DbSet<Claim> Claims => Set<Claim>();
+    public DbSet<InsurancePolicyDriver> InsurancePolicyDrivers => Set<InsurancePolicyDriver>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(v => v.Policy)
              .HasForeignKey(v => v.InsurancePolicyId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<InsurancePolicyDriver>(e =>
+        {
+            e.HasQueryFilter(d => d.Policy!.Owner!.UserId == CurrentUserId);
+            e.HasIndex(d => new { d.InsurancePolicyId, d.OwnerId }).IsUnique();
+            e.HasOne(d => d.Policy).WithMany(p => p.Drivers).HasForeignKey(d => d.InsurancePolicyId).OnDelete(DeleteBehavior.Cascade);
+            // Deleting an owner takes them off the policies they're a named driver on.
+            e.HasOne(d => d.Owner).WithMany().HasForeignKey(d => d.OwnerId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<InsurancePolicyVehicle>(e =>

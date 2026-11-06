@@ -11,7 +11,7 @@ namespace GreenHedges.HomeServer.VehicleManager.Pages.Insurance;
 /// <summary>
 /// What to have to hand for a renewal quote, for one owner (<c>?ownerId=</c>, else the first): the renewal date (from
 /// their current policy, or <c>?date=</c>), the claims to declare for 3, 4 and 5 year cut-offs, how long they've held a
-/// licence by then, and their driver number ready to copy.
+/// licence by then, and their driver number ready to copy; and the same for each owner who's a named driver on the policy.
 /// </summary>
 public class PreRenewalModel(AppDbContext db) : PageModel
 {
@@ -34,16 +34,21 @@ public class PreRenewalModel(AppDbContext db) : PageModel
 
     public record ClaimRow(ClaimView Claim, bool[] Declare);
 
-    /// <summary>The claims that need declaring under at least one cut-off, newest first.</summary>
-    public List<ClaimRow> ToDeclare { get; private set; } = [];
+    /// <summary>
+    /// What's asked about one driver: their licence, the claims they must declare under at least one cut-off (newest
+    /// first), and how many older ones needn't be.
+    /// </summary>
+    public record Person(int OwnerId, string Name, bool IsPolicyholder, string? DriverNumber, DateOnly? LicenceIssueDate, int? YearsHeld,
+        List<ClaimRow> ToDeclare, int OlderClaims)
+    {
+        public List<(string Name, string Value)>? Sections => PreRenewal.Sections(DriverNumber);
+    }
 
-    /// <summary>Older claims, outside every cut-off.</summary>
-    public int OlderClaims { get; private set; }
+    /// <summary>The policyholder, then the owners who are named drivers on the policy being renewed.</summary>
+    public List<Person> People { get; private set; } = [];
 
-    public string? DriverNumber { get; private set; }
-    public DateOnly? LicenceIssueDate { get; private set; }
-    public int? YearsHeld { get; private set; }
-    public List<(string Name, string Value)>? Sections { get; private set; }
+    /// <summary>The policy whose named drivers are included: the current one, else the latest to have started.</summary>
+    public InsurancePolicyView? BasisPolicy { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -59,17 +64,20 @@ public class PreRenewalModel(AppDbContext db) : PageModel
         var policies = await db.InsurancePolicies.Where(p => p.OwnerId == owner.Id).Select(InsurancePolicyView.Projection).ToListAsync();
         DetectedRenewal = PreRenewal.RenewalDate(policies.Select(p => (p.StartDate, p.EndDate)), now);
         CurrentPolicy = policies.Where(p => p.StartDate <= now && now < p.EndDate).MaxBy(p => p.EndDate);
+        BasisPolicy = CurrentPolicy ?? policies.Where(p => p.StartDate <= now).MaxBy(p => p.EndDate);
         RenewalDate = Date ?? DetectedRenewal ?? Reminders.UkToday();
 
-        var claims = await db.Claims.Where(c => c.OwnerId == owner.Id).OrderByDescending(c => c.Date).ThenByDescending(c => c.Id)
-            .Select(ClaimView.Projection).ToListAsync();
-        var rows = claims.Select(c => new ClaimRow(c, PreRenewal.CutOffYears.Select(y => PreRenewal.MustDeclare(c.Date, RenewalDate, y)).ToArray())).ToList();
-        ToDeclare = rows.Where(r => r.Declare.Any(d => d)).ToList();
-        OlderClaims = rows.Count(r => r.Claim.Date <= RenewalDate) - ToDeclare.Count;
-
-        (DriverNumber, LicenceIssueDate) = (owner.DriverNumber, owner.LicenceIssueDate);
-        YearsHeld = LicenceIssueDate is { } issued && issued <= RenewalDate ? PreRenewal.FullYears(issued, RenewalDate) : null;
-        Sections = PreRenewal.Sections(DriverNumber);
+        var ids = (BasisPolicy?.Drivers.Select(d => d.OwnerId) ?? []).Prepend(owner.Id).Distinct().ToList();
+        var claims = (await db.Claims.Where(c => ids.Contains(c.OwnerId)).OrderByDescending(c => c.Date).ThenByDescending(c => c.Id)
+            .Select(ClaimView.Projection).ToListAsync()).ToLookup(c => c.OwnerId);
+        People = ids.Select(id => owners.Single(o => o.Id == id)).Select(o =>
+        {
+            var rows = claims[o.Id].Select(c => new ClaimRow(c, PreRenewal.CutOffYears.Select(y => PreRenewal.MustDeclare(c.Date, RenewalDate, y)).ToArray())).ToList();
+            var toDeclare = rows.Where(r => r.Declare.Any(d => d)).ToList();
+            var years = o.LicenceIssueDate is { } issued && issued <= RenewalDate ? PreRenewal.FullYears(issued, RenewalDate) : (int?)null;
+            return new Person(o.Id, o.Name, o.Id == owner.Id, o.DriverNumber, o.LicenceIssueDate, years, toDeclare,
+                rows.Count(r => r.Claim.Date <= RenewalDate) - toDeclare.Count);
+        }).ToList();
         return Page();
     }
 }

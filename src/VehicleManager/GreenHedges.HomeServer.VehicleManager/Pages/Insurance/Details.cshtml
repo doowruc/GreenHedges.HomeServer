@@ -30,7 +30,14 @@
         }
         <dt class="col-sm-3">Total excess</dt><dd class="col-sm-9">@(p.Excess?.ToString("C") ?? "–")</dd>
         <dt class="col-sm-3">No claims bonus</dt><dd class="col-sm-9">@(p.NoClaimsYears is { } years ? $"{years} year{(years == 1 ? "" : "s")}" : "–")@(p.ProtectedNoClaims ? " (protected)" : "")</dd>
-        <dt class="col-sm-3">Named drivers</dt><dd class="col-sm-9">@(p.NamedDrivers ?? "–")</dd>
+        <dt class="col-sm-3">Named drivers</dt>
+        <dd class="col-sm-9">
+            @foreach (var d in p.Drivers)
+            {
+                <a asp-page="/Owners/Details" asp-route-id="@d.OwnerId">@d.Name</a>@(d == p.Drivers[^1] && p.NamedDrivers is null ? "" : ", ")
+            }
+            @(p.NamedDrivers ?? (p.Drivers.Count == 0 ? "–" : ""))
+        </dd>
         @if (p.Notes is { } notes)
         {
             <dt class="col-sm-3">Notes</dt><dd class="col-sm-9" style="white-space: pre-line">@notes</dd>

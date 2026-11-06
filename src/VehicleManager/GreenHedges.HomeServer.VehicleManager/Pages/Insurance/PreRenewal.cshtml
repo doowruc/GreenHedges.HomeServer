@@ -43,104 +43,14 @@
     </div>
 </div></form>
 
-<div class="row g-4">
-    <div class="col-lg-6">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-body fw-semibold">Driving licence</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5">Held for</dt>
-                    <dd class="col-sm-7">
-                        @if (Model.YearsHeld is { } years)
-                        {
-                            <span class="fs-5 fw-semibold" data-pre-renewal="years-held">@years</span> <text>full year@(years == 1 ? "" : "s") by @Model.RenewalDate.ToString("dd/MM/yyyy")</text>
-                            <div class="text-muted small">First issued @Model.LicenceIssueDate?.ToString("dd/MM/yyyy")</div>
-                        }
-                        else
-                        {
-                            <span class="text-muted">No first issue date.</span> <a asp-page="/Owners/Edit" asp-route-id="@Model.OwnerId">Add it</a>
-                        }
-                    </dd>
-                    <dt class="col-sm-5">Driver number</dt>
-                    <dd class="col-sm-7">
-                        @if (Model.DriverNumber is { } number)
-                        {
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="font-monospace fs-5">@number</span>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" data-copy="@number" title="Copy"><i class="bi bi-copy"></i></button>
-                            </div>
-                            <div class="text-muted small font-monospace">@PreRenewal.Grouped(number)</div>
-                        }
-                        else
-                        {
-                            <span class="text-muted">Not recorded.</span> <a asp-page="/Owners/Edit" asp-route-id="@Model.OwnerId">Add it</a>
-                        }
-                    </dd>
-                </dl>
-                @if (Model.Sections is { } sections)
-                {
-                    <table class="table table-sm align-middle mt-3 mb-0">
-                        <thead class="table-head"><tr><th>Section</th><th>Value</th><th></th></tr></thead>
-                        <tbody>
-                        @foreach (var (name, value) in sections)
-                        {
-                            <tr>
-                                <td>@name</td>
-                                <td class="font-monospace">@value</td>
-                                <td class="text-end"><button type="button" class="btn btn-sm btn-link p-0" data-copy="@value" title="Copy @name.ToLowerInvariant()"><i class="bi bi-copy"></i></button></td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-body fw-semibold">Claims to declare (@Model.ToDeclare.Count)</div>
-            @if (Model.ToDeclare.Count == 0)
-            {
-                <div class="card-body text-muted">None in the last @PreRenewal.CutOffYears.Max() years.@(Model.OlderClaims > 0 ? $" ({Model.OlderClaims} older.)" : "")</div>
-            }
-            else
-            {
-                <div class="card-body py-2"><div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-head">
-                        <tr>
-                            <th>Date</th><th>Vehicle</th><th>At Fault</th><th class="text-end">Total Value</th>
-                            @foreach (var cutOff in PreRenewal.CutOffYears) { <th class="text-center" title="Asked about claims in the last @cutOff years">@cutOff Yrs</th> }
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach (var row in Model.ToDeclare)
-                    {
-                        var c = row.Claim;
-                        <tr>
-                            <td class="text-nowrap">@c.Date.ToString("dd/MM/yyyy")</td>
-                            <td class="text-nowrap">@c.VehicleName <span class="reg-plate small">@c.RegistrationNumber</span>
-                                <div class="text-muted small">@c.TypeName@(c.PolicyLabel is { } policy ? $" · {policy}" : "")</div></td>
-                            <td><span class="badge @c.FaultBadge">@c.FaultName</span></td>
-                            <td class="text-end">@c.TotalValue.ToString("C")</td>
-                            @foreach (var declare in row.Declare)
-                            {
-                                <td class="text-center">@if (declare) { <i class="bi bi-check-lg text-danger" title="Declare"></i> } else { <span class="text-muted">–</span> }</td>
-                            }
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-                </div></div>
-                <div class="card-footer bg-body small text-muted">
-                    A tick means it's within that many years before @Model.RenewalDate.ToString("dd/MM/yyyy"), so declare it if the insurer asks about that period.
-                    @if (Model.OlderClaims > 0) { <text>@Model.OlderClaims older claim@(Model.OlderClaims == 1 ? "" : "s") needn't be declared.</text> }
-                </div>
-            }
-        </div>
-    </div>
-</div>
+@if (Model.People.Count > 1)
+{
+    <p class="text-muted small">With the named drivers on the @Model.BasisPolicy!.Provider @Model.BasisPolicy.PolicyNumber policy: quotes ask the same of each.</p>
+}
+@foreach (var person in Model.People)
+{
+    <partial name="_PreRenewalPerson" model="person" view-data='new ViewDataDictionary(ViewData) { ["RenewalDate"] = Model.RenewalDate }' />
+}
 
 <script>
     (() => {

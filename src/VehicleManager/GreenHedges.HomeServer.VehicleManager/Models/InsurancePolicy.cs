@@ -39,6 +39,7 @@ public class InsurancePolicy : AuditedEntity
     /// <summary>The total excess on a claim (compulsory plus voluntary).</summary>
     public decimal? Excess { get; set; }
 
+    /// <summary>Named drivers who aren't owners in the app (the owners are <see cref="Drivers"/>).</summary>
     [StringLength(MaxNamedDriversLength)]
     public string? NamedDrivers { get; set; }
 
@@ -50,4 +51,7 @@ public class InsurancePolicy : AuditedEntity
     public string? Notes { get; set; }
 
     public List<InsurancePolicyVehicle> Vehicles { get; set; } = [];
+
+    /// <summary>Owners who are named drivers on it (not the policyholder).</summary>
+    public List<InsurancePolicyDriver> Drivers { get; set; } = [];
 }

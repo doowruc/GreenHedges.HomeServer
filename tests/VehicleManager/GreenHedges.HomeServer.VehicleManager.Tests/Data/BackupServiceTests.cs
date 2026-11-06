@@ -31,6 +31,9 @@ public class BackupServiceTests : DatabaseTest
             OwnerId = vehicle.OwnerId, StartDate = new DateTime(2025, 1, 15, 0, 0, 0), EndDate = policyStart, Provider = "Other Insurer",
             PolicyNumber = "OLD-1", Premium = 400m
         });
+        var partner = new Owner { Name = "Partner Driver" };
+        db.Owners.Add(partner);
+        db.InsurancePolicies.Local.Single(p => p.PolicyNumber == "POL-123").Drivers.Add(new InsurancePolicyDriver { Owner = partner });
         db.Claims.Add(new Claim
         {
             OwnerId = vehicle.OwnerId, Vehicle = vehicle, InsurancePolicy = db.InsurancePolicies.Local.Single(p => p.PolicyNumber == "POL-123"),
@@ -72,6 +75,7 @@ public class BackupServiceTests : DatabaseTest
         .. await db.InsurancePolicyVehicles.Select(v => $"insured {v.Vehicle!.RegistrationNumber} on {v.Policy!.PolicyNumber} {v.From:O} {v.To:O} {v.Adjustment} {v.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicies.Select(p => $"policy {p.Owner!.Name} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
                                                   $"{p.Premium} {p.Excess} {p.NamedDrivers} ncb={p.NoClaimsYears} protected={p.ProtectedNoClaims} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
+        .. await db.InsurancePolicyDrivers.Select(d => $"named driver {d.Owner!.Name} on {d.Policy!.PolicyNumber} {d.AddedDate:O}").ToListAsync(),
         .. await db.Claims.Select(c => $"claim {c.Owner!.Name} {c.Vehicle!.RegistrationNumber} policy={c.InsurancePolicy!.PolicyNumber} {c.Date} {c.Type} {c.Fault} {c.TotalValue} {c.AddedDate:O}").ToListAsync(),
         .. await db.MotTests.Select(t => $"mot {t.Vehicle!.RegistrationNumber} {t.CompletedDate:O} passed={t.Passed} {t.ExpiryDate} {t.Odometer} km={t.OdometerInKilometres} " +
                                          $"{t.MotTestNumber} {t.RegistrationAtTest} {t.DataSource} {t.AddedBy} {t.AddedDate:O}").ToListAsync(),
@@ -91,7 +95,7 @@ public class BackupServiceTests : DatabaseTest
             original = Sorted(await ContentsAsync(db));
             backup = await new BackupService(db).CreateAsync();
         }
-        Assert.Equal(new BackupCounts(1, 1, 3, 2, 2, 2), backup.Counts);
+        Assert.Equal(new BackupCounts(2, 1, 3, 2, 2, 2), backup.Counts);
 
         // Change things after the backup.
         await using (var db = Db())
@@ -141,7 +145,7 @@ public class BackupServiceTests : DatabaseTest
         await using (var db = Db()) await new BackupService(db).RestoreAsync(empty);
 
         await using (var db = Db()) Assert.Equal(new BackupCounts(0, 0, 0, 0, 0, 0), await new BackupService(db).CountAsync());
-        await using (var db = TestDatabase.As(other)) Assert.Equal(new BackupCounts(1, 1, 3, 2, 2, 2), await new BackupService(db).CountAsync());
+        await using (var db = TestDatabase.As(other)) Assert.Equal(new BackupCounts(2, 1, 3, 2, 2, 2), await new BackupService(db).CountAsync());
     }
 
     [DatabaseFact]
