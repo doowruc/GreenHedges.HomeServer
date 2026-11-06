@@ -30,6 +30,13 @@
     </div>
     <div class="col-12">
         <div class="form-check">
+            <input asp-for="MileageEstimated" class="form-check-input" />
+            <label asp-for="MileageEstimated" class="form-check-label"></label>
+            <div class="form-text mt-0">Ticked for you by Estimate: for a service whose mileage wasn't recorded.</div>
+        </div>
+    </div>
+    <div class="col-12">
+        <div class="form-check">
             <input asp-for="UnderPreviousOwner" class="form-check-input" />
             <label asp-for="UnderPreviousOwner" class="form-check-label"></label>
             <div class="form-text mt-0">
@@ -65,7 +72,7 @@
         previousOwner.addEventListener('change', () => autoTicked = false);
         // Estimate: the mileage on the date, from the readings either side of it (the page's Estimate handler).
         const estimate = document.getElementById('estimate-mileage'), mileage = document.getElementById('Service_Mileage'),
-              basis = document.getElementById('mileage-estimate-basis');
+              basis = document.getElementById('mileage-estimate-basis'), estimated = document.getElementById('Service_MileageEstimated');
         const showBasis = text => basis.firstElementChild.textContent = text;
         const enableEstimate = () => estimate.disabled = !date.value;
         date.addEventListener('input', enableEstimate);
@@ -82,6 +89,7 @@
                 if (result.mileage != null) {
                     mileage.value = result.mileage;
                     mileage.dispatchEvent(new Event('change', { bubbles: true }));
+                    estimated.checked = true;
                     showBasis(`Estimated: ${result.basis} Check it before saving.`);
                 } else {
                     showBasis(result.basis);

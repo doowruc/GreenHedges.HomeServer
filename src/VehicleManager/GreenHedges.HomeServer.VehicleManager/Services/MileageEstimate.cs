@@ -66,7 +66,7 @@ public sealed record MileageEstimate(int Mileage, string Basis)
 
     /// <summary>
     /// The current user's odometer readings for a vehicle: its fill-ups', MOT tests' (in miles) and services' (but not
-    /// <paramref name="exceptServiceId"/>, the one being edited), and none at its first registration.
+    /// <paramref name="exceptServiceId"/>, the one being edited, or estimated ones), and none at its first registration.
     /// </summary>
     public static async Task<List<MileageReading>> ReadingsAsync(AppDbContext db, int vehicleId, int? exceptServiceId = null)
     {
@@ -75,7 +75,7 @@ public sealed record MileageEstimate(int Mileage, string Basis)
         readings.AddRange((await db.MotTests.Where(t => t.VehicleId == vehicleId && t.Odometer != null)
                 .Select(t => new { t.CompletedDate, Odometer = t.Odometer!.Value, t.OdometerInKilometres }).ToListAsync())
             .Select(t => new MileageReading(Reminders.UkDate(t.CompletedDate), MileageTrend.Miles(t.Odometer, t.OdometerInKilometres), "the MOT")));
-        readings.AddRange(await db.ServiceRecords.Where(s => s.VehicleId == vehicleId && s.Id != exceptServiceId)
+        readings.AddRange(await db.ServiceRecords.Where(s => s.VehicleId == vehicleId && s.Id != exceptServiceId && !s.MileageEstimated)
             .Select(s => new MileageReading(s.Date, s.Mileage, "a service")).ToListAsync());
         var registered = await db.Vehicles.Where(v => v.Id == vehicleId).Select(v => v.RegistrationDate).FirstOrDefaultAsync();
         if (registered is { } date) readings.Add(new(date, 0, "first registration"));

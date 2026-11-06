@@ -191,8 +191,9 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 - `_ServiceForm`'s Estimate button fetches `ServicePageModel.OnGetEstimateAsync` (`?handler=Estimate&date=` on Create
   or Edit, JSON `{ mileage, basis }`): `MileageEstimate.For` (unit tested) over `MileageEstimate.ReadingsAsync` (fill-ups,
   MOT tests in miles, the vehicle's other services, and 0 at `RegistrationDate`; Edit leaves out the service being
-  edited). Between readings it interpolates by days; outside them it uses `MileageTrend` (after) or the earliest
-  readings' rate (before, not below 0). Nothing records that a mileage was estimated.
+  edited, and services whose mileage was itself estimated). Between readings it interpolates by days; outside them it
+  uses `MileageTrend` (after) or the earliest readings' rate (before, not below 0). It also ticks the form's
+  `MileageEstimated` (on `ServiceRecord`, in the backup), which `_ServiceTable` shows as an "Estimated mileage" badge.
 - `Vehicle.ServiceIntervalMonths`/`ServiceIntervalMiles`: adding the vehicle's latest service (or changing the latest's
   date or mileage) sets `ServiceDueDate`/`ServiceDueMileage` via `ServiceSchedule.UpdateNextDueAsync`; an unset interval
   leaves that value alone. Older services and deletes don't change them; other edits don't either, so hand-set values stay.

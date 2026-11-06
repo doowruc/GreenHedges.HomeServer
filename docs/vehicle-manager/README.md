@@ -232,7 +232,8 @@ form starts from today and the latest odometer reading, and suggests garages (an
 For a service whose mileage wasn't recorded, **Estimate** (next to the mileage, once there's a date) fills in an
 estimate from the vehicle's other odometer readings (fill-ups, MOTs, other services, and 0 at first registration):
 in proportion between the readings either side of the date, or, before or after all of them, at the rate the miles
-were going up at that end. It says what it went by, so you can check it before saving.
+were going up at that end. It says what it went by, so you can check it before saving, and ticks **Mileage
+estimated**, which shows as an "Estimated mileage" badge in the list. Estimated mileages aren't used for other estimates.
 When you add the vehicle's latest service, the next service's due date and mileage are worked out from it and the
 service interval (e.g. serviced 01/10/2026 at 45,000 miles, every 12 months or 10,000 miles → next due 01/10/2027
 or at 55,000 miles). An interval that isn't set leaves that due value alone. Adding an older service, or deleting

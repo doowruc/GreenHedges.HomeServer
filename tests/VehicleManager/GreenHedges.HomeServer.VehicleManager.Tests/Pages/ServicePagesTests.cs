@@ -564,4 +564,26 @@ public class ServicePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         Assert.Equal(HttpStatusCode.NotFound,
             (await app.ClientFor(NewUser()).GetResponseAsync($"/Vehicles/{id}/Services/Create?handler=Estimate&date=2023-03-11")).StatusCode);
     }
+
+    [DatabaseFact]
+    public async Task An_estimated_mileage_is_marked_and_not_used_for_other_estimates()
+    {
+        var id = await AddVehicleAsync();
+        var client = app.ClientFor(UserId);
+        var form = await client.GetAsync($"/Vehicles/{id}/Services/Create");
+        Assert.Contains("name=\"Service.MileageEstimated\"", form.Html);
+        await client.PostFormAsync($"/Vehicles/{id}/Services/Create", form, new()
+        {
+            ["Service.Date"] = "2023-03-11", ["Service.Mileage"] = "30500", ["Service.Garage"] = "Main Dealer", ["Service.MileageEstimated"] = "true"
+        });
+        await AddServiceAsync(client, id, "2023-03-01", 30000);
+        await AddServiceAsync(client, id, "2023-03-31", 31500);
+
+        Assert.Contains(">Estimated mileage</span>", (await client.GetAsync($"/Vehicles/Details/{id}?tab=services")).Html);
+        // Only the recorded services count: the estimate on 11/03 isn't a reading.
+        Assert.Equal((30500, "Between 30,000 miles at a service on 01/03/2023 and 31,500 miles at a service on 31/03/2023."),
+            await EstimateAsync(client, $"/Vehicles/{id}/Services/Create", "2023-03-11"));
+        await using var db = Db();
+        Assert.Equal([false, true, false], await db.ServiceRecords.Where(s => s.VehicleId == id).OrderBy(s => s.Date).Select(s => s.MileageEstimated).ToListAsync());
+    }
 }

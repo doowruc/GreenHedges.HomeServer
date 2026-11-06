@@ -26,4 +26,7 @@ public class ServiceRecord : AuditedEntity
 
     /// <summary>Done while a previous owner had the vehicle, rather than the user.</summary>
     public bool UnderPreviousOwner { get; set; }
+
+    /// <summary>The <see cref="Mileage"/> is an estimate (the service form's Estimate button), not a recorded reading.</summary>
+    public bool MileageEstimated { get; set; }
 }
