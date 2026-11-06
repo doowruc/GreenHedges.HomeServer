@@ -12,7 +12,9 @@ their latest payslip, the tax year so far and predicted, and charts of gross and
 **tax years**: every year's totals, with the change on the same months of the year before. **Pensions**: pension
 providers (shared by the people, with their websites) and each person's pensions with them (type and policy number),
 and the pension each payslip's pension amounts go to: chosen on the payslip (a new one takes the latest's), or set on
-a range of payslips at once from the pension's **Assign** button, to fill in the history. And, as Vehicle Manager,
+a range of payslips at once from the pension's **Assign** button, to fill in the history. Each pension's
+**statements**, under its own statement types (e.g. a quarterly investment report and an annual illustration with
+projections), a table per type with the change, growth and per-day figures worked out. And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).
 

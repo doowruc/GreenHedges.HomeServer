@@ -67,4 +67,28 @@ public static class TestData
         await db.SaveChangesAsync();
         return pension;
     }
+
+    /// <summary>A statement type for <paramref name="pension"/>.</summary>
+    public static async Task<StatementType> AddStatementTypeAsync(AppDbContext db, Pension pension, string name = "Investment report",
+        bool hasProjections = false)
+    {
+        var type = new StatementType { PensionId = pension.Id, Name = name, HasProjections = hasProjections };
+        db.StatementTypes.Add(type);
+        await db.SaveChangesAsync();
+        return type;
+    }
+
+    /// <summary>A statement of <paramref name="type"/>.</summary>
+    public static async Task<PensionStatement> AddStatementAsync(AppDbContext db, StatementType type, DateOnly date, decimal value,
+        string? label = null, decimal? projectedFund = null, decimal? projectedAnnualIncome = null)
+    {
+        var statement = new PensionStatement
+        {
+            StatementTypeId = type.Id, Date = date, Value = value, Label = label,
+            ProjectedFund = projectedFund, ProjectedAnnualIncome = projectedAnnualIncome
+        };
+        db.PensionStatements.Add(statement);
+        await db.SaveChangesAsync();
+        return statement;
+    }
 }

@@ -18,12 +18,15 @@ public class PensionInput
 
     public PensionType Type { get; set; }
 
+    [Display(Name = "Start date (optional)")]
+    public DateOnly? StartDate { get; set; }
+
     /// <summary>The row's version when the form was loaded, to detect conflicting edits. Never copied to the entity.</summary>
     public byte[] RowVersion { get; set; } = [];
 
     public static readonly Expression<Func<Pension, PensionInput>> Projection = pn => new PensionInput
     {
-        Name = pn.Name, PensionProviderId = pn.PensionProviderId, PolicyNumber = pn.PolicyNumber, Type = pn.Type,
+        Name = pn.Name, PensionProviderId = pn.PensionProviderId, PolicyNumber = pn.PolicyNumber, Type = pn.Type, StartDate = pn.StartDate,
         RowVersion = pn.RowVersion
     };
 
@@ -33,5 +36,6 @@ public class PensionInput
         pension.PensionProviderId = PensionProviderId;
         pension.PolicyNumber = PolicyNumber;
         pension.Type = Type;
+        pension.StartDate = StartDate;
     }
 }

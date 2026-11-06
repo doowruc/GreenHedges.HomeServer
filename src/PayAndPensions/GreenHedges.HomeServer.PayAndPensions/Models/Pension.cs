@@ -22,8 +22,13 @@ public class Pension : AuditedEntity
 
     public PensionType Type { get; set; }
 
+    /// <summary>When it started: statements' days-since-start figures count from it, and the first one's change from 0.</summary>
+    public DateOnly? StartDate { get; set; }
+
     /// <summary>The payslips whose pension lines go to it.</summary>
     public List<Payslip> Payslips { get; set; } = [];
+
+    public List<StatementType> StatementTypes { get; set; } = [];
 }
 
 public enum PensionType

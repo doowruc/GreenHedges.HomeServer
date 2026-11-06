@@ -1,0 +1,107 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Statements"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Statements.IndexModel
+@{
+    ViewData["Title"] = $"{Model.PensionName} statements";
+    static string Money(decimal? value) => value is { } v ? v.ToString("N2") : "";
+    static string Whole(decimal? value) => value is { } v ? v.ToString("N0") : "";
+    static string Signed(decimal? value) => value is { } v ? (v > 0 ? "+" : "") + v.ToString("N2") : "";
+    static string Percent(decimal? value) => value is { } v ? (v > 0 ? "+" : "") + v.ToString("P1") : "";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+    <h1 class="h3 mb-0">@Model.PersonName's @Model.PensionName statements</h1>
+    <a asp-page="/StatementTypes/Create" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-primary"><i class="bi bi-plus-lg me-1"></i>Add statement type</a>
+</div>
+<p class="text-body-secondary">
+    With @Model.ProviderName.
+    @if (Model.StartDate is { } start) { <text>Started @start.ToString("d MMMM yyyy"): the first statement's change is from 0 then.</text> }
+    else { <text><a asp-page="/Pensions/Edit" asp-route-personId="@Model.PersonId" asp-route-id="@Model.PensionId">Give it a start date</a> for the days-since-start figures.</text> }
+</p>
+
+@if (Model.Types.Count == 0)
+{
+    <div class="alert alert-info">No statement types yet. <a asp-page="/StatementTypes/Create" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Add one</a> for each kind of statement the provider sends, e.g. an investment report or an annual illustration.</div>
+}
+@foreach (var type in Model.Types)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 mb-2">
+        <h2 class="h5 mb-0">@type.Name</h2>
+        <div class="d-flex gap-2">
+            <a asp-page="Create" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-typeId="@type.Id" class="btn btn-sm btn-primary" title="Add @type.Name"><i class="bi bi-plus-lg me-1"></i>Add statement</a>
+            <a asp-page="/StatementTypes/Edit" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@type.Id" class="btn btn-sm btn-outline-secondary" title="Edit @type.Name"><i class="bi bi-pencil"></i></a>
+            <a asp-page="/StatementTypes/Delete" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@type.Id" class="btn btn-sm btn-outline-danger" title="Delete @type.Name"><i class="bi bi-trash"></i></a>
+        </div>
+    </div>
+    @if (type.Rows.Count == 0)
+    {
+        <p class="text-body-secondary">No statements yet.</p>
+        continue;
+    }
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0 payslip-table" data-statements="@type.Name">
+                <thead class="table-head">
+                    <tr>
+                        <th>Date</th>
+                        <th class="section-end">Label</th>
+                        <th class="text-end">Value</th>
+                        <th class="text-end">Change</th>
+                        <th class="text-end" title="The change on the previous value">Growth</th>
+                        <th class="text-end section-end" title="The value less the highest of these statements">Below highest</th>
+                        <th class="text-end" title="Days since the pension started">Days</th>
+                        <th class="text-end" title="The value ÷ the days since the pension started">Per day</th>
+                        <th class="text-end" title="Days since the previous statement">Period</th>
+                        <th class="text-end @(type.HasProjections ? "section-end" : null)" title="The change ÷ the period's days">Change per day</th>
+                        @if (type.HasProjections)
+                        {
+                            <th class="text-end">At retirement</th>
+                            <th class="text-end">Annual income</th>
+                            <th class="text-end">Monthly</th>
+                        }
+                        <th><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="amount">
+                @foreach (var r in type.Rows)
+                {
+                    var f = r.Figures;
+                    <tr data-row-menu data-edit="@Url.Page("Edit", new { personId = Model.PersonId, pensionId = Model.PensionId, id = r.Id })"
+                        data-delete="@Url.Page("Delete", new { personId = Model.PersonId, pensionId = Model.PensionId, id = r.Id })">
+                        <td class="text-nowrap">@r.Date.ToString("dd/MM/yy")@if (r.Notes is not null) {<i class="bi bi-sticky ms-1 text-body-secondary has-tip-icon" title="@r.Notes" aria-label="Notes: @r.Notes"></i>}</td>
+                        <td class="section-end">@r.Label</td>
+                        <td class="text-end fw-semibold">@Money(r.Value)</td>
+                        <td class="text-end">@Signed(f.Change)</td>
+                        <td class="text-end">@Percent(f.Growth)</td>
+                        <td class="text-end section-end">@Money(f.BelowHighest)</td>
+                        <td class="text-end">@f.DaysSinceStart</td>
+                        <td class="text-end">@Money(f.PerDaySinceStart)</td>
+                        <td class="text-end">@f.PeriodDays</td>
+                        <td class="text-end @(type.HasProjections ? "section-end" : null)">@Signed(f.ChangePerDay)</td>
+                        @if (type.HasProjections)
+                        {
+                            <td class="text-end">@Whole(r.ProjectedFund)</td>
+                            <td class="text-end">@Money(r.ProjectedAnnualIncome)</td>
+                            <td class="text-end">@Money(r.ProjectedAnnualIncome / 12)</td>
+                        }
+                        <td class="text-end text-nowrap">
+                            <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@r.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@if (Model.Types.Any(t => t.Rows.Count > 0))
+{
+    <p class="form-text mt-1 mb-0">Right-click a statement to edit or delete it, or use its buttons at the end of the row.</p>
+    <ul class="dropdown-menu shadow" id="row-menu" role="menu">
+        <li><a class="dropdown-item" data-action="edit" role="menuitem"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+        <li><a class="dropdown-item text-danger" data-action="delete" role="menuitem"><i class="bi bi-trash me-2"></i>Delete</a></li>
+    </ul>
+}
+<a asp-page="/Pensions/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary mt-3"><i class="bi bi-arrow-left me-1"></i>@Model.PersonName's pensions</a>
+
+@section Scripts { <script src="~/js/row-menu.js" asp-append-version="true"></script> }

@@ -1,0 +1,12 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Statements/Delete/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Statements.DeleteModel
+@{ ViewData["Title"] = "Delete statement"; }
+
+<h1 class="h3 mb-3">Delete @Model.PensionName's statement</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Are you sure you want to delete @Model.Description?</p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

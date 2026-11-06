@@ -51,10 +51,12 @@ figures, and never a real spreadsheet.
 ```
 GreenHedges.HomeServer.PayAndPensions/
   Models/      EF Core entities: Person (the user-owned root), Employer, PayElement (+ PayElementKind, PayCategory),
-               Payslip, PayslipLine, PensionProvider (user-owned, shared by the people), Pension (+ PensionType)
+               Payslip, PayslipLine, PensionProvider (user-owned, shared by the people), Pension (+ PensionType),
+               StatementType (a pension's kinds of statement), PensionStatement
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
-               each tax year's totals, as the spreadsheets worked them out; pure, unit tested),
+               each tax year's totals, as the spreadsheets worked them out; pure, unit tested), StatementCalculations
+               (each statement's change, growth and per-day figures; pure, unit tested),
                Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
@@ -62,7 +64,8 @@ GreenHedges.HomeServer.PayAndPensions/
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
                PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel; Assign sets one on a range
-               of payslips), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
+               of payslips), Statements/* and StatementTypes/* (a pension's, at /People/{id}/Pensions/{pensionId}/…,
+               through PensionPageModel), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
                PensionProviders/* (at /PensionProviders: not a person's), Account/* (sign in/out), Shared/ (layout;
@@ -85,6 +88,13 @@ GreenHedges.HomeServer.PayAndPensions/
   (`PensionType`, stored as text), optional policy number. A provider's website is an http(s) address (https:// is
   added if typed without). A provider can't be deleted while pensions are with it, nor a pension while payslips go to
   it (FK `Restrict`).
+- **Statements:** a pension has statement types (named per pension, e.g. "Investment report"; unique per pension),
+  each with or without **projections** (fund at retirement, annual income). A statement is a type's value on a date
+  (one per type and date), with an optional label and notes; projections only on a type with them. Worked out, never
+  stored (`StatementCalculations`, per type, oldest first): the change on the previous (the first's from 0 at the
+  pension's optional **start date**), growth (change ÷ previous), below the type's highest, days since the start and
+  value per day, the period's days and change per day; monthly income is annual ÷ 12. A type with statements can't be
+  deleted (FK `Restrict`), so nor can its pension or person; a pension's types go with it.
 - **A payslip's pension** (optional) is where its pension lines go, employee's and employer's: only on a payslip with
   a pension line (`PayElement.IsPension`: Pension category, not an earning). The payslips table has a Pension column
   when a year's payslips with pension lines differ (or some have none). `Pensions/Assign` sets one on a range of

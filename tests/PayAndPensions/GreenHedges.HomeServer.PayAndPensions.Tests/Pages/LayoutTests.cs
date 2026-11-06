@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Text.RegularExpressions;
 using GreenHedges.HomeServer.PayAndPensions.Tests.Infrastructure;
@@ -89,5 +90,18 @@ public class LayoutTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactor
         Assert.Equal(["/PensionProviders", $"/People/{alex}/Pensions", $"/People/{sam}/Pensions"],
             Regex.Matches(menu, "href=\"([^\"]*)\"").Select(m => m.Groups[1].Value));
         Assert.Contains("Sam's pensions", WebUtility.HtmlDecode(menu));
+    }
+
+    [DatabaseFact]
+    public async Task A_pensions_own_page_switches_to_the_other_persons_pensions()
+    {
+        var (alex, sam, _) = await TwoPeopleAsync();
+        int pensionId;
+        await using (var db = Db())
+            pensionId = (await TestData.AddPensionAsync(db, await db.People.SingleAsync(p => p.Id == alex), await TestData.AddProviderAsync(db))).Id;
+
+        var switcher = Switcher(await app.ClientFor(UserId).GetAsync($"/People/{alex}/Pensions/{pensionId}/Statements"));
+
+        Assert.Equal([$"Alex → /People/{alex}/Pensions *", $"Sam → /People/{sam}/Pensions"], switcher);
     }
 }

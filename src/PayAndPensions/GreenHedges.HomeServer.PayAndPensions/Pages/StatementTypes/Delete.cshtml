@@ -1,0 +1,20 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/StatementTypes/Delete/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.StatementTypes.DeleteModel
+@{ ViewData["Title"] = "Delete statement type"; }
+
+<h1 class="h3 mb-3">Delete @Model.PensionName's statement type</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    @if (Model.Statements > 0)
+    {
+        <p><strong>@Model.TypeName</strong> can't be deleted while it has statements (@Model.Statements).</p>
+        <a asp-page="/Statements/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
+        <p>Are you sure you want to delete <strong>@Model.TypeName</strong>?</p>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-page="/Statements/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    }
+</div></div>
