@@ -234,6 +234,12 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   and cover the date (`InsurancePolicyView.LastDay` for its last day). The form's script suggests the policy covering
   the vehicle on the date from `ViewData["PolicyCover"]`, until one is picked by hand.
 
+**Pre-renewal** (`Pages/Insurance/PreRenewal`, `?ownerId=` else the first owner, `?date=` to override)
+- The rules are in `Services/PreRenewal` (unit tested): the renewal date is `CreateModel.RenewalStart` of the
+  latest-ending policy in force now; a claim is declared for an N-year cut-off when it's after the renewal date minus N
+  years (`CutOffYears` 3, 4, 5) and not after the renewal; `FullYears` (also the Owners list's years held); `Sections`
+  and `Grouped` split a driver number. Copy buttons are `data-copy` with an inline script.
+
 **Due dates, reminders and MOT/tax lookups**
 - `Vehicle` has `MotDueDate`, `TaxDueDate`, `ServiceDueDate` (all optional, in the backup); the insurance due date
   comes from its latest policy (see Insurance policies).

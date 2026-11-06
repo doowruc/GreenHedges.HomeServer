@@ -13,6 +13,10 @@
                 </select>
             </form>
         }
+        @if (Model.OwnerOptions.Count > 0)
+        {
+            <a asp-page="PreRenewal" asp-route-ownerId="@Model.OwnerId" class="btn btn-sm btn-outline-primary"><i class="bi bi-list-check me-1"></i>Pre-renewal</a>
+        }
         <a asp-page="Create" class="btn btn-sm btn-primary"><i class="bi bi-shield-plus me-1"></i>Add policy</a>
     </div>
 </div>
