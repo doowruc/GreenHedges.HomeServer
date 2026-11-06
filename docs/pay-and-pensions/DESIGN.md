@@ -51,8 +51,10 @@ earnings columns, so the columns can't be fixed in the schema.
 | `PayElement` | Belongs to a person: name, **kind** (Earning, Deduction, Employer contribution), **category** (Salary, Bonus, Allowance, Overtime, Back pay, Tax, NI, Pension, Other), sort order, hidden, **salary sacrifice** (pension deductions only). One per workbook column |
 | `Payslip` | Person, employer, tax year (stored as its start year), tax month, pay date, **pension received** date (the workbook's Transfer Date), notes. Unique per person, tax year and month |
 | `PayslipLine` | Payslip, pay element, amount (`decimal(19,2)`) |
+| `PensionProvider` | The pension company: name, website. Belongs to the user (`IUserOwned`), not a person, as both of us can have pensions with the same provider |
+| `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other). Payslips will point at the pension their pension lines go to |
 
-Every table inherits `AuditedEntity`. Child tables are filtered through their person.
+Every table inherits `AuditedEntity`. Child tables are filtered through their person; providers through the user.
 
 **Derived, never stored** (a calculation service with unit tests): gross, deductions, net; annual salary (Salary
 category × 12) and each rise in £ and %; employee and employer pension as % of salary; take-home %; year-to-date gross
@@ -61,9 +63,9 @@ change on the year before, and **higher-rate pension relief** (20% of the year's
 extra relief reclaimed through Self Assessment), leaving out pension paid by salary sacrifice, which comes off before
 tax and so already has full relief.
 
-**Room for later:** pension pots belong to a person; a pension pay element can point at a pot, so payslip
+**Room for later:** each payslip with pension lines points at the pension they go to (next), so payslip
 contributions feed its history without typing them twice, and the pension received date becomes the date a
-contribution reached the pot. Documents attach to a payslip (payslip PDF) or a person's tax year (P60, P11D).
+contribution reached it. Documents attach to a payslip (payslip PDF) or a person's tax year (P60, P11D).
 
 ## Pages
 
@@ -72,7 +74,8 @@ contribution reached the pot. Documents attach to a payslip (payslip PDF) or a p
 - **Payslips:** one table per tax year, laid out like the workbook with the derived columns (DataTables).
 - **Add / edit payslip:** a new payslip starts from the previous month's lines, so usually only a few figures change.
 - **Tax years:** totals, change on the year before, take-home %, pension and relief.
-- **People, Employers, Pay elements; Import; Backup; Settings.** The menu groups **Pay** and (later) **Pensions**.
+- **Pension providers** (shared) and each person's **Pensions**.
+- **People, Employers, Pay elements; Import; Backup; Settings.** The menu groups **Pay** and **Pensions**.
 
 ## Import
 
@@ -125,5 +128,12 @@ One branch and PR each:
 6. **Backups, off-site copies, Mac pull, alerts and heartbeat.**
 7. **Deploy.** Deploy files, Caddy block, database setup, host setup; the server's notes updated.
 
-**Later:** documents (payslip PDFs, P60s, P11Ds); pension pots (designed from the pensions workbook when we get
+**Pensions,** one PR each:
+
+1. **Providers and pensions:** the pension companies (shared by the people) and each person's pensions, with their pages
+   and the Pensions menu. Done.
+2. **Payslips to pensions:** an optional pension on each payslip with a pension line (the latest payslip's by default),
+   a Pension column on the payslips table when a year has more than one, and setting it on a range of payslips at once.
+
+**Later:** documents (payslip PDFs, P60s, P11Ds); pension values (designed from the pensions workbook when we get
 there); a JSON export.

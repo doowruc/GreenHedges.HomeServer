@@ -1,0 +1,15 @@
+@model PensionProviderInput
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" autofocus />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Website" class="form-label"></label>
+        <input asp-for="Website" class="form-control" type="text" inputmode="url" placeholder="https://www.example.com" />
+        <span asp-validation-for="Website" class="text-danger small"></span>
+        <div class="form-text">Its sign-in page, say.</div>
+    </div>
+</div>

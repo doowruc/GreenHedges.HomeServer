@@ -82,4 +82,27 @@ public class SchemaTests : DatabaseTest
 
         Assert.False(await db.PayslipLines.AnyAsync());
     }
+
+    [DatabaseFact]
+    public async Task Deleting_a_person_takes_their_pensions_but_not_the_provider()
+    {
+        await using var db = Db();
+        var person = await TestData.AddPersonAsync(db);
+        await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db));
+
+        await db.People.Where(p => p.Id == person.Id).ExecuteDeleteAsync();
+
+        Assert.False(await db.Pensions.IgnoreQueryFilters().AnyAsync(pn => pn.PersonId == person.Id));
+        Assert.True(await db.PensionProviders.AnyAsync());
+    }
+
+    [DatabaseFact]
+    public async Task A_provider_with_pensions_cant_be_deleted()
+    {
+        await using var db = Db();
+        var provider = await TestData.AddProviderAsync(db);
+        await TestData.AddPensionAsync(db, await TestData.AddPersonAsync(db), provider);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => db.PensionProviders.Where(pp => pp.Id == provider.Id).ExecuteDeleteAsync());
+    }
 }

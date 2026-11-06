@@ -51,7 +51,7 @@ figures, and never a real spreadsheet.
 ```
 GreenHedges.HomeServer.PayAndPensions/
   Models/      EF Core entities: Person (the user-owned root), Employer, PayElement (+ PayElementKind, PayCategory),
-               Payslip, PayslipLine
+               Payslip, PayslipLine, PensionProvider (user-owned, shared by the people), Pension (+ PensionType)
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
                each tax year's totals, as the spreadsheets worked them out; pure, unit tested),
@@ -61,11 +61,12 @@ GreenHedges.HomeServer.PayAndPensions/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
-               PayElements/*, Payslips/*, Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
+               PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
-               Account/* (sign in/out), Shared/ (layout; PersonSwitcherViewComponent, the navbar's people switcher:
-               the same page for another person), Names (name tidying)
+               PensionProviders/* (at /PensionProviders: not a person's), Account/* (sign in/out), Shared/ (layout;
+               PersonSwitcherViewComponent, the navbar's people switcher: the same page for another person;
+               PensionsMenuViewComponent, the Pensions menu: providers, then each person's pensions), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
                on the payslip form), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), js/row-menu.js (the payslips table's
@@ -76,10 +77,14 @@ GreenHedges.HomeServer.PayAndPensions/
 
 ## Data rules
 
-- **People** belong to the signed-in user (`IUserOwned`); everything else is filtered through its person. Names of
-  people, and of a person's employers and pay elements, are unique ignoring case, with spaces tidied (`Names`).
-- **Pay history is never deleted along with something else.** Deleting a person takes their employers and pay
-  elements (FK cascade), but not while they have payslips; an employer with payslips, or a pay element on a payslip,
+- **People** and **pension providers** belong to the signed-in user (`IUserOwned`); everything else is filtered
+  through its person. Names of people and providers, and of a person's employers, pay elements and pensions, are unique
+  ignoring case, with spaces tidied (`Names`).
+- **Pensions:** a person's pension with one of the user's providers (several people can share a provider): name, type
+  (`PensionType`, stored as text), optional policy number. A provider's website is an http(s) address (https:// is
+  added if typed without). A provider can't be deleted while pensions are with it (FK `Restrict`).
+- **Pay history is never deleted along with something else.** Deleting a person takes their employers, pay
+  elements and pensions (FK cascade), but not while they have payslips; an employer with payslips, or a pay element on a payslip,
   can't be deleted either (FK `Restrict`, and the Delete pages say so). Unused pay elements are hidden instead.
 - **Payslips:** one per person and tax month (unique index; a check constraint keeps `TaxMonth` 1-12). `TaxYear` is the
   year the tax year starts (2026 = 2026-27). Amounts are `decimal(19,2)` and can be negative.

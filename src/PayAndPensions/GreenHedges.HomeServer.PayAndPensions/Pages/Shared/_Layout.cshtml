@@ -36,13 +36,13 @@
                     @if (allowed)
                     {
                         <li class="nav-item"><a class="nav-link" asp-page="/Index">Dashboard</a></li>
-                        @* Pay now; Pensions (pots) joins it later. *@
                         <li class="nav-item dropdown">
                             <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Pay</button>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" asp-page="/People/Index">People</a></li>
                             </ul>
                         </li>
+                        @await Component.InvokeAsync("PensionsMenu")
                     }
                 </ul>
                 <div class="d-flex align-items-center gap-2">

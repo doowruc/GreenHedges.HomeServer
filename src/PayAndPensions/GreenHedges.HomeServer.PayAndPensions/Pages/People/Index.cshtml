@@ -16,7 +16,7 @@ else
     <div class="card shadow-sm">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-head">
-                <tr><th>Name</th><th class="text-end">Employers</th><th class="text-end">Pay elements</th><th class="text-end">Payslips</th><th></th></tr>
+                <tr><th>Name</th><th class="text-end">Employers</th><th class="text-end">Pay elements</th><th class="text-end">Payslips</th><th class="text-end">Pensions</th><th></th></tr>
             </thead>
             <tbody>
             @foreach (var p in Model.People)
@@ -26,6 +26,7 @@ else
                     <td class="text-end"><a asp-page="/Employers/Index" asp-route-personId="@p.Id" title="Employers">@p.Employers</a></td>
                     <td class="text-end"><a asp-page="/PayElements/Index" asp-route-personId="@p.Id" title="Pay elements">@p.PayElements</a></td>
                     <td class="text-end"><a asp-page="/Payslips/Index" asp-route-personId="@p.Id" title="Payslips">@p.Payslips</a></td>
+                    <td class="text-end"><a asp-page="/Pensions/Index" asp-route-personId="@p.Id" title="Pensions">@p.Pensions</a></td>
                     <td class="text-end text-nowrap">
                         <a asp-page="/Import/Index" asp-route-personId="@p.Id" class="btn btn-sm btn-outline-secondary" title="Import payslips"><i class="bi bi-file-earmark-arrow-up"></i></a>
                         <a asp-page="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>

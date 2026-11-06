@@ -77,4 +77,17 @@ public class LayoutTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactor
         Assert.Equal(HttpStatusCode.OK, page.Status);
         Assert.DoesNotContain("person-switcher", page.Html);
     }
+
+    [DatabaseFact]
+    public async Task The_pensions_menu_has_the_providers_and_each_persons_pensions()
+    {
+        var (alex, sam, _) = await TwoPeopleAsync();
+
+        var page = await app.ClientFor(UserId).GetAsync("/People");
+
+        var menu = Regex.Match(page.Html, ">Pensions</button>.*?</ul>", RegexOptions.Singleline).Value;
+        Assert.Equal(["/PensionProviders", $"/People/{alex}/Pensions", $"/People/{sam}/Pensions"],
+            Regex.Matches(menu, "href=\"([^\"]*)\"").Select(m => m.Groups[1].Value));
+        Assert.Contains("Sam's pensions", WebUtility.HtmlDecode(menu));
+    }
 }

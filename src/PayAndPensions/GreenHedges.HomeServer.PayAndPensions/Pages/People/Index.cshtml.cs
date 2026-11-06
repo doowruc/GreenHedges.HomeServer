@@ -6,7 +6,7 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.People;
 
 public class IndexModel(AppDbContext db) : PageModel
 {
-    public record Row(int Id, string Name, int Employers, int PayElements, int Payslips);
+    public record Row(int Id, string Name, int Employers, int PayElements, int Payslips, int Pensions);
 
     public List<Row> People { get; private set; } = [];
 
@@ -14,7 +14,7 @@ public class IndexModel(AppDbContext db) : PageModel
     {
         People = await db.People
             .OrderBy(p => p.Name)
-            .Select(p => new Row(p.Id, p.Name, p.Employers.Count, p.PayElements.Count, p.Payslips.Count))
+            .Select(p => new Row(p.Id, p.Name, p.Employers.Count, p.PayElements.Count, p.Payslips.Count, p.Pensions.Count))
             .ToListAsync();
     }
 }

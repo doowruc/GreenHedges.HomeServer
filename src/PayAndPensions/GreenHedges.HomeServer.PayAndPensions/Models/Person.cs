@@ -20,4 +20,5 @@ public class Person : AuditedEntity, IUserOwned
     public List<Employer> Employers { get; set; } = [];
     public List<PayElement> PayElements { get; set; } = [];
     public List<Payslip> Payslips { get; set; } = [];
+    public List<Pension> Pensions { get; set; } = [];
 }

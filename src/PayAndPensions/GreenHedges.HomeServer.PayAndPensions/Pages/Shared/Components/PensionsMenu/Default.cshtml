@@ -1,0 +1,15 @@
+@model List<GreenHedges.HomeServer.PayAndPensions.Pages.Shared.PensionsMenuViewComponent.Person>
+<li class="nav-item dropdown">
+    <button class="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Pensions</button>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" asp-page="/PensionProviders/Index">Providers</a></li>
+        @if (Model.Count > 0)
+        {
+            <li><hr class="dropdown-divider"></li>
+            @foreach (var p in Model)
+            {
+                <li><a class="dropdown-item" asp-page="/Pensions/Index" asp-route-personId="@p.Id">@p.Name's pensions</a></li>
+            }
+        }
+    </ul>
+</li>

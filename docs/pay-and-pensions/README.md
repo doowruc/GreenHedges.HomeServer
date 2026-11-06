@@ -9,7 +9,9 @@ which leaves it out of the higher-rate pension relief); and **payslips**, a tabl
 figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
 a few amounts change. **Importing** a person's existing spreadsheet (below). The **dashboard**, one person at a time:
 their latest payslip, the tax year so far and predicted, and charts of gross and net by month and by tax year. And
-**tax years**: every year's totals, with the change on the same months of the year before. And, as Vehicle Manager,
+**tax years**: every year's totals, with the change on the same months of the year before. **Pensions**: pension
+providers (shared by the people, with their websites) and each person's pensions with them (type and policy number);
+linking payslips to them is next. And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).
 

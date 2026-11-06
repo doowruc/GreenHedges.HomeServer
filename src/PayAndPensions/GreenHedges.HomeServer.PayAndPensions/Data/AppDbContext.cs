@@ -6,9 +6,9 @@ using GreenHedges.HomeServer.PayAndPensions.Models;
 namespace GreenHedges.HomeServer.PayAndPensions.Data;
 
 /// <remarks>
-/// Each signed-in user has their own data. Query filters limit every query to the current user's people and
-/// (through their person) employers, pay elements, payslips and payslip lines.
-/// Saving stamps new people with the current user's id and fills in every table's audit columns
+/// Each signed-in user has their own data. Query filters limit every query to the current user's people and pension
+/// providers, and (through their person) employers, pay elements, payslips, payslip lines and pensions.
+/// Saving stamps new people and pension providers with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
 /// </remarks>
@@ -20,10 +20,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<PayElement> PayElements => Set<PayElement>();
     public DbSet<Payslip> Payslips => Set<Payslip>();
     public DbSet<PayslipLine> PayslipLines => Set<PayslipLine>();
+    public DbSet<PensionProvider> PensionProviders => Set<PensionProvider>();
+    public DbSet<Pension> Pensions => Set<Pension>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Deleting a person takes their employers and pay elements with them; payslips must go first (Restrict), so
+        // Deleting a person takes their employers, pay elements and pensions with them; payslips must go first (Restrict), so
         // nobody's pay history goes by accident. SQL Server allows only one cascade path to a table, which this keeps.
         modelBuilder.Entity<Person>(e =>
         {
@@ -41,6 +43,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(s => s.Person)
              .HasForeignKey(s => s.PersonId)
              .OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(p => p.Pensions)
+             .WithOne(pn => pn.Person)
+             .HasForeignKey(pn => pn.PersonId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // A provider is shared by the user's people, so it can't be deleted while any of their pensions are with it.
+        modelBuilder.Entity<PensionProvider>(e =>
+        {
+            e.HasQueryFilter(pp => pp.UserId == CurrentUserId);
+            e.HasIndex(pp => new { pp.UserId, pp.Name }).IsUnique();
+            e.HasMany(pp => pp.Pensions)
+             .WithOne(pn => pn.PensionProvider)
+             .HasForeignKey(pn => pn.PensionProviderId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Pension>(e =>
+        {
+            e.HasQueryFilter(pn => pn.Person!.UserId == CurrentUserId);
+            e.Property(pn => pn.Type).HasConversion<string>().HasMaxLength(30);
+            e.HasIndex(pn => new { pn.PersonId, pn.Name }).IsUnique();
+            e.HasIndex(pn => pn.PensionProviderId);
         });
 
         modelBuilder.Entity<Employer>(e =>
