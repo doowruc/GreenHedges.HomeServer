@@ -44,6 +44,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         sql => sql.EnableRetryOnFailure()));
 builder.Services.AddScoped<PayHistory>();
 builder.Services.AddScoped<PayslipImporter>();
+builder.Services.AddScoped<PensionPayslips>();
 
 // Alert emails (through Resend) and the off-machine heartbeat (healthchecks.io), shared with the other services
 // (GreenHedges.HomeServer.Common). Both are off until configured: Alerts:ResendApiKey, From and To; Heartbeat:PingUrl.

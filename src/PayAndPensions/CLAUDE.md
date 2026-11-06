@@ -60,6 +60,8 @@ GreenHedges.HomeServer.PayAndPensions/
                Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it; StatementPaste reads
                statements pasted from one; TransactionCsv reads a provider's transaction export and picks the new
                lines; pure, unit tested),
+               ContributionMatching (which payslips each pension contribution came from; pure, unit tested) and
+               PensionPayslips (runs it for a pension and sets the payslips' pension received date),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
@@ -113,6 +115,12 @@ GreenHedges.HomeServer.PayAndPensions/
   files are kept between steps (base64, 2 MB together). Log counts only. The list is by tax year, latest first, with
   totals per kind, paid in (contributions and transfers in) and the change in cash. A pension (or person) with
   transactions can't be deleted (FK `Restrict`).
+- **Contributions to payslips** (`ContributionMatching`, `PensionPayslips`): an import, or the Transactions page's
+  Match payslips, sets the pension received date on the pension's payslips without one. A contribution (kind
+  Contribution, positive) matches the oldest run of such payslips in a row by pay date, up to 6, paid in the 120 days
+  before it, whose pension lines (`PayElement.IsPension`: employee's and employer's) add up to it exactly. A contribution
+  on a date one of the pension's payslips was already received is taken as matched. The import's preview lists the
+  matches and counts the contributions that match nothing; the dates save with the transactions, in one `SaveChanges`.
 - **A payslip's pension** (optional) is where its pension lines go, employee's and employer's: only on a payslip with
   a pension line (`PayElement.IsPension`: Pension category, not an earning). The payslips table has a Pension column
   when a year's payslips with pension lines differ (or some have none). `Pensions/Assign` sets one on a range of

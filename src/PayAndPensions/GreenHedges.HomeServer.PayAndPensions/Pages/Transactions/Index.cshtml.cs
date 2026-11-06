@@ -6,8 +6,12 @@ using GreenHedges.HomeServer.PayAndPensions.Services;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Transactions;
 
-/// <summary>A pension's transactions in one tax year (the latest with any, or ?year=), latest first, with totals per kind.</summary>
-public class IndexModel(AppDbContext db) : PensionPageModel(db)
+/// <summary>
+/// A pension's transactions in one tax year (the latest with any, or ?year=), latest first, with totals per kind. Match
+/// payslips sets their pension received date from the contributions, as an import does: for payslips assigned to the
+/// pension after its transactions were imported.
+/// </summary>
+public class IndexModel(AppDbContext db, PensionPayslips pensionPayslips) : PensionPageModel(db)
 {
     public sealed record Row(int Id, DateOnly TradeDate, string Reference, string Description, TransactionKind Kind, string? Fund,
         decimal? UnitPrice, decimal? Quantity, decimal Value);
@@ -58,5 +62,16 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
         Totals = Rows.GroupBy(r => r.Kind).OrderBy(g => g.Key)
             .Select(g => new KindTotal(g.Key, g.Count(), g.Sum(r => r.Value))).ToList();
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostMatchAsync()
+    {
+        if (!await LoadPensionAsync()) return NotFound();
+        var received = await pensionPayslips.SetReceivedAsync(await pensionPayslips.PlanAsync(PensionId));
+        await Db.SaveChangesAsync();
+        TempData["Message"] = received == 0
+            ? "No payslips not yet received add up to the contributions."
+            : $"Set the pension received date on {received} {(received == 1 ? "payslip" : "payslips")}.";
+        return RedirectToPage(new { personId = PersonId, pensionId = PensionId, year = Year });
     }
 }
