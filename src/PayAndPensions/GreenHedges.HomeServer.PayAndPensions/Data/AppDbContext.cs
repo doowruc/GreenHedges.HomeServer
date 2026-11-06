@@ -66,6 +66,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
             e.Property(pn => pn.Type).HasConversion<string>().HasMaxLength(30);
             e.HasIndex(pn => new { pn.PersonId, pn.Name }).IsUnique();
             e.HasIndex(pn => pn.PensionProviderId);
+            // Not while payslips go to it: pay history is never changed by deleting something else.
+            e.HasMany(pn => pn.Payslips)
+             .WithOne(s => s.Pension)
+             .HasForeignKey(s => s.PensionId)
+             .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Employer>(e =>

@@ -66,12 +66,20 @@
 </div>
 
 <div class="row g-3 mt-1">
+    <div class="col-md-4">
+        <label asp-for="Payslip.PensionId" class="form-label"></label>
+        <select asp-for="Payslip.PensionId" asp-items="Model.PensionOptions" class="form-select">
+            <option value="">None</option>
+        </select>
+        <span asp-validation-for="Payslip.PensionId" class="text-danger small"></span>
+        <div class="form-text">Where the month's pension amounts go.@if (Model.PensionOptions.Count == 0) { <text> <a asp-page="/Pensions/Create" asp-route-personId="@Model.PersonId">Add a pension</a> first.</text> }</div>
+    </div>
     <div class="col-md-3">
         <label asp-for="Payslip.PensionReceivedDate" class="form-label"></label>
         <input asp-for="Payslip.PensionReceivedDate" type="date" class="form-control" />
         <div class="form-text">When the month's pension contributions reached the pension, if they're paid in separately.</div>
     </div>
-    <div class="col-md-9">
+    <div class="col-md-5">
         <label asp-for="Payslip.Notes" class="form-label"></label>
         <textarea asp-for="Payslip.Notes" class="form-control" rows="2"></textarea>
         <span asp-validation-for="Payslip.Notes" class="text-danger small"></span>

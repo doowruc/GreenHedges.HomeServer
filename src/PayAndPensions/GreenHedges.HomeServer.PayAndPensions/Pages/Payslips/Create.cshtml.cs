@@ -10,8 +10,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.Payslips;
 public class CreateModel(AppDbContext db) : PayslipFormModel(db)
 {
     /// <summary>
-    /// A new payslip starts as the month after the person's latest: same employer and amounts, the next tax month, and a
-    /// pay date a month on. Usually only a few figures change. Their first starts from today.
+    /// A new payslip starts as the month after the person's latest: same employer, pension and amounts, the next tax
+    /// month, and a pay date a month on. Usually only a few figures change. Their first starts from today.
     /// </summary>
     public async Task<IActionResult> OnGetAsync()
     {
@@ -21,7 +21,7 @@ public class CreateModel(AppDbContext db) : PayslipFormModel(db)
             .OrderByDescending(s => s.TaxYear).ThenByDescending(s => s.TaxMonth)
             .Select(s => new
             {
-                s.EmployerId, s.TaxYear, s.TaxMonth, s.PayDate,
+                s.EmployerId, s.PensionId, s.TaxYear, s.TaxMonth, s.PayDate,
                 Lines = s.Lines.Select(l => new PayslipLineInput { PayElementId = l.PayElementId, Amount = l.Amount }).ToList()
             })
             .FirstOrDefaultAsync();
@@ -35,7 +35,7 @@ public class CreateModel(AppDbContext db) : PayslipFormModel(db)
             var (taxYear, taxMonth) = TaxYears.Next(latest.TaxYear, latest.TaxMonth);
             Payslip = new PayslipInput
             {
-                EmployerId = latest.EmployerId, TaxYear = taxYear, TaxMonth = taxMonth, PayDate = latest.PayDate.AddMonths(1),
+                EmployerId = latest.EmployerId, PensionId = latest.PensionId, TaxYear = taxYear, TaxMonth = taxMonth, PayDate = latest.PayDate.AddMonths(1),
                 Lines = latest.Lines
             };
         }

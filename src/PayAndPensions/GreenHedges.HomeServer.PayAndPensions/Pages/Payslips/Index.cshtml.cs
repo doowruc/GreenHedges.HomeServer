@@ -15,8 +15,8 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
     /// <param name="EndsGroup">The last column of its kind's group, so a separator follows it.</param>
     public record Column(int Id, string Name, PayElementKind Kind, PayCategory Category, bool EndsGroup);
 
-    public record Row(int Id, int TaxMonth, DateOnly PayDate, string Employer, DateOnly? PensionReceivedDate, string? Notes,
-        IReadOnlyDictionary<int, decimal> Amounts, PayslipFigures Figures);
+    public record Row(int Id, int TaxMonth, DateOnly PayDate, string Employer, DateOnly? PensionReceivedDate, string? Pension,
+        string? Notes, IReadOnlyDictionary<int, decimal> Amounts, PayslipFigures Figures);
 
     /// <summary>The tax year shown: the one asked for, else the person's latest, else this one.</summary>
     [BindProperty(SupportsGet = true)]
@@ -45,6 +45,12 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
     /// <summary>Whether any payslip that year has a pension received date, so it's worth a column.</summary>
     public bool ShowPensionReceived { get; private set; }
 
+    /// <summary>
+    /// Whether that year's payslips with pension amounts go to more than one pension (or some to none yet), so it's worth
+    /// a column.
+    /// </summary>
+    public bool ShowPension { get; private set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadPersonAsync()) return NotFound();
@@ -60,7 +66,8 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
             .OrderBy(s => s.TaxYear).ThenBy(s => s.TaxMonth)
             .Select(s => new
             {
-                s.Id, s.TaxYear, s.TaxMonth, s.PayDate, Employer = s.Employer!.Name, s.PensionReceivedDate, s.Notes,
+                s.Id, s.TaxYear, s.TaxMonth, s.PayDate, Employer = s.Employer!.Name, s.PensionReceivedDate,
+                Pension = s.Pension != null ? s.Pension.Name : null, s.Notes,
                 Lines = s.Lines.Select(l => new
                 {
                     l.PayElementId, l.PayElement!.Name, l.PayElement.Kind, l.PayElement.Category, l.PayElement.SortOrder, l.Amount,
@@ -76,19 +83,21 @@ public class IndexModel(AppDbContext db) : PersonPageModel(db)
             .ToList());
         if (before is not null) figures = figures.Skip(1).ToList();
 
-        Rows = shown.Select((s, i) => new Row(s.Id, s.TaxMonth, s.PayDate, s.Employer, s.PensionReceivedDate, s.Notes,
+        Rows = shown.Select((s, i) => new Row(s.Id, s.TaxMonth, s.PayDate, s.Employer, s.PensionReceivedDate, s.Pension, s.Notes,
             s.Lines.ToDictionary(l => l.PayElementId, l => l.Amount), figures[i])).ToList();
         ManyEmployers = shown.Select(s => s.Employer).Distinct().Count() > 1;
         ShowPensionReceived = shown.Any(s => s.PensionReceivedDate is not null);
-        // Earnings, deductions, then the employer's (with the pension received date after them, when shown), each group
-        // ending in a separator.
+        ShowPension = shown.Where(s => s.Lines.Any(l => PayElement.IsPension(l.Kind, l.Category)))
+            .Select(s => s.Pension).Distinct().Count() > 1;
+        // Earnings, deductions, then the employer's (with the pension and the pension received date after them, when
+        // shown), each group ending in a separator.
         var lines = shown.SelectMany(s => s.Lines)
             .DistinctBy(l => l.PayElementId)
             .OrderBy(l => l.Kind).ThenBy(l => l.SortOrder).ThenBy(l => l.Name)
             .ToList();
         Columns = lines.Select((l, i) => new Column(l.PayElementId, l.Name, l.Kind, l.Category,
                 EndsGroup: (i == lines.Count - 1 || lines[i + 1].Kind != l.Kind) &&
-                           !(l.Kind == PayElementKind.EmployerContribution && ShowPensionReceived)))
+                           !(l.Kind == PayElementKind.EmployerContribution && (ShowPension || ShowPensionReceived))))
             .ToList();
 
         // The totals compare with the year before, whose payslips are all here too.

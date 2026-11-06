@@ -49,10 +49,10 @@ earnings columns, so the columns can't be fixed in the schema.
 | `Person` | Name (unique per user). The root: `IUserOwned`, with a per-user query filter |
 | `Employer` | Belongs to a person: name. Payslips from a job change stay comparable |
 | `PayElement` | Belongs to a person: name, **kind** (Earning, Deduction, Employer contribution), **category** (Salary, Bonus, Allowance, Overtime, Back pay, Tax, NI, Pension, Other), sort order, hidden, **salary sacrifice** (pension deductions only). One per workbook column |
-| `Payslip` | Person, employer, tax year (stored as its start year), tax month, pay date, **pension received** date (the workbook's Transfer Date), notes. Unique per person, tax year and month |
+| `Payslip` | Person, employer, tax year (stored as its start year), tax month, pay date, **pension received** date (the workbook's Transfer Date), **pension** (where its pension lines go; optional, only with a pension line), notes. Unique per person, tax year and month |
 | `PayslipLine` | Payslip, pay element, amount (`decimal(19,2)`) |
 | `PensionProvider` | The pension company: name, website. Belongs to the user (`IUserOwned`), not a person, as both of us can have pensions with the same provider |
-| `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other). Payslips will point at the pension their pension lines go to |
+| `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other). Payslips point at the pension their pension lines go to |
 
 Every table inherits `AuditedEntity`. Child tables are filtered through their person; providers through the user.
 
@@ -63,9 +63,8 @@ change on the year before, and **higher-rate pension relief** (20% of the year's
 extra relief reclaimed through Self Assessment), leaving out pension paid by salary sacrifice, which comes off before
 tax and so already has full relief.
 
-**Room for later:** each payslip with pension lines points at the pension they go to (next), so payslip
-contributions feed its history without typing them twice, and the pension received date becomes the date a
-contribution reached it. Documents attach to a payslip (payslip PDF) or a person's tax year (P60, P11D).
+**Room for later:** each payslip with pension lines points at the pension they go to, so payslip contributions can
+feed its history without typing them twice, and the pension received date becomes the date a contribution reached it. Documents attach to a payslip (payslip PDF) or a person's tax year (P60, P11D).
 
 ## Pages
 
@@ -134,6 +133,7 @@ One branch and PR each:
    and the Pensions menu. Done.
 2. **Payslips to pensions:** an optional pension on each payslip with a pension line (the latest payslip's by default),
    a Pension column on the payslips table when a year has more than one, and setting it on a range of payslips at once.
+   Done.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds); pension values (designed from the pensions workbook when we get
 there); a JSON export.

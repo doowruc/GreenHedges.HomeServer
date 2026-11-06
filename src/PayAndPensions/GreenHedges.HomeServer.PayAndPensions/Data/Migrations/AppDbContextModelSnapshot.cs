@@ -167,6 +167,9 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.Property<DateOnly>("PayDate")
                         .HasColumnType("date");
 
+                    b.Property<int?>("PensionId")
+                        .HasColumnType("int");
+
                     b.Property<DateOnly?>("PensionReceivedDate")
                         .HasColumnType("date");
 
@@ -188,6 +191,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EmployerId");
+
+                    b.HasIndex("PensionId");
 
                     b.HasIndex("PersonId", "TaxYear", "TaxMonth")
                         .IsUnique();
@@ -438,6 +443,11 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.Pension", "Pension")
+                        .WithMany("Payslips")
+                        .HasForeignKey("PensionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.Person", "Person")
                         .WithMany("Payslips")
                         .HasForeignKey("PersonId")
@@ -445,6 +455,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Employer");
+
+                    b.Navigation("Pension");
 
                     b.Navigation("Person");
                 });
@@ -500,6 +512,11 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Payslip", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Pension", b =>
+                {
+                    b.Navigation("Payslips");
                 });
 
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionProvider", b =>

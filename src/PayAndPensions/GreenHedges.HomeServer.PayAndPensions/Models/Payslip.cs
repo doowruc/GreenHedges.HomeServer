@@ -25,6 +25,10 @@ public class Payslip : AuditedEntity
     /// <summary>When the month's pension contributions reached the pension, where they're paid in separately.</summary>
     public DateOnly? PensionReceivedDate { get; set; }
 
+    /// <summary>The pension its pension lines (employee and employer) go to; only on a payslip with a pension line.</summary>
+    public int? PensionId { get; set; }
+    public Pension? Pension { get; set; }
+
     [StringLength(500)]
     public string? Notes { get; set; }
 

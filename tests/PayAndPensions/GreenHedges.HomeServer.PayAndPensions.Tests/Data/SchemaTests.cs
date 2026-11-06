@@ -105,4 +105,16 @@ public class SchemaTests : DatabaseTest
 
         await Assert.ThrowsAnyAsync<Exception>(() => db.PensionProviders.Where(pp => pp.Id == provider.Id).ExecuteDeleteAsync());
     }
+
+    [DatabaseFact]
+    public async Task A_pension_with_payslips_cant_be_deleted()
+    {
+        await using var db = Db();
+        var person = await TestData.AddPersonAsync(db);
+        var pension = await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db));
+        var payslip = await TestData.AddPayslipAsync(db, person, 2026, 1, ("Pension", 1m));
+        await db.Payslips.Where(s => s.Id == payslip.Id).ExecuteUpdateAsync(s => s.SetProperty(p => p.PensionId, pension.Id));
+
+        await Assert.ThrowsAnyAsync<Exception>(() => db.Pensions.Where(pn => pn.Id == pension.Id).ExecuteDeleteAsync());
+    }
 }

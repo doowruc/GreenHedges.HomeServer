@@ -9,12 +9,13 @@ using GreenHedges.HomeServer.PayAndPensions.ViewModels;
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Payslips;
 
 /// <summary>
-/// What the add and edit pages share: the person's employers and pay elements for the form, the form's rules, and
-/// saving its lines. Pay element ids come back from the form, so they're always checked against the person's own.
+/// What the add and edit pages share: the person's employers, pay elements and pensions for the form, the form's rules,
+/// and saving its lines. Pay element and pension ids come back from the form, so they're always checked against the
+/// person's own.
 /// </summary>
 public abstract class PayslipFormModel(AppDbContext db) : PersonPageModel(db)
 {
-    public record ElementOption(int Id, string Name, PayElementKind Kind, bool Hidden);
+    public record ElementOption(int Id, string Name, PayElementKind Kind, PayCategory Category, bool Hidden);
 
     [BindProperty]
     public PayslipInput Payslip { get; set; } = new();
@@ -23,6 +24,9 @@ public abstract class PayslipFormModel(AppDbContext db) : PersonPageModel(db)
     public List<ElementOption> Elements { get; private set; } = [];
 
     public List<SelectListItem> EmployerOptions { get; private set; } = [];
+
+    /// <summary>The person's pensions, for the payslip's pension lines to go to.</summary>
+    public List<SelectListItem> PensionOptions { get; private set; } = [];
 
     public List<SelectListItem> TaxYearOptions { get; private set; } = [];
 
@@ -36,13 +40,16 @@ public abstract class PayslipFormModel(AppDbContext db) : PersonPageModel(db)
     protected async Task LoadChoicesAsync()
     {
         var elements = await Db.PayElements.Where(el => el.PersonId == PersonId)
-            .Select(el => new { el.Id, el.Name, el.Kind, el.SortOrder, el.Hidden }).ToListAsync();
+            .Select(el => new { el.Id, el.Name, el.Kind, el.Category, el.SortOrder, el.Hidden }).ToListAsync();
         // Kind is stored as text, so it's ordered here by its place in the enum.
         Elements = elements.OrderBy(el => el.Kind).ThenBy(el => el.SortOrder).ThenBy(el => el.Name)
-            .Select(el => new ElementOption(el.Id, el.Name, el.Kind, el.Hidden)).ToList();
+            .Select(el => new ElementOption(el.Id, el.Name, el.Kind, el.Category, el.Hidden)).ToList();
 
         EmployerOptions = await Db.Employers.Where(m => m.PersonId == PersonId).OrderBy(m => m.Name)
             .Select(m => new SelectListItem(m.Name, m.Id.ToString())).ToListAsync();
+
+        PensionOptions = await Db.Pensions.Where(pn => pn.PersonId == PersonId).OrderBy(pn => pn.Name)
+            .Select(pn => new SelectListItem(pn.Name + " (" + pn.PensionProvider!.Name + ")", pn.Id.ToString())).ToListAsync();
 
         // From the year before the person's first payslip (or this one's) to the year after this tax year.
         var payslips = Db.Payslips.Where(s => s.PersonId == PersonId);
@@ -89,6 +96,12 @@ public abstract class PayslipFormModel(AppDbContext db) : PersonPageModel(db)
             ModelState.AddModelError(string.Empty, "The form's pay elements don't match this person's. Reload the page and try again.");
         else if (Payslip.Lines.All(l => l.Amount is null))
             ModelState.AddModelError(string.Empty, "Enter at least one amount.");
+        else if (Payslip.PensionId is not null &&
+                 !Payslip.Lines.Any(l => l.Amount is not null && ElementFor(l) is var e && PayElement.IsPension(e.Kind, e.Category)))
+            ModelState.AddModelError("Payslip.PensionId", "Only a payslip with a pension amount can have a pension.");
+
+        if (Payslip.PensionId is { } pensionId && !PensionOptions.Any(o => o.Value == pensionId.ToString()))
+            ModelState.AddModelError("Payslip.PensionId", "Choose one of this person's pensions.");
     }
 
     /// <summary>

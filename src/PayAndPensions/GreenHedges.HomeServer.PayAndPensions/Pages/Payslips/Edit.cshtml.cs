@@ -16,7 +16,7 @@ public class EditModel(AppDbContext db) : PayslipFormModel(db)
             .Select(s => new PayslipInput
             {
                 EmployerId = s.EmployerId, TaxYear = s.TaxYear, TaxMonth = s.TaxMonth, PayDate = s.PayDate,
-                PensionReceivedDate = s.PensionReceivedDate, Notes = s.Notes, RowVersion = s.RowVersion,
+                PensionReceivedDate = s.PensionReceivedDate, PensionId = s.PensionId, Notes = s.Notes, RowVersion = s.RowVersion,
                 Lines = s.Lines.Select(l => new PayslipLineInput { PayElementId = l.PayElementId, Amount = l.Amount }).ToList()
             })
             .FirstOrDefaultAsync();
