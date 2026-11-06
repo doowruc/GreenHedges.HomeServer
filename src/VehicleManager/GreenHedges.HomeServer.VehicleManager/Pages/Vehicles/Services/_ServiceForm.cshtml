@@ -9,10 +9,15 @@
     </div>
     <div class="col-6 col-md-3">
         <label asp-for="Mileage" class="form-label"></label>
-        <input asp-for="Mileage" class="form-control" inputmode="numeric" />
+        <div class="input-group">
+            <input asp-for="Mileage" class="form-control" inputmode="numeric" />
+            <button type="button" class="btn btn-outline-secondary" id="estimate-mileage" disabled
+                    title="Estimate the mileage on the date from the fill-ups, MOTs and other services either side of it">Estimate</button>
+        </div>
         <span asp-validation-for="Mileage" class="text-danger small"></span>
     </div>
-    <div class="col-md-6"></div>
+    @* Says what the Estimate button went by: beside the mileage, or below it on a phone. *@
+    <div class="col-md-6 align-self-end" id="mileage-estimate-basis" aria-live="polite"><div class="form-text mt-0"></div></div>
     <div class="col-md-6">
         <label asp-for="Garage" class="form-label"></label>
         <input asp-for="Garage" class="form-control" autocomplete="off" />
@@ -58,6 +63,36 @@
             }
         });
         previousOwner.addEventListener('change', () => autoTicked = false);
+        // Estimate: the mileage on the date, from the readings either side of it (the page's Estimate handler).
+        const estimate = document.getElementById('estimate-mileage'), mileage = document.getElementById('Service_Mileage'),
+              basis = document.getElementById('mileage-estimate-basis');
+        const showBasis = text => basis.firstElementChild.textContent = text;
+        const enableEstimate = () => estimate.disabled = !date.value;
+        date.addEventListener('input', enableEstimate);
+        date.addEventListener('change', enableEstimate);
+        enableEstimate();
+        estimate.addEventListener('click', async () => {
+            estimate.disabled = true;
+            try {
+                const url = new URL(location.pathname, location.origin);
+                url.search = new URLSearchParams({ handler: 'Estimate', date: date.value });
+                const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                if (!response.ok) throw new Error(response.statusText);
+                const result = await response.json();
+                if (result.mileage != null) {
+                    mileage.value = result.mileage;
+                    mileage.dispatchEvent(new Event('change', { bubbles: true }));
+                    showBasis(`Estimated: ${result.basis} Check it before saving.`);
+                } else {
+                    showBasis(result.basis);
+                }
+            } catch {
+                showBasis("Couldn't estimate the mileage just now.");
+            } finally {
+                enableEstimate();
+            }
+        });
+        mileage.addEventListener('input', () => showBasis(''));
         typeahead(fields, '#Service_GarageLocation', () => locationsByGarage[norm(document.getElementById('Service_Garage').value)] ?? []);
     })();
 </script>

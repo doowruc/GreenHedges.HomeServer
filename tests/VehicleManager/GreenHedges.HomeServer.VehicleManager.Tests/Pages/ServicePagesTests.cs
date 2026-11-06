@@ -511,4 +511,57 @@ public class ServicePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
             .Select(r => $"{r.GetProperty("date").GetString()} {r.GetProperty("miles").GetInt32()} {r.GetProperty("note").GetString()} {r.GetProperty("failed").GetBoolean()}" +
                          (r.GetProperty("previousOwner").GetBoolean() ? " previous owner" : ""))];
     }
+
+    private static async Task<(int? Mileage, string Basis)> EstimateAsync(PageClient client, string page, string date)
+    {
+        var response = await client.GetResponseAsync($"{page}?handler=Estimate&date={date}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        var mileage = json.GetProperty("mileage");
+        return (mileage.ValueKind == System.Text.Json.JsonValueKind.Null ? null : mileage.GetInt32(), json.GetProperty("basis").GetString()!);
+    }
+
+    [DatabaseFact]
+    public async Task Estimate_works_out_the_mileage_on_the_date_from_the_MOTs_fill_ups_and_other_services()
+    {
+        var id = await AddVehicleAsync();
+        await using (var db = Db())
+        {
+            var vehicle = await db.Vehicles.SingleAsync(v => v.Id == id);
+            vehicle.RegistrationDate = new DateOnly(2020, 3, 1);
+            vehicle.MotTests.Add(new Models.MotTest { CompletedDate = new DateTime(2023, 3, 1, 10, 0, 0), Passed = true, Odometer = 30000 });
+            await db.SaveChangesAsync();
+            (await TestData.AddFillUpAsync(db, id, new DateOnly(2023, 3, 31), ("Shell", "Meadowbank"))).Odometer = 31500;
+            await db.SaveChangesAsync();
+        }
+        var client = app.ClientFor(UserId);
+        var create = $"/Vehicles/{id}/Services/Create";
+
+        Assert.Contains("id=\"estimate-mileage\"", (await client.GetAsync(create)).Html);
+        Assert.Equal((30500, "Between 30,000 miles at the MOT on 01/03/2023 and 31,500 miles at a fill-up on 31/03/2023."),
+            await EstimateAsync(client, create, "2023-03-11"));
+        // Before the first MOT: from 0 at first registration.
+        Assert.Equal((15014, "Between 0 miles at first registration on 01/03/2020 and 30,000 miles at the MOT on 01/03/2023."),   // 548 of 1,095 days
+            await EstimateAsync(client, create, "2021-08-31"));
+
+        // Another service counts, except on its own edit page.
+        await AddServiceAsync(client, id, "2023-03-11", 30600);
+        Assert.Equal(30600, (await EstimateAsync(client, create, "2023-03-11")).Mileage);
+        await using (var db = Db())
+        {
+            var serviceId = await db.ServiceRecords.Where(s => s.VehicleId == id).Select(s => s.Id).SingleAsync();
+            Assert.Equal(30500, (await EstimateAsync(client, $"/Vehicles/{id}/Services/Edit/{serviceId}", "2023-03-11")).Mileage);
+        }
+    }
+
+    [DatabaseFact]
+    public async Task Estimate_says_when_there_is_not_enough_to_go_on_and_only_answers_for_your_own_vehicles()
+    {
+        var id = await AddVehicleAsync();
+        var (mileage, basis) = await EstimateAsync(app.ClientFor(UserId), $"/Vehicles/{id}/Services/Create", "2023-03-11");
+        Assert.Null(mileage);
+        Assert.StartsWith("There aren't enough odometer readings", basis);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await app.ClientFor(NewUser()).GetResponseAsync($"/Vehicles/{id}/Services/Create?handler=Estimate&date=2023-03-11")).StatusCode);
+    }
 }
