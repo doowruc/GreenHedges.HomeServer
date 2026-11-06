@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.VehicleManager.Data;
+using GreenHedges.HomeServer.VehicleManager.Services;
 
 namespace GreenHedges.HomeServer.VehicleManager.Pages.Vehicles.Services;
 
@@ -50,6 +51,22 @@ public abstract class ServicePageModel(AppDbContext db) : PageModel
             .Where(u => u.GarageLocation is not null)
             .GroupBy(u => u.Garage.ToLowerInvariant())
             .ToDictionary(g => g.Key, g => g.Select(u => u.GarageLocation!).Distinct(StringComparer.OrdinalIgnoreCase).Order()));
+    }
+
+    /// <summary>
+    /// The form's Estimate button (<c>?handler=Estimate&amp;date=</c>, on Create or Edit): the vehicle's mileage on
+    /// <paramref name="date"/> from its other odometer readings, as <c>{ mileage, basis }</c> (mileage null when there
+    /// aren't enough). On Edit, <paramref name="id"/> (from the route) leaves out the service being edited.
+    /// </summary>
+    public async Task<IActionResult> OnGetEstimateAsync(DateOnly date, int? id)
+    {
+        if (!await LoadVehicleAsync()) return NotFound();
+        var estimate = MileageEstimate.For(await MileageEstimate.ReadingsAsync(db, VehicleId, id), date);
+        return new JsonResult(new
+        {
+            mileage = estimate?.Mileage,
+            basis = estimate?.Basis ?? "There aren't enough odometer readings (fill-ups, MOTs or other services) to estimate from."
+        });
     }
 
     /// <summary>Back to the vehicle's page, on its Services tab.</summary>

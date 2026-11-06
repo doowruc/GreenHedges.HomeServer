@@ -758,6 +758,9 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<int>("Mileage")
                         .HasColumnType("int");
 
+                    b.Property<bool>("MileageEstimated")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasMaxLength(128)

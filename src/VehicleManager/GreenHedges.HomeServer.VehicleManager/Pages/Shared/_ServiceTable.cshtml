@@ -5,7 +5,7 @@
     // A page with several of these tables (the period toggle's) passes all their services in "SizeColumnsFrom" so they match.
     var services = Model.ToList();
     var sizeFrom = (ViewData["SizeColumnsFrom"] as IEnumerable<ServiceRecordView> ?? services).ToList();
-    var widest = sizeFrom.Count == 0 ? [] : sizeFrom.DistinctBy(s => (s.GarageAndLocation, s.UnderPreviousOwner, s.LateText, s.MilesOverText))
+    var widest = sizeFrom.Count == 0 ? [] : sizeFrom.DistinctBy(s => (s.GarageAndLocation, s.UnderPreviousOwner, s.MileageEstimated, s.LateText, s.MilesOverText))
         .Append(sizeFrom.MaxBy(s => s.Mileage.ToString("N0").Length)!)
         .Distinct().ToList();
 
@@ -19,6 +19,7 @@
             <td>
                 @if (s.LateText is { } late) { <span class="badge text-bg-danger" title="Due @s.DueDate?.ToString("dd/MM/yyyy"), the service interval after the one before">@late</span> }
                 @if (s.MilesOverText is { } over) { <span class="badge text-bg-danger" title="Due at @s.DueMileage?.ToString("N0") miles, the service interval after the one before">@over</span> }
+                @if (s.MileageEstimated) { <span class="badge text-bg-secondary" title="Not recorded at the service: estimated from the readings either side">Estimated mileage</span> }
                 @if (s.UnderPreviousOwner) { <span class="badge text-bg-secondary">Previous owner</span> }
             </td>
             <td class="text-end">

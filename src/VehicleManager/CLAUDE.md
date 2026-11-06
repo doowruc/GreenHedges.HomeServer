@@ -83,7 +83,8 @@ GreenHedges.HomeServer.VehicleManager/
                BackupFile (backup JSON format: read/validate/write) + BackupService (create, restore, record),
                BackupEmailer (emails a backup via Resend), ScheduledBackups (Coravel invocable, nightly),
                Reminders (when to remind; pure) + ReminderEmailer + ScheduledReminders (Coravel, each morning),
-               MileageTrend (recent miles per day from fill-up and MOT odometer readings, for service-by-mileage estimates), ServiceSchedule (next service from intervals),
+               MileageTrend (recent miles per day from fill-up and MOT odometer readings, for service-by-mileage estimates),
+               MileageEstimate (+ MileageReading: a vehicle's mileage on a date, for the service form's Estimate button), ServiceSchedule (next service from intervals),
                VehicleLookup (MOT/tax dates) over DvlaClient (DVLA Vehicle Enquiry) and MotHistoryClient (DVSA MOT History),
                MotTests (keeps stored MOT tests in step with the DVSA), InsuranceCosts (vehicles' shares of policies, cost chart), Telemetry (OpenTelemetry setup, ActivitySource)
   Pages/       Index (dashboard, with a "Coming up" due-dates list), Owners/* (+ Claims/* per owner), Vehicles/* (+ Services/* per vehicle), Insurance/* (+ Vehicles/* per policy), FuelLog/* (log + fill-up pages), Import/*, Backup/* (Index, Restore), Settings/* (user menu), FuelBrands/* (+ Stations/* per brand),
@@ -187,6 +188,12 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   vehicle's `PurchasedDate`, and always set for one when a service is added); filter and cascade through its vehicle; in the backup) is
   managed at `/Vehicles/{vehicleId}/Services/...` (`Pages/Vehicles/Services`, base `ServicePageModel`, which 404s a
   service not under the vehicle in the URL). Links and redirects between them must pass `vehicleId`, as for stations.
+- `_ServiceForm`'s Estimate button fetches `ServicePageModel.OnGetEstimateAsync` (`?handler=Estimate&date=` on Create
+  or Edit, JSON `{ mileage, basis }`): `MileageEstimate.For` (unit tested) over `MileageEstimate.ReadingsAsync` (fill-ups,
+  MOT tests in miles, the vehicle's other services, and 0 at `RegistrationDate`; Edit leaves out the service being
+  edited, and services whose mileage was itself estimated). Between readings it interpolates by days; outside them it
+  uses `MileageTrend` (after) or the earliest readings' rate (before, not below 0). It also ticks the form's
+  `MileageEstimated` (on `ServiceRecord`, in the backup), which `_ServiceTable` shows as an "Estimated mileage" badge.
 - `Vehicle.ServiceIntervalMonths`/`ServiceIntervalMiles`: adding the vehicle's latest service (or changing the latest's
   date or mileage) sets `ServiceDueDate`/`ServiceDueMileage` via `ServiceSchedule.UpdateNextDueAsync`; an unset interval
   leaves that value alone. Older services and deletes don't change them; other edits don't either, so hand-set values stay.

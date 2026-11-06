@@ -45,7 +45,7 @@ public class BackupServiceTests : DatabaseTest
         vehicle.ServiceIntervalMonths = 12;
         vehicle.ServiceIntervalMiles = 10000;
         vehicle.ServiceRecords.Add(new ServiceRecord { Date = new DateOnly(2025, 6, 30), Mileage = 35000, Garage = "Main Dealer", GarageLocation = "Leeds" });
-        vehicle.ServiceRecords.Add(new ServiceRecord { Date = new DateOnly(2024, 6, 1), Mileage = 25000, Garage = "Local Garage", UnderPreviousOwner = true });
+        vehicle.ServiceRecords.Add(new ServiceRecord { Date = new DateOnly(2024, 6, 1), Mileage = 25000, Garage = "Local Garage", UnderPreviousOwner = true, MileageEstimated = true });
         vehicle.Valuations.Add(new VehicleValuation
         {
             Date = new DateOnly(2026, 9, 1), Mileage = 41000, Value = 8250m, Type = ValuationType.Trade, Grade = ValuationGrade.Average, Source = ValuationSource.Parkers
@@ -76,7 +76,7 @@ public class BackupServiceTests : DatabaseTest
         .. await db.FuelStations.Select(s => $"station {s.FuelBrand!.Name}@{s.Name} user={s.UserId}").ToListAsync(),
         .. await db.FuelEntries.Select(f => $"fill-up {f.Vehicle!.RegistrationNumber} {f.Date} {f.Litres} {f.CostPerLitre} {f.Notes} {f.AddedBy}").ToListAsync(),
         .. await db.FuelEntryStops.Select(s => $"stop {s.FuelEntry!.Date} {s.Sequence} {s.FuelStation!.FuelBrand!.Name}@{s.FuelStation.Name}").ToListAsync(),
-        .. await db.ServiceRecords.Select(s => $"service {s.Vehicle!.RegistrationNumber} {s.Date} {s.Mileage} {s.Garage} {s.GarageLocation} previous={s.UnderPreviousOwner} {s.AddedBy} {s.AddedDate:O}").ToListAsync(),
+        .. await db.ServiceRecords.Select(s => $"service {s.Vehicle!.RegistrationNumber} {s.Date} {s.Mileage} {s.Garage} {s.GarageLocation} previous={s.UnderPreviousOwner} estimated={s.MileageEstimated} {s.AddedBy} {s.AddedDate:O}").ToListAsync(),
         .. await db.VehicleValuations.Select(v => $"value {v.Vehicle!.RegistrationNumber} {v.Date} {v.Mileage} {v.Value} {v.Type} {v.Grade} {v.Source} {v.AddedBy} {v.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicyVehicles.Select(v => $"insured {v.Vehicle!.RegistrationNumber} on {v.Policy!.PolicyNumber} {v.From:O} {v.To:O} {v.Adjustment} {v.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicies.Select(p => $"policy {p.Owner!.Name} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +

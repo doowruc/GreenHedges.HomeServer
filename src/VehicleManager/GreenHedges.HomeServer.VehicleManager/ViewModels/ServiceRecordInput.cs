@@ -24,6 +24,9 @@ public class ServiceRecordInput
     [Display(Name = "Under a previous owner")]
     public bool UnderPreviousOwner { get; set; }
 
+    [Display(Name = "Mileage estimated")]
+    public bool MileageEstimated { get; set; }
+
     /// <summary>The row's version when the form was loaded, to detect conflicting edits. Never copied to the entity.</summary>
     public byte[] RowVersion { get; set; } = [];
 
@@ -34,6 +37,7 @@ public class ServiceRecordInput
         Garage = s.Garage,
         GarageLocation = s.GarageLocation,
         UnderPreviousOwner = s.UnderPreviousOwner,
+        MileageEstimated = s.MileageEstimated,
         RowVersion = s.RowVersion
     };
 
@@ -45,5 +49,6 @@ public class ServiceRecordInput
         service.Garage = FuelStops.NormaliseName(Garage);
         service.GarageLocation = string.IsNullOrWhiteSpace(GarageLocation) ? null : FuelStops.NormaliseName(GarageLocation);
         service.UnderPreviousOwner = UnderPreviousOwner;
+        service.MileageEstimated = MileageEstimated;
     }
 }

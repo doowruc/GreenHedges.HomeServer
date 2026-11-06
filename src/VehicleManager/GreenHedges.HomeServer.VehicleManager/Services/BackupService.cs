@@ -55,7 +55,7 @@ public class BackupService(AppDbContext db)
         }).ToListAsync(),
         ServiceRecords = await db.ServiceRecords.OrderBy(s => s.Id).Select(s => new ServiceRecordBackup
         {
-            Id = s.Id, VehicleId = s.VehicleId, Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner,
+            Id = s.Id, VehicleId = s.VehicleId, Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner, MileageEstimated = s.MileageEstimated,
             AddedDate = s.AddedDate, AddedBy = s.AddedBy, ModifiedDate = s.ModifiedDate, ModifiedBy = s.ModifiedBy
         }).ToListAsync(),
         VehicleValuations = await db.VehicleValuations.OrderBy(v => v.Id).Select(v => new VehicleValuationBackup
@@ -162,7 +162,8 @@ public class BackupService(AppDbContext db)
         foreach (var s in backup.ServiceRecords)
             vehicles[s.VehicleId].ServiceRecords.Add(Audited(s, new ServiceRecord
             {
-                Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner
+                Date = s.Date, Mileage = s.Mileage, Garage = s.Garage, GarageLocation = s.GarageLocation, UnderPreviousOwner = s.UnderPreviousOwner,
+                MileageEstimated = s.MileageEstimated
             }));
         foreach (var v in backup.VehicleValuations)
             vehicles[v.VehicleId].Valuations.Add(Audited(v, new VehicleValuation

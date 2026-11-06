@@ -9,4 +9,5 @@ public sealed record ServiceRecordBackup : BackupRow
     public required string Garage { get; set; }
     public string? GarageLocation { get; set; }
     public bool UnderPreviousOwner { get; init; }
+    public bool MileageEstimated { get; init; }
 }

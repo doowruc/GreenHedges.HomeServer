@@ -13,6 +13,7 @@ public class ServiceRecordView
     public string Garage { get; init; } = string.Empty;
     public string? GarageLocation { get; init; }
     public bool UnderPreviousOwner { get; init; }
+    public bool MileageEstimated { get; init; }
 
     /// <summary>The garage and its location, e.g. "Main Dealer, Leeds".</summary>
     public string GarageAndLocation => GarageLocation is { } location ? $"{Garage}, {location}" : Garage;
@@ -38,6 +39,7 @@ public class ServiceRecordView
         Mileage = s.Mileage,
         Garage = s.Garage,
         GarageLocation = s.GarageLocation,
-        UnderPreviousOwner = s.UnderPreviousOwner
+        UnderPreviousOwner = s.UnderPreviousOwner,
+        MileageEstimated = s.MileageEstimated
     };
 }

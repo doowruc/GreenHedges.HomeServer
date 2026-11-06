@@ -5,7 +5,7 @@
 <h1 class="h3 mb-3">Delete service</h1>
 <div class="card shadow-sm border-danger"><div class="card-body">
     <p>Delete the service for <strong>@Model.VehicleName</strong> on <strong>@Model.Service.Date.ToString("dd/MM/yyyy")</strong>
-       at @Model.Service.Mileage.ToString("N0") miles, by @(Model.Service.Garage)@(Model.Service.GarageLocation is { } at ? $" ({at})" : "")@(Model.Service.UnderPreviousOwner ? ", under a previous owner" : "")?</p>
+       at @Model.Service.Mileage.ToString("N0") miles@(Model.Service.MileageEstimated ? " (estimated)" : ""), by @(Model.Service.Garage)@(Model.Service.GarageLocation is { } at ? $" ({at})" : "")@(Model.Service.UnderPreviousOwner ? ", under a previous owner" : "")?</p>
     <p class="text-muted small">The next service's due date and mileage won't change.</p>
     <form method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
