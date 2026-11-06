@@ -48,4 +48,23 @@ public static class TestData
         await db.SaveChangesAsync();
         return payslip;
     }
+
+    /// <summary>A pension provider for the context's user.</summary>
+    public static async Task<PensionProvider> AddProviderAsync(AppDbContext db, string name = "Example Pensions", string? website = null)
+    {
+        var provider = new PensionProvider { Name = name, Website = website };
+        db.PensionProviders.Add(provider);
+        await db.SaveChangesAsync();
+        return provider;
+    }
+
+    /// <summary>A pension for <paramref name="person"/> with <paramref name="provider"/>.</summary>
+    public static async Task<Pension> AddPensionAsync(AppDbContext db, Person person, PensionProvider provider,
+        string name = "Workplace pension", PensionType type = PensionType.Workplace)
+    {
+        var pension = new Pension { PersonId = person.Id, PensionProviderId = provider.Id, Name = name, Type = type };
+        db.Pensions.Add(pension);
+        await db.SaveChangesAsync();
+        return pension;
+    }
 }

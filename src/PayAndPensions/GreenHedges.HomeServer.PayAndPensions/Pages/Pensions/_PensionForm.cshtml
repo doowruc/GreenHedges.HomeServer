@@ -1,0 +1,27 @@
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Pensions.PensionFormModel
+<input type="hidden" asp-for="Pension.RowVersion" />
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="Pension.Name" class="form-label"></label>
+        <input asp-for="Pension.Name" class="form-control" autofocus />
+        <span asp-validation-for="Pension.Name" class="text-danger small"></span>
+        <div class="form-text">E.g. "Workplace pension".</div>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Pension.PensionProviderId" class="form-label"></label>
+        <select asp-for="Pension.PensionProviderId" asp-items="Model.Providers" class="form-select">
+            <option value="0">Choose…</option>
+        </select>
+        <span asp-validation-for="Pension.PensionProviderId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Pension.PolicyNumber" class="form-label"></label>
+        <input asp-for="Pension.PolicyNumber" class="form-control" />
+        <span asp-validation-for="Pension.PolicyNumber" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="Pension.Type" class="form-label"></label>
+        <select asp-for="Pension.Type" asp-items="Html.GetEnumSelectList<PensionType>()" class="form-select"></select>
+        <span asp-validation-for="Pension.Type" class="text-danger small"></span>
+    </div>
+</div>

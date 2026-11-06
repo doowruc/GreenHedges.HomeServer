@@ -6,7 +6,7 @@ using GreenHedges.HomeServer.PayAndPensions.Data;
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.People;
 
 /// <summary>
-/// Deletes a person with their employers and pay elements. Not while they have payslips: a pay history is never deleted
+/// Deletes a person with their employers, pay elements and pensions. Not while they have payslips: a pay history is never deleted
 /// along with something else.
 /// </summary>
 public class DeleteModel(AppDbContext db) : PageModel

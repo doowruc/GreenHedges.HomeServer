@@ -1,0 +1,20 @@
+@page "{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.PensionProviders.DeleteModel
+@{ ViewData["Title"] = "Delete pension provider"; }
+
+<h1 class="h3 mb-3">Delete pension provider</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    @if (Model.Pensions > 0)
+    {
+        <p><strong>@Model.ProviderName</strong> can't be deleted while pensions are with it (@Model.Pensions).</p>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
+        <p>Are you sure you want to delete <strong>@Model.ProviderName</strong>?</p>
+        <form method="post">
+            <button type="submit" class="btn btn-danger">Delete</button>
+            <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    }
+</div></div>
