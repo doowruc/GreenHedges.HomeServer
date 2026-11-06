@@ -1,0 +1,69 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model ClaimInput
+@{
+    var vehicles = ViewData["Vehicles"] as List<SelectListItem> ?? [];
+    var policies = ViewData["Policies"] as List<SelectListItem> ?? [];
+    var types = Enum.GetValues<ClaimType>().Select(t => new SelectListItem(t.ToString(), t.ToString()));
+    var faults = Enum.GetValues<ClaimFault>().Select(f => new SelectListItem(ClaimView.FaultNames(f), f.ToString()));
+}
+<input type="hidden" asp-for="RowVersion" />
+<div class="row g-3" id="claim-fields" data-policy-cover="@ViewData["PolicyCover"]">
+    <div class="col-md-6">
+        <label asp-for="VehicleId" class="form-label"></label>
+        <select asp-for="VehicleId" asp-items="vehicles" class="form-select">
+            <option value="">Choose…</option>
+        </select>
+        <span asp-validation-for="VehicleId" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="Date" class="form-label"></label>
+        <input asp-for="Date" class="form-control" />
+        <span asp-validation-for="Date" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="Type" class="form-label"></label>
+        <select asp-for="Type" asp-items="types" class="form-select"></select>
+        <span asp-validation-for="Type" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="InsurancePolicyId" class="form-label"></label>
+        <select asp-for="InsurancePolicyId" asp-items="policies" class="form-select">
+            <option value="">None recorded</option>
+        </select>
+        <span asp-validation-for="InsurancePolicyId" class="text-danger small"></span>
+        <div class="form-text">Picked for you from the vehicle and date, when a policy covered it then.</div>
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="Fault" class="form-label"></label>
+        <select asp-for="Fault" asp-items="faults" class="form-select">
+            <option value="">Choose…</option>
+        </select>
+        <span asp-validation-for="Fault" class="text-danger small"></span>
+    </div>
+    <div class="col-6 col-md-3">
+        <label asp-for="TotalValue" class="form-label"></label>
+        <input asp-for="TotalValue" class="form-control" inputmode="decimal" placeholder="e.g. 2400.00" />
+        <span asp-validation-for="TotalValue" class="text-danger small"></span>
+    </div>
+</div>
+
+<script>
+    (() => {
+        // Suggests the policy that covered the chosen vehicle on the date (or else any of the owner's in force then),
+        // until a policy is picked by hand.
+        const cover = JSON.parse(document.getElementById('claim-fields').dataset.policyCover || '[]');
+        const vehicle = document.getElementById('Claim_VehicleId'), date = document.getElementById('Claim_Date');
+        const policy = document.getElementById('Claim_InsurancePolicyId');
+        let picked = policy.value !== '';
+        policy.addEventListener('change', () => { picked = true; });
+        const suggest = () => {
+            if (picked || !date.value) return;
+            const on = p => p.periods.some(v => String(v.vehicle) === vehicle.value && v.from <= date.value && date.value <= v.to);
+            const inForce = p => p.start <= date.value && date.value <= p.end;
+            const match = cover.find(on) ?? cover.find(inForce);
+            policy.value = match ? String(match.id) : '';
+        };
+        vehicle.addEventListener('change', suggest);
+        date.addEventListener('change', suggest);
+    })();
+</script>

@@ -71,6 +71,12 @@ public class BackupService(AppDbContext db)
                 InsurancePolicyId = v.InsurancePolicyId, VehicleId = v.VehicleId, From = v.From, To = v.To, Adjustment = v.Adjustment,
                 AddedDate = v.AddedDate, AddedBy = v.AddedBy, ModifiedDate = v.ModifiedDate, ModifiedBy = v.ModifiedBy
             }).ToListAsync(),
+        Claims = await db.Claims.OrderBy(c => c.Id).Select(c => new ClaimBackup
+        {
+            Id = c.Id, OwnerId = c.OwnerId, VehicleId = c.VehicleId, InsurancePolicyId = c.InsurancePolicyId, Date = c.Date,
+            Type = c.Type, Fault = c.Fault, TotalValue = c.TotalValue,
+            AddedDate = c.AddedDate, AddedBy = c.AddedBy, ModifiedDate = c.ModifiedDate, ModifiedBy = c.ModifiedBy
+        }).ToListAsync(),
         MotTests = await db.MotTests.OrderBy(t => t.Id).Select(t => new MotTestBackup
         {
             Id = t.Id, VehicleId = t.VehicleId, CompletedDate = t.CompletedDate, Passed = t.Passed, ExpiryDate = t.ExpiryDate,
@@ -103,8 +109,9 @@ public class BackupService(AppDbContext db)
             await db.FuelEntryStops.ExecuteDeleteAsync();
             await db.FuelEntries.ExecuteDeleteAsync();
             await db.ServiceRecords.ExecuteDeleteAsync();
+            await db.Claims.ExecuteDeleteAsync();   // they stop their owners being deleted
             await db.Vehicles.ExecuteDeleteAsync();
-            await db.InsurancePolicies.ExecuteDeleteAsync();   // they stop their owners being deleted
+            await db.InsurancePolicies.ExecuteDeleteAsync();   // so do these
             await db.Owners.ExecuteDeleteAsync();
             await db.FuelStations.ExecuteDeleteAsync();
             await db.FuelBrands.ExecuteDeleteAsync();
@@ -156,6 +163,12 @@ public class BackupService(AppDbContext db)
             policies[v.InsurancePolicyId].Vehicles.Add(Audited(v, new InsurancePolicyVehicle
             {
                 Vehicle = vehicles[v.VehicleId], From = v.From, To = v.To, Adjustment = v.Adjustment
+            }));
+        foreach (var c in backup.Claims)
+            owners[c.OwnerId].Claims.Add(Audited(c, new Claim
+            {
+                Vehicle = vehicles[c.VehicleId], InsurancePolicy = c.InsurancePolicyId is { } policyId ? policies[policyId] : null,
+                Date = c.Date, Type = c.Type, Fault = c.Fault, TotalValue = c.TotalValue
             }));
         var motTests = backup.MotTests.ToDictionary(t => t.Id, t => Audited(t, new MotTest
         {

@@ -10,6 +10,10 @@
     {
         <p>It covers @Model.Policy.VehiclesText. Their insurance renewal dates will come from their latest remaining policies, if they have any.</p>
     }
+    @if (Model.ClaimCount > 0)
+    {
+        <p>Its @Model.ClaimCount claim(s) are kept, without a policy.</p>
+    }
     <form method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
         <a asp-page="Details" asp-route-id="@Model.Policy.Id" class="btn btn-outline-secondary">Cancel</a>

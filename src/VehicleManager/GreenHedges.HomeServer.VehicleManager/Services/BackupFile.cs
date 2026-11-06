@@ -41,6 +41,7 @@ public sealed record BackupFile
     public List<ServiceRecordBackup> ServiceRecords { get; init; } = [];
     public List<InsurancePolicyBackup> InsurancePolicies { get; init; } = [];
     public List<InsurancePolicyVehicleBackup> InsurancePolicyVehicles { get; init; } = [];
+    public List<ClaimBackup> Claims { get; init; } = [];
     public List<MotTestBackup> MotTests { get; init; } = [];
     public List<MotDefectBackup> MotDefects { get; init; } = [];
 
@@ -252,6 +253,21 @@ public sealed record BackupFile
                 errors.Add($"Insurance policy {v.InsurancePolicyId}'s cover for vehicle {v.VehicleId} isn't within the policy's dates.");
         }
 
+        UniqueIds(Claims, c => c.Id, "claim", errors);
+        foreach (var c in Claims)
+        {
+            if (!ownerIds.Contains(c.OwnerId)) errors.Add($"Claim {c.Id}'s owner ({c.OwnerId}) isn't in the backup.");
+            if (!vehicleIds.Contains(c.VehicleId)) errors.Add($"Claim {c.Id}'s vehicle ({c.VehicleId}) isn't in the backup.");
+            if (c.InsurancePolicyId is { } policyId)
+            {
+                if (!policies.TryGetValue(policyId, out var policy)) errors.Add($"Claim {c.Id}'s insurance policy ({policyId}) isn't in the backup.");
+                else if (policy.OwnerId != c.OwnerId) errors.Add($"Claim {c.Id}'s insurance policy ({policyId}) isn't its owner's.");
+            }
+            if (!Enum.IsDefined(c.Type)) errors.Add($"Claim {c.Id}'s type ({c.Type}) isn't a kind of claim.");
+            if (!Enum.IsDefined(c.Fault)) errors.Add($"Claim {c.Id}'s fault ({c.Fault}) isn't who was at fault.");
+            if (c.TotalValue is < 0 or >= 10_000_000) errors.Add($"Claim {c.Id}'s total value ({c.TotalValue}) isn't a value.");
+        }
+
         var motTestIds = UniqueIds(MotTests, t => t.Id, "MOT test", errors);
         foreach (var t in MotTests)
         {
@@ -270,7 +286,7 @@ public sealed record BackupFile
         }
         Unique(MotDefects, d => $"{d.MotTestId}|{d.Sequence}", d => $"MOT test {d.MotTestId} has more than one defect {d.Sequence}.", errors);
 
-        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, InsurancePolicies, InsurancePolicyVehicles, MotTests, MotDefects }.SelectMany(r => r))
+        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, InsurancePolicies, InsurancePolicyVehicles, Claims, MotTests, MotDefects }.SelectMany(r => r))
             if (row.AddedBy.Length > 128 || row.ModifiedBy.Length > 128)
                 errors.Add("An AddedBy or ModifiedBy value is longer than 128 characters.");
 

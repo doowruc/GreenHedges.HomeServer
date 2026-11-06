@@ -1,0 +1,13 @@
+@page "/Owners/{ownerId:int}/Claims/Delete/{id:int}"
+@model GreenHedges.HomeServer.VehicleManager.Pages.Owners.Claims.DeleteModel
+@{ ViewData["Title"] = "Delete claim"; }
+
+<h1 class="h3 mb-3">Delete claim</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Delete @(Model.OwnerName)'s claim of @Model.Claim.Date.ToString("dd/MM/yyyy") for <strong>@Model.Claim.VehicleName</strong>
+       <span class="reg-plate small">@Model.Claim.RegistrationNumber</span>, @Model.Claim.TotalValue.ToString("C")?</p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="/Owners/Details" asp-route-id="@Model.OwnerId" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

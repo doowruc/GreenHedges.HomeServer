@@ -14,6 +14,11 @@
     {
         <p class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>This will also delete its @Model.Services service record(s).</p>
     }
+    @if (Model.Claims > 0)
+    {
+        <p class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>This will also delete its @Model.Claims insurance claim(s).
+           To keep them, record it as disposed of instead.</p>
+    }
     <form method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
         <a asp-page="Details" asp-route-id="@Model.Vehicle.Id" class="btn btn-outline-secondary">Cancel</a>

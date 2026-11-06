@@ -31,6 +31,12 @@ public class BackupServiceTests : DatabaseTest
             OwnerId = vehicle.OwnerId, StartDate = new DateTime(2025, 1, 15, 0, 0, 0), EndDate = policyStart, Provider = "Other Insurer",
             PolicyNumber = "OLD-1", Premium = 400m
         });
+        db.Claims.Add(new Claim
+        {
+            OwnerId = vehicle.OwnerId, Vehicle = vehicle, InsurancePolicy = db.InsurancePolicies.Local.Single(p => p.PolicyNumber == "POL-123"),
+            Date = new DateOnly(2026, 8, 3), Fault = ClaimFault.Both, TotalValue = 2400.50m
+        });
+        db.Claims.Add(new Claim { OwnerId = vehicle.OwnerId, Vehicle = vehicle, Date = new DateOnly(2020, 2, 1), Fault = ClaimFault.OtherParty, TotalValue = 800m });
         vehicle.ServiceDueDate = new DateOnly(2027, 6, 30);
         vehicle.ServiceDueMileage = 45000;
         vehicle.ServiceIntervalMonths = 12;
@@ -66,6 +72,7 @@ public class BackupServiceTests : DatabaseTest
         .. await db.InsurancePolicyVehicles.Select(v => $"insured {v.Vehicle!.RegistrationNumber} on {v.Policy!.PolicyNumber} {v.From:O} {v.To:O} {v.Adjustment} {v.AddedDate:O}").ToListAsync(),
         .. await db.InsurancePolicies.Select(p => $"policy {p.Owner!.Name} {p.StartDate:O} {p.EndDate:O} {p.Provider} {p.PolicyNumber} {p.Cover} " +
                                                   $"{p.Premium} {p.Excess} {p.NamedDrivers} ncb={p.NoClaimsYears} protected={p.ProtectedNoClaims} {p.Notes} {p.AddedBy} {p.AddedDate:O}").ToListAsync(),
+        .. await db.Claims.Select(c => $"claim {c.Owner!.Name} {c.Vehicle!.RegistrationNumber} policy={c.InsurancePolicy!.PolicyNumber} {c.Date} {c.Type} {c.Fault} {c.TotalValue} {c.AddedDate:O}").ToListAsync(),
         .. await db.MotTests.Select(t => $"mot {t.Vehicle!.RegistrationNumber} {t.CompletedDate:O} passed={t.Passed} {t.ExpiryDate} {t.Odometer} km={t.OdometerInKilometres} " +
                                          $"{t.MotTestNumber} {t.RegistrationAtTest} {t.DataSource} {t.AddedBy} {t.AddedDate:O}").ToListAsync(),
         .. await db.MotDefects.Select(d => $"defect {d.MotTest!.CompletedDate:O} {d.Sequence} {d.Type} {d.Text} dangerous={d.Dangerous} {d.AddedDate:O}").ToListAsync()

@@ -16,6 +16,9 @@ public class DeleteModel(AppDbContext db) : PageModel
     /// <summary>Insurance policies they hold; the owner can't be deleted until these are deleted or given to someone else.</summary>
     public int PolicyCount { get; private set; }
 
+    /// <summary>Insurance claims they've made; the owner can't be deleted until these are deleted.</summary>
+    public int ClaimCount { get; private set; }
+
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var name = await db.Owners.Where(o => o.Id == id).Select(o => o.Name).FirstOrDefaultAsync();
@@ -26,6 +29,7 @@ public class DeleteModel(AppDbContext db) : PageModel
             .Select(VehicleView.Projection)
             .ToListAsync();
         PolicyCount = await db.InsurancePolicies.CountAsync(p => p.OwnerId == id);
+        ClaimCount = await db.Claims.CountAsync(c => c.OwnerId == id);
         return Page();
     }
 
@@ -33,7 +37,8 @@ public class DeleteModel(AppDbContext db) : PageModel
     {
         var name = await db.Owners.Where(o => o.Id == id).Select(o => o.Name).FirstOrDefaultAsync();
         if (name is null) return RedirectToPage("Index");
-        if (await db.Vehicles.AnyAsync(v => v.OwnerId == id) || await db.InsurancePolicies.AnyAsync(p => p.OwnerId == id))
+        if (await db.Vehicles.AnyAsync(v => v.OwnerId == id) || await db.InsurancePolicies.AnyAsync(p => p.OwnerId == id)
+            || await db.Claims.AnyAsync(c => c.OwnerId == id))
             return RedirectToPage("Delete", new { id });
 
         await db.Owners.Where(o => o.Id == id).ExecuteDeleteAsync();
