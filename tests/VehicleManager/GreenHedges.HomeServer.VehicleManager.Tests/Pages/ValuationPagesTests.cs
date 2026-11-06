@@ -61,43 +61,59 @@ public class ValuationPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Contains("data-copy=\"VALUE 1\"", page.Html);
         Assert.Contains("data-copy=\"40000\"", page.Html);
         foreach (var site in ValuationSites.All) Assert.Contains($"href=\"{site.Url}\"", page.Html);
-        Assert.Contains("None yet.", page.Text);
+        Assert.Contains("No values yet.", page.Text);
     }
 
     [DatabaseFact]
-    public async Task Values_saved_on_pre_renewal_show_the_latest_the_one_before_and_the_change()
+    public async Task Values_saved_on_pre_renewal_are_shown_by_type_and_grade_with_each_source_and_the_average()
     {
         var (ownerId, vehicleId, _, _) = await SetUpAsync();
         var client = app.ClientFor(UserId);
         var url = $"/Insurance/PreRenewal?ownerId={ownerId}";
         var page = await client.GetAsync(url);
+        var post = $"/Insurance/PreRenewal?handler=Value&vehicleId={vehicleId}";
 
-        var saved = await client.PostFormAsync($"/Insurance/PreRenewal?handler=Value&vehicleId={vehicleId}", page,
-            Fields(ownerId, "9500", nameof(ValuationType.Private), "", nameof(ValuationSource.AutoTrader), Today.AddYears(-1), "30000"));
+        var saved = await client.PostFormAsync(post, page, Fields(ownerId, "9000", date: Today.AddYears(-1), mileage: "30000"));
         Assert.Equal(HttpStatusCode.Redirect, saved.Status);
         Assert.Equal($"/Insurance/PreRenewal?ownerId={ownerId}#vehicle-{vehicleId}", saved.Location);
-        await client.PostFormAsync($"/Insurance/PreRenewal?handler=Value&vehicleId={vehicleId}", page, Fields(ownerId, "8250"));
+        await client.PostFormAsync(post, page, Fields(ownerId, "8250"));
+        await client.PostFormAsync(post, page, Fields(ownerId, "8450", source: nameof(ValuationSource.AutoTrader), date: Today.AddDays(-2)));
+        await client.PostFormAsync(post, page, Fields(ownerId, "9900", nameof(ValuationType.Private), "", nameof(ValuationSource.WhatCar)));
 
         await using (var db = Db())
         {
-            var latest = await db.VehicleValuations.OrderByDescending(v => v.Date).FirstAsync();
+            var latest = await db.VehicleValuations.OrderByDescending(v => v.Date).ThenBy(v => v.Id).FirstAsync();
             Assert.Equal((vehicleId, Today, 40000, 8250m, ValuationType.Trade, ValuationGrade.Average, ValuationSource.Parkers),
                 (latest.VehicleId, latest.Date, latest.Mileage, latest.Value, latest.Type, latest.Grade, latest.Source));
-            Assert.Null((await db.VehicleValuations.OrderBy(v => v.Date).FirstAsync()).Grade);
+            Assert.Null((await db.VehicleValuations.SingleAsync(v => v.Source == ValuationSource.WhatCar)).Grade);
         }
 
         page = await client.GetAsync(url);
-        Assert.Contains("£8,250", page.Text);
-        Assert.Contains("Trade (Average), Parkers", page.Text);
-        Assert.Contains("(Private, Auto Trader)", page.Text);
-        Assert.Contains("data-pre-renewal=\"change\">Down", page.Html);
-        Assert.Contains("Down £1,250", page.Text);
-        // The form starts like the latest: the same type, grade and source.
-        Assert.Contains("value=\"Trade\" selected=\"selected\"", page.Html);
-        Assert.Contains("value=\"Average\" selected=\"selected\"", page.Html);
+        // Columns for the sources used this round only, in order.
+        var table = page.Html[page.Html.IndexOf("data-pre-renewal=\"values\"", StringComparison.Ordinal)..];
+        table = table[..table.IndexOf("</table>", StringComparison.Ordinal)];
+        Assert.Matches("<th>Type</th>\\s*<th[^>]*>Parkers</th>\\s*<th[^>]*>Auto Trader</th>\\s*<th[^>]*>What Car\\?</th>\\s*<th[^>]*>Average</th>", table);
+
+        string Row(string label)
+        {
+            var at = table.IndexOf($"data-row=\"{label}\"", StringComparison.Ordinal);
+            Assert.True(at >= 0, $"No {label} row.");
+            var row = table[at..];
+            return System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(row[..row.IndexOf("</tr>", StringComparison.Ordinal)], "<[^>]+>", " "));
+        }
+        var trade = Row("Trade (Average)");
+        Assert.Matches(@"£8,250\s+£8,450\s+–\s+£8,350\s+£9,000\s+−£650", trade);   // Parkers, Auto Trader, no What Car?, average, last year's, change
+        Assert.Matches(@"–\s+–\s+£9,900\s+£9,900\s+–\s+–", Row("Private"));
+        Assert.True(table.IndexOf("data-row=\"Private\"", StringComparison.Ordinal) < table.IndexOf("data-row=\"Trade (Average)\"", StringComparison.Ordinal));
+        Assert.Contains($"Values from {Today.AddDays(-2):dd/MM/yyyy} to {Today:dd/MM/yyyy}; previous from {Today.AddYears(-1):dd/MM/yyyy}.", page.Text);
+
+        // The form starts like the latest saved (What Car?'s private value): the same type, grade (none) and source.
+        Assert.Contains("value=\"Private\" selected=\"selected\"", page.Html);
+        Assert.Contains("value=\"WhatCar\" selected=\"selected\"", page.Html);
+        Assert.DoesNotContain("value=\"Average\" selected=\"selected\"", page.Html);
 
         var vehiclePage = await client.GetAsync($"/Vehicles/Details/{vehicleId}?tab=insurance");
-        Assert.Contains("Values (2)", vehiclePage.Text);
+        Assert.Contains("Values (4)", vehiclePage.Text);
         Assert.Contains("Trade (Average)", vehiclePage.Text);
         Assert.Contains($"href=\"/Insurance/PreRenewal?ownerId={ownerId}\"", vehiclePage.Html);
     }

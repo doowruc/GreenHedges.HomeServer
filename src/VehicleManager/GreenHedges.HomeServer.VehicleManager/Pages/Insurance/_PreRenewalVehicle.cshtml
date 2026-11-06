@@ -1,12 +1,13 @@
 @model GreenHedges.HomeServer.VehicleManager.Pages.Insurance.PreRenewalModel.VehicleRow
 @{
-    // One vehicle on the pre-renewal page: its latest values, the valuation sites and a form to add a value.
+    // One vehicle on the pre-renewal page: the valuation sites, a form to add a value, and its values by type and grade.
     // The form shows the posted values and errors when it's the one that failed (ViewData["Posted"]).
     var posted = ViewData["Posted"] as VehicleValuationInput;
     var input = posted ?? new() { Date = Reminders.UkToday(), Mileage = Model.SuggestedMileage, Type = Model.Latest?.Type, Grade = Model.Latest?.Grade, Source = Model.Latest?.Source };
     var ownerId = ViewData["OwnerId"];
     var date = (DateOnly?)ViewData["Date"];
     var id = $"v{Model.VehicleId}";
+    static string Dates(DateOnly from, DateOnly to) => from == to ? to.ToString("dd/MM/yyyy") : $"{from:dd/MM/yyyy} to {to:dd/MM/yyyy}";
     string? Error(string field) => posted is null ? null
         : ViewData.ModelState[$"Valuation.{field}"]?.Errors.FirstOrDefault()?.ErrorMessage;
 }
@@ -33,31 +34,6 @@
                             <span class="text-muted">No odometer readings.</span>
                         }
                     </dd>
-                    <dt class="col-sm-5">Latest value</dt>
-                    <dd class="col-sm-7" data-pre-renewal="latest-value">
-                        @if (Model.Latest is { } latest)
-                        {
-                            <span class="fs-5 fw-semibold">@latest.Value.ToString("C0")</span>
-                            <div class="small">@latest.Label, @latest.SourceName</div>
-                            <div class="text-muted small">@latest.Date.ToString("dd/MM/yyyy") at @latest.Mileage.ToString("N0") miles</div>
-                        }
-                        else
-                        {
-                            <span class="text-muted">None yet.</span>
-                        }
-                    </dd>
-                    @if (Model.Previous is { } previous)
-                    {
-                        <dt class="col-sm-5">Before that</dt>
-                        <dd class="col-sm-7" data-pre-renewal="previous-value">
-                            @previous.Value.ToString("C0") <span class="small">(@previous.Label, @previous.SourceName)</span>
-                            <div class="text-muted small">@previous.Date.ToString("dd/MM/yyyy") at @previous.Mileage.ToString("N0") miles</div>
-                            @if (Model.Change is { } change)
-                            {
-                                <div class="small @(change < 0 ? "text-danger" : "text-success")" data-pre-renewal="change">@(change < 0 ? "Down" : "Up") @Math.Abs(change).ToString("C0")</div>
-                            }
-                        </dd>
-                    }
                 </dl>
                 <div class="mt-3 small">
                     Look it up:
@@ -124,5 +100,55 @@
                 </form>
             </div>
         </div>
+        @if (Model.Summary is { } summary)
+        {
+            <div class="table-responsive mt-4">
+                <table class="table table-sm align-middle mb-1" data-pre-renewal="values">
+                    <thead class="table-head">
+                        <tr>
+                            <th>Type</th>
+                            @foreach (var source in summary.Sources) { <th class="text-end">@VehicleValuationView.SourceNames(source)</th> }
+                            <th class="text-end">Average</th>
+                            <th class="text-end">Previous</th>
+                            <th class="text-end">Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in summary.Rows)
+                        {
+                            <tr data-row="@row.Label">
+                                <td class="text-nowrap">@row.Label</td>
+                                @foreach (var source in summary.Sources)
+                                {
+                                    @if (row.BySource.TryGetValue(source, out var v))
+                                    {
+                                        <td class="text-end" title="@v.Date.ToString("dd/MM/yyyy") at @v.Mileage.ToString("N0") miles">@v.Value.ToString("C0")</td>
+                                    }
+                                    else
+                                    {
+                                        <td class="text-end text-muted">–</td>
+                                    }
+                                }
+                                <td class="text-end fw-semibold" data-cell="average">@row.Average.ToString("C0")</td>
+                                <td class="text-end text-muted" data-cell="previous">@(row.PreviousAverage?.ToString("C0") ?? "–")</td>
+                                <td class="text-end @(row.Change < 0 ? "text-danger" : row.Change > 0 ? "text-success" : "")" data-cell="change">
+                                    @if (row.Change is { } change) { @((change < 0 ? "−" : change > 0 ? "+" : "") + Math.Abs(change).ToString("C0")) } else { <text>–</text> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-muted small">
+                Values from @Dates(summary.From, summary.To)@if (summary.PreviousTo is { } previousTo)
+                {
+                    <text>; previous from @Dates(summary.PreviousFrom!.Value, previousTo)</text>
+                }. A source's latest figure in each counts; older values are on the <a asp-page="/Vehicles/Details" asp-route-id="@Model.VehicleId" asp-route-tab="insurance" asp-fragment="vehicle-values">vehicle's page</a>.
+            </div>
+        }
+        else
+        {
+            <p class="text-muted small mt-3 mb-0">No values yet.</p>
+        }
     </div>
 </div>
