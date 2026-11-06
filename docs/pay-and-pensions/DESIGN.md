@@ -143,7 +143,7 @@ One branch and PR each:
 3. **Statements:** each pension's statement types (named, with or without projections) and statements, a table per
    type with the workbook's worked-out figures, and the pension's start date. Done.
 4. **Pasting statements in:** a type's history pasted from a spreadsheet's columns, with a preview, to bring in the
-   pensions workbook once.
+   pensions workbook once. Done.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.

@@ -57,7 +57,8 @@ GreenHedges.HomeServer.PayAndPensions/
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
                each tax year's totals, as the spreadsheets worked them out; pure, unit tested), StatementCalculations
                (each statement's change, growth and per-day figures; pure, unit tested),
-               Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it),
+               Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it; StatementPaste reads
+               statements pasted from one; pure, unit tested),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
@@ -95,6 +96,12 @@ GreenHedges.HomeServer.PayAndPensions/
   pension's optional **start date**), growth (change ÷ previous), below the type's highest, days since the start and
   value per day, the period's days and change per day; monthly income is annual ÷ 12. A type with statements can't be
   deleted (FK `Restrict`), so nor can its pension or person; a pension's types go with it.
+- **Pasting statements** (`Statements/Paste`, `StatementPaste`): tab-separated rows as Excel copies them, from the
+  first row with Date and Value headings (a title above is ignored); columns by heading (Date, Value, Label/When, and
+  for projections Retirement/Fund and Annual/Annual income), others ignored. UK dates or Excel serial numbers; amounts
+  with or without £ and commas. Unreadable rows are skipped with the reason; dates the type has are left alone; a 0
+  first row is offered as the pension's start date (when it has none). Paste, preview, import: only the text is kept
+  between steps, so the import reads what was previewed. Log counts only.
 - **A payslip's pension** (optional) is where its pension lines go, employee's and employer's: only on a payslip with
   a pension line (`PayElement.IsPension`: Pension category, not an earning). The payslips table has a Pension column
   when a year's payslips with pension lines differ (or some have none). `Pensions/Assign` sets one on a range of

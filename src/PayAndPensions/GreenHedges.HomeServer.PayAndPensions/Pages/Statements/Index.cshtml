@@ -28,13 +28,14 @@
         <h2 class="h5 mb-0">@type.Name</h2>
         <div class="d-flex gap-2">
             <a asp-page="Create" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-typeId="@type.Id" class="btn btn-sm btn-primary" title="Add @type.Name"><i class="bi bi-plus-lg me-1"></i>Add statement</a>
+            <a asp-page="Paste" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-typeId="@type.Id" class="btn btn-sm btn-outline-secondary" title="Paste @type.Name statements from a spreadsheet"><i class="bi bi-clipboard"></i></a>
             <a asp-page="/StatementTypes/Edit" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@type.Id" class="btn btn-sm btn-outline-secondary" title="Edit @type.Name"><i class="bi bi-pencil"></i></a>
             <a asp-page="/StatementTypes/Delete" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-id="@type.Id" class="btn btn-sm btn-outline-danger" title="Delete @type.Name"><i class="bi bi-trash"></i></a>
         </div>
     </div>
     @if (type.Rows.Count == 0)
     {
-        <p class="text-body-secondary">No statements yet.</p>
+        <p class="text-body-secondary">No statements yet. Add them one at a time, or <a asp-page="Paste" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-typeId="@type.Id">paste their history</a> from a spreadsheet.</p>
         continue;
     }
     <div class="card shadow-sm">
