@@ -69,6 +69,24 @@ else
                 {
                     <li>@Model.AlreadyThere the pension already has, which are left out.</li>
                 }
+                @{ var matches = Model.Matches!; }
+                @if (matches.Matches.Count > 0)
+                {
+                    var payslips = matches.Matches.Sum(m => m.Payslips.Count);
+                    <li>
+                        Sets the pension received date on @payslips @(payslips == 1 ? "payslip" : "payslips"), for the contributions they add up to:
+                        <ul data-matches>
+                            @foreach (var m in matches.Matches)
+                            {
+                                <li>@m.Contribution.Date.ToString("dd/MM/yyyy"), £@m.Contribution.Value.ToString("N2"): @ImportModel.Months(m.Payslips)</li>
+                            }
+                        </ul>
+                    </li>
+                }
+                @if (matches.Unmatched.Count > 0)
+                {
+                    <li class="text-body-secondary">@matches.Unmatched.Count @(matches.Unmatched.Count == 1 ? "contribution doesn't" : "contributions don't") add up to any of the pension's payslips not yet received.</li>
+                }
             </ul>
         </div></div>
 

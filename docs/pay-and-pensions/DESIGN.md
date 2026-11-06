@@ -148,8 +148,10 @@ One branch and PR each:
 5. **Transactions:** a pension's transaction history imported from the provider's CSV exports (several files at once,
    overlaps and lines already there left out), each line's kind and fund worked out and changeable, and a page per
    tax year with totals per kind and the money paid in. Done.
-6. **Contributions to payslips:** at each import, match contributions to the payslips whose pension amounts (employee's
-   and employer's, over one or more months) add up to them, and set those payslips' pension received date.
+6. **Contributions to payslips:** at each import (and from the Transactions page's **Match payslips**), match
+   contributions to the payslips whose pension amounts (employee's and employer's, over one or more months in a row,
+   paid in the 120 days before) add up to them exactly, oldest first, and set those payslips' pension received date.
+   Done.
 7. **Units held:** each fund's units and value, from the purchases and sales.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get

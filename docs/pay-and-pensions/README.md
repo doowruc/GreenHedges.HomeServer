@@ -39,6 +39,12 @@ and fund worked out from its description; lines it can't read, and why; and how 
 are left out, so files can overlap and the latest can be imported again as it grows. A kind or fund that's wrong can
 be changed on the transaction afterwards.
 
+Importing also sets the **pension received date** on the pension's payslips: each contribution is matched to the
+payslips whose pension amounts, employee's and employer's, add up to it exactly (one month's, or several months in a
+row paid in together), paid in the four months before it, oldest first. The preview lists which payslips each
+contribution would mark. Payslips with a received date already are left alone. For payslips assigned to the pension
+after its transactions were imported, the Transactions page's **Match payslips** does the same.
+
 And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).

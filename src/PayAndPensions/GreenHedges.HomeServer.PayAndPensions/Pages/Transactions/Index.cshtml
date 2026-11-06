@@ -42,6 +42,9 @@
             @{ await YearButton(Model.LastYear, "bi-chevron-double-right", "Latest tax year"); }
             <noscript><button type="submit" class="btn btn-outline-secondary">Show</button></noscript>
         </form>
+        <form method="post" asp-page-handler="Match" asp-route-year="@year">
+            <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" title="Set payslips' pension received date from the contributions they add up to"><i class="bi bi-link-45deg me-1"></i>Match payslips</button>
+        </form>
         <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
     </div>
 </div>
