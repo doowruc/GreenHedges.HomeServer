@@ -102,6 +102,24 @@ public class BackupFileTests
     }
 
     [Fact]
+    public void Rejects_vehicle_values_that_dont_link_up_or_arent_values()
+    {
+        static VehicleValuationBackup Value(int vehicleId = 2) => new()
+        {
+            Id = 4, VehicleId = vehicleId, Date = new DateOnly(2026, 9, 1), Mileage = 41000, Value = 8250m,
+            Type = ValuationType.Trade, Grade = ValuationGrade.Good, Source = ValuationSource.WhatCar
+        };
+        var value = Assert.Single(Read(Json(Sample(b => b with { VehicleValuations = [Value()] }))).VehicleValuations);
+        Assert.Equal((8250m, ValuationType.Trade, ValuationGrade.Good, ValuationSource.WhatCar), (value.Value, value.Type, value.Grade!.Value, value.Source));
+
+        Assert.Contains("Vehicle value 4's vehicle (99) isn't in the backup.", ReadError(Sample(b => b with { VehicleValuations = [Value(99)] })));
+        Assert.Contains("Vehicle value 4's value (0) isn't a value.", ReadError(Sample(b => b with { VehicleValuations = [Value() with { Value = 0 }] })));
+        Assert.Contains("Vehicle value 4's mileage (-1) is negative.", ReadError(Sample(b => b with { VehicleValuations = [Value() with { Mileage = -1 }] })));
+        Assert.Contains("Vehicle value 4's grade (9) isn't a grade.", ReadError(Sample(b => b with { VehicleValuations = [Value() with { Grade = (ValuationGrade)9 }] })));
+        Assert.Contains("vehicle value", ReadError(Sample(b => b with { VehicleValuations = [Value(), Value()] })));
+    }
+
+    [Fact]
     public void Rejects_claims_that_dont_link_up()
     {
         static ClaimBackup Claim(int ownerId = 1, int vehicleId = 2, int? policyId = 8) => new()

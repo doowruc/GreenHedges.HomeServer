@@ -30,6 +30,9 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
     public List<InsurancePolicyView> Policies { get; private set; } = [];
     /// <summary>How many spells the vehicle has had on them (a policy it was switched off and back on to counts twice).</summary>
     public int InsuranceSpells { get; private set; }
+
+    /// <summary>The values typed in for this vehicle (on the pre-renewal page), newest first.</summary>
+    public List<VehicleValuationView> Valuations { get; private set; } = [];
     /// <summary>This vehicle's insurance costs for wwwroot/js/premium-chart.js (InsuranceCosts.ChartJson); null with fewer than two.</summary>
     public string? PremiumChartJson { get; private set; }
     /// <summary>The MOT tests of the last 12 months, for the period toggle.</summary>
@@ -101,6 +104,9 @@ public class DetailsModel(AppDbContext db, FuelStatsService stats, VehicleLookup
         InsurancePolicyView.MarkCurrent(Policies, Reminders.UkNow());
         InsuranceSpells = Policies.Sum(p => p.Vehicles.Count(v => v.VehicleId == id));
         PremiumChartJson = InsuranceCosts.ChartJson(Policies, id);
+        Valuations = await db.VehicleValuations.Where(v => v.VehicleId == id)
+            .OrderByDescending(v => v.Date).ThenByDescending(v => v.Id)
+            .Select(VehicleValuationView.Projection).ToListAsync();
         if (vehicle.DisposedDate is { } gone)
         {
             var dayAfter = gone.AddDays(1).ToDateTime(TimeOnly.MinValue);

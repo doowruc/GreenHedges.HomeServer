@@ -39,6 +39,7 @@ public sealed record BackupFile
     public List<FuelEntryBackup> FuelEntries { get; init; } = [];
     public List<FuelEntryStopBackup> FuelEntryStops { get; init; } = [];
     public List<ServiceRecordBackup> ServiceRecords { get; init; } = [];
+    public List<VehicleValuationBackup> VehicleValuations { get; init; } = [];
     public List<InsurancePolicyBackup> InsurancePolicies { get; init; } = [];
     public List<InsurancePolicyVehicleBackup> InsurancePolicyVehicles { get; init; } = [];
     public List<ClaimBackup> Claims { get; init; } = [];
@@ -223,6 +224,17 @@ public sealed record BackupFile
         }
         UniqueIds(ServiceRecords, s => s.Id, "service", errors);
 
+        UniqueIds(VehicleValuations, v => v.Id, "vehicle value", errors);
+        foreach (var v in VehicleValuations)
+        {
+            if (!vehicleIds.Contains(v.VehicleId)) errors.Add($"Vehicle value {v.Id}'s vehicle ({v.VehicleId}) isn't in the backup.");
+            if (v.Mileage < 0) errors.Add($"Vehicle value {v.Id}'s mileage ({v.Mileage}) is negative.");
+            if (v.Value is <= 0 or >= 10_000_000) errors.Add($"Vehicle value {v.Id}'s value ({v.Value}) isn't a value.");
+            if (!Enum.IsDefined(v.Type)) errors.Add($"Vehicle value {v.Id}'s type ({v.Type}) isn't a kind of value.");
+            if (v.Grade is { } grade && !Enum.IsDefined(grade)) errors.Add($"Vehicle value {v.Id}'s grade ({grade}) isn't a grade.");
+            if (!Enum.IsDefined(v.Source)) errors.Add($"Vehicle value {v.Id}'s source ({v.Source}) isn't a valuation site.");
+        }
+
         var policies = new Dictionary<int, InsurancePolicyBackup>();
         foreach (var p in InsurancePolicies)
         {
@@ -295,7 +307,7 @@ public sealed record BackupFile
         }
         Unique(MotDefects, d => $"{d.MotTestId}|{d.Sequence}", d => $"MOT test {d.MotTestId} has more than one defect {d.Sequence}.", errors);
 
-        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, InsurancePolicies, InsurancePolicyVehicles, InsurancePolicyDrivers, Claims, MotTests, MotDefects }.SelectMany(r => r))
+        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, VehicleValuations, InsurancePolicies, InsurancePolicyVehicles, InsurancePolicyDrivers, Claims, MotTests, MotDefects }.SelectMany(r => r))
             if (row.AddedBy.Length > 128 || row.ModifiedBy.Length > 128)
                 errors.Add("An AddedBy or ModifiedBy value is longer than 128 characters.");
 

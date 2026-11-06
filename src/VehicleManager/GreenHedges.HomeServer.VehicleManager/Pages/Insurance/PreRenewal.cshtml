@@ -52,6 +52,26 @@
     <partial name="_PreRenewalPerson" model="person" view-data='new ViewDataDictionary(ViewData) { ["RenewalDate"] = Model.RenewalDate }' />
 }
 
+<h2 class="h5 mt-4 mb-3">Vehicles <span class="text-muted fs-6">current value</span></h2>
+@if (Model.Vehicles.Count == 0)
+{
+    <p class="text-muted">No vehicles on the policy.</p>
+}
+else
+{
+    <p class="text-muted small">Quotes ask what each vehicle is worth now. Look it up on a valuation site with the registration and
+       mileage, then save the figure here. Values are estimates.</p>
+}
+@if (Model.ValuationVehicleId is { } failed && Model.Vehicles.All(v => v.VehicleId != failed))
+{
+    @* A value posted for a vehicle not listed here (e.g. disposed of): its form isn't on the page to show the errors. *@
+    <div class="alert alert-danger" role="alert">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))</div>
+}
+@foreach (var vehicle in Model.Vehicles)
+{
+    <partial name="_PreRenewalVehicle" model="vehicle" view-data='new ViewDataDictionary(ViewData) { ["OwnerId"] = Model.OwnerId, ["Date"] = Model.Date, ["Posted"] = vehicle.VehicleId == Model.ValuationVehicleId ? Model.Valuation : null }' />
+}
+
 <script>
     (() => {
         // Copy buttons: put the value on the clipboard and show a tick for a moment.
