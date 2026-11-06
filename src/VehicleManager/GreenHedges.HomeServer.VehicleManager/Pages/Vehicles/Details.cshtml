@@ -79,8 +79,8 @@
     {
         (DetailsModel.FuelTab, "bi-fuel-pump", "Fuel", Model.Entries.Count),
         (DetailsModel.ServicesTab, "bi-wrench", "Services", Model.Services.Count),
-        (DetailsModel.InsuranceTab, "bi-shield-check", "Insurance", Model.InsuranceSpells),
-        (DetailsModel.MotTab, "bi-clipboard-check", "MOT", Model.MotTests.Count)
+        (DetailsModel.MotTab, "bi-clipboard-check", "MOT", Model.MotTests.Count),
+        (DetailsModel.InsuranceTab, "bi-shield-check", "Insurance", Model.InsuranceSpells)
     }.Where(t => t.Item1 != DetailsModel.MotTab || Model.ShowMotTab))
     {
         <li class="nav-item" role="presentation">

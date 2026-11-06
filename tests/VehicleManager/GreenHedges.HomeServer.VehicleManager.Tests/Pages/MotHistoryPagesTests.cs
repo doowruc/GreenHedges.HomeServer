@@ -22,6 +22,8 @@ public class MotHistoryPagesTests(AppFactory app) : DatabaseTest, IClassFixture<
 
         var page = await client.GetAsync($"/Vehicles/Details/{id}?tab=mot");
         Assert.Contains("class=\"tab-pane show active\" id=\"tab-mot\"", page.Html);
+        Assert.Equal(["fuel", "services", "mot", "insurance"],
+            System.Text.RegularExpressions.Regex.Matches(page.Html, @"data-tab=""(\w+)""").Select(m => m.Groups[1].Value).Distinct());   // Insurance last
         Assert.Contains("No MOT tests yet.", page.Text);
 
         // Checking from the MOT tab comes back to it.
