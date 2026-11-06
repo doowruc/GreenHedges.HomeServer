@@ -1,0 +1,40 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Transactions/Edit/{id:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Transactions.EditModel
+@using GreenHedges.HomeServer.PayAndPensions.Models
+@{
+    ViewData["Title"] = "Edit transaction";
+    var d = Model.Shown!;
+}
+
+<h1 class="h3 mb-3">Edit @Model.PensionName's transaction</h1>
+<div class="card shadow-sm"><div class="card-body">
+    <dl class="row mb-3">
+        <dt class="col-sm-3">Date</dt><dd class="col-sm-9">@d.TradeDate.ToString("dd/MM/yyyy")</dd>
+        <dt class="col-sm-3">Reference</dt><dd class="col-sm-9">@d.Reference</dd>
+        <dt class="col-sm-3">Description</dt><dd class="col-sm-9">@d.Description</dd>
+        @if (d.Quantity is { } q) { <dt class="col-sm-3">Units</dt><dd class="col-sm-9">@q.ToString("#,##0.######")</dd> }
+        <dt class="col-sm-3">Value</dt><dd class="col-sm-9">£@d.Value.ToString("N2")</dd>
+    </dl>
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Transaction.RowVersion" />
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Transaction.Kind" class="form-label"></label>
+                <select asp-for="Transaction.Kind" asp-items="Html.GetEnumSelectList<TransactionKind>()" class="form-select"></select>
+                <span asp-validation-for="Transaction.Kind" class="text-danger small"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Transaction.Fund" class="form-label"></label>
+                <input asp-for="Transaction.Fund" class="form-control" />
+                <span asp-validation-for="Transaction.Fund" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-year="@GreenHedges.HomeServer.PayAndPensions.Services.TaxYears.Of(d.TradeDate)" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div></div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

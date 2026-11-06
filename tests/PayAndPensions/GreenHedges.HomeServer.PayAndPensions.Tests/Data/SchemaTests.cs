@@ -117,4 +117,14 @@ public class SchemaTests : DatabaseTest
 
         await Assert.ThrowsAnyAsync<Exception>(() => db.Pensions.Where(pn => pn.Id == pension.Id).ExecuteDeleteAsync());
     }
+
+    [DatabaseFact]
+    public async Task A_pension_with_transactions_cant_be_deleted()
+    {
+        await using var db = Db();
+        var pension = await TestData.AddPensionAsync(db, await TestData.AddPersonAsync(db), await TestData.AddProviderAsync(db));
+        await TestData.AddTransactionAsync(db, pension, new DateOnly(2026, 5, 1), 100m);
+
+        await Assert.ThrowsAnyAsync<Exception>(() => db.Pensions.Where(pn => pn.Id == pension.Id).ExecuteDeleteAsync());
+    }
 }

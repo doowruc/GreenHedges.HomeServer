@@ -31,3 +31,6 @@
 .table-hover > tbody > tr.row-menu-open > * { --bs-table-bg-state: var(--bs-table-hover-bg); color: var(--bs-table-hover-color); }
 #row-menu .dropdown-item:hover { background: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis); }
 #row-menu .dropdown-item.text-danger:hover { background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis) !important; }
+
+/* A short table of totals: no wider than it needs to be. */
+.totals-card { max-width: 28rem; }

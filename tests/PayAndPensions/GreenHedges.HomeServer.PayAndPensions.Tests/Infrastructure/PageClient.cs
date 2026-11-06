@@ -29,6 +29,16 @@ public sealed class PageClient(HttpClient client)
         return await ReadAsync(await client.PostAsync(url, content));
     }
 
+    /// <summary>Posts a form with several files in one field, as an <c>&lt;input type="file" multiple&gt;</c> sends them.</summary>
+    public async Task<PageResponse> PostFilesAsync(string url, PageResponse page, string fileField, IEnumerable<(string Name, byte[] Bytes)> files,
+        Dictionary<string, string>? fields = null)
+    {
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in FormValues(page, fields)) content.Add(new StringContent(value), name);
+        foreach (var (name, bytes) in files) content.Add(new ByteArrayContent(bytes), fileField, name);
+        return await ReadAsync(await client.PostAsync(url, content));
+    }
+
     /// <summary>A form's current values, with <paramref name="fields"/> changed or added.</summary>
     private static Dictionary<string, string> FormValues(PageResponse page, Dictionary<string, string>? fields)
     {

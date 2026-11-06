@@ -14,6 +14,11 @@
         <p><strong>@Model.PersonName</strong> can't be deleted while their pensions have statements (@Model.Statements). Delete those first.</p>
         <a asp-page="Index" class="btn btn-outline-secondary">Back</a>
     }
+    else if (Model.Transactions > 0)
+    {
+        <p><strong>@Model.PersonName</strong> can't be deleted while their pensions have transactions (@Model.Transactions). Delete those first.</p>
+        <a asp-page="Index" class="btn btn-outline-secondary">Back</a>
+    }
     else
     {
         <p>Are you sure you want to delete <strong>@Model.PersonName</strong>, with their employers, pay elements and pensions?</p>
