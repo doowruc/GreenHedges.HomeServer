@@ -73,7 +73,7 @@ so test pages through the in-memory host rather than relying on the browser.
 ```
 GreenHedges.HomeServer.VehicleManager/
   Models/      EF Core entities: Owner, Vehicle (+ DisposalMethod), FuelEntry, FuelEntryStop, FuelBrand, FuelStation, ServiceRecord, InsurancePolicy (+ InsuranceCover,
-               InsurancePolicyVehicle), Claim (+ ClaimType, ClaimFault), UserSettings (storage only),
+               InsurancePolicyVehicle, InsurancePolicyDriver), Claim (+ ClaimType, ClaimFault), UserSettings (storage only),
                SentReminder (+ DueDateKind), MotTest (+ MotDefect), IFuelPlace
   ViewModels/  What pages use: *View (output, with calculated figures) and *Input (form/import input)
   Data/        AppDbContext (per-user query filters), DesignTimeDbContextFactory, Migrations/
@@ -197,6 +197,10 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 - `InsurancePolicy` belongs to an `Owner` (the policyholder; FK `Restrict`, so an owner with policies can't be
   deleted; filtered through the owner): start and end, insurer (`Provider`), policy number, `Cover`, premium, optional
   total excess, no claims bonus (`NoClaimsYears`, optional, 0 to 50; `ProtectedNoClaims`), named drivers and notes.
+  Named drivers who are owners are `InsurancePolicyDriver` rows (policy + owner, unique, never the policyholder;
+  cascade with both; filtered through the policy; in the backup as `InsurancePolicyDrivers`); `NamedDrivers` is the
+  free text for anyone else ("Other named drivers"). The `InsuranceNamedDrivers` migration linked typed names that
+  matched one of the same user's other owners and took them out of the text.
   The create form defaults to 00:00 to 23:59 a year on (`CreateModel.RenewalStart` / `DefaultEnd`); a renewal carries
   the bonus over a year more. Its `Vehicles` are `InsurancePolicyVehicle` rows: a vehicle, `From`/`To`
   within the policy's dates, and an optional `Adjustment` (charged, or negative refunded, for a mid-term change).
@@ -239,6 +243,8 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   latest-ending policy in force now; a claim is declared for an N-year cut-off when it's after the renewal date minus N
   years (`CutOffYears` 3, 4, 5) and not after the renewal; `FullYears` (also the Owners list's years held); `Sections`
   and `Grouped` split a driver number. Copy buttons are `data-copy` with an inline script.
+- `People` is the policyholder then the named-driver owners of `BasisPolicy` (the current policy, else the latest
+  started), each shown by `_PreRenewalPerson` (licence and claims) against the same renewal date.
 
 **Due dates, reminders and MOT/tax lookups**
 - `Vehicle` has `MotDueDate`, `TaxDueDate`, `ServiceDueDate` (all optional, in the backup); the insurance due date

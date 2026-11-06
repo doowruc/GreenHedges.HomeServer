@@ -46,8 +46,12 @@ public class InsurancePolicyInput : IValidatableObject
     [Display(Name = "Total excess (£)")]
     public decimal? Excess { get; set; }
 
-    [StringLength(InsurancePolicy.MaxNamedDriversLength)]
+    /// <summary>Owners who are named drivers (not the policyholder): their claims and licence go on its pre-renewal.</summary>
     [Display(Name = "Named drivers")]
+    public List<int> DriverIds { get; set; } = [];
+
+    [StringLength(InsurancePolicy.MaxNamedDriversLength)]
+    [Display(Name = "Other named drivers")]
     public string? NamedDrivers { get; set; }
 
     [Range(0, InsurancePolicy.MaxNoClaimsYears)]
@@ -82,6 +86,7 @@ public class InsurancePolicyInput : IValidatableObject
         Premium = p.Premium,
         Excess = p.Excess,
         NamedDrivers = p.NamedDrivers,
+        DriverIds = p.Drivers.Select(d => d.OwnerId).ToList(),
         NoClaimsYears = p.NoClaimsYears,
         ProtectedNoClaims = p.ProtectedNoClaims,
         Notes = p.Notes,

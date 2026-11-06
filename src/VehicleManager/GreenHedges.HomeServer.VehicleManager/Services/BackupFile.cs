@@ -42,6 +42,7 @@ public sealed record BackupFile
     public List<InsurancePolicyBackup> InsurancePolicies { get; init; } = [];
     public List<InsurancePolicyVehicleBackup> InsurancePolicyVehicles { get; init; } = [];
     public List<ClaimBackup> Claims { get; init; } = [];
+    public List<InsurancePolicyDriverBackup> InsurancePolicyDrivers { get; init; } = [];
     public List<MotTestBackup> MotTests { get; init; } = [];
     public List<MotDefectBackup> MotDefects { get; init; } = [];
 
@@ -253,6 +254,14 @@ public sealed record BackupFile
                 errors.Add($"Insurance policy {v.InsurancePolicyId}'s cover for vehicle {v.VehicleId} isn't within the policy's dates.");
         }
 
+        foreach (var d in InsurancePolicyDrivers)
+        {
+            if (!ownerIds.Contains(d.OwnerId)) errors.Add($"Insurance policy {d.InsurancePolicyId}'s named driver ({d.OwnerId}) isn't in the backup.");
+            if (!policies.TryGetValue(d.InsurancePolicyId, out var policy)) errors.Add($"A named driver's insurance policy ({d.InsurancePolicyId}) isn't in the backup.");
+            else if (policy.OwnerId == d.OwnerId) errors.Add($"Insurance policy {d.InsurancePolicyId}'s policyholder is also a named driver on it.");
+        }
+        Unique(InsurancePolicyDrivers, d => $"{d.InsurancePolicyId}/{d.OwnerId}", d => $"Insurance policy {d.InsurancePolicyId} names driver {d.OwnerId} more than once.", errors);
+
         UniqueIds(Claims, c => c.Id, "claim", errors);
         foreach (var c in Claims)
         {
@@ -286,7 +295,7 @@ public sealed record BackupFile
         }
         Unique(MotDefects, d => $"{d.MotTestId}|{d.Sequence}", d => $"MOT test {d.MotTestId} has more than one defect {d.Sequence}.", errors);
 
-        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, InsurancePolicies, InsurancePolicyVehicles, Claims, MotTests, MotDefects }.SelectMany(r => r))
+        foreach (var row in new IEnumerable<BackupRow>[] { Owners, Vehicles, FuelBrands, FuelStations, FuelEntries, FuelEntryStops, ServiceRecords, InsurancePolicies, InsurancePolicyVehicles, InsurancePolicyDrivers, Claims, MotTests, MotDefects }.SelectMany(r => r))
             if (row.AddedBy.Length > 128 || row.ModifiedBy.Length > 128)
                 errors.Add("An AddedBy or ModifiedBy value is longer than 128 characters.");
 

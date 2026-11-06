@@ -244,6 +244,36 @@ public class InsurancePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
     }
 
     [DatabaseFact]
+    public async Task Owners_can_be_named_drivers_and_a_renewal_keeps_them()
+    {
+        var (vehicleId, ownerId) = await AddVehicleAsync();
+        int driverId;
+        await using (var db = Db())
+        {
+            db.Owners.Add(new Owner { Name = "Second Driver" });
+            await db.SaveChangesAsync();
+            driverId = (await db.Owners.SingleAsync(o => o.Name == "Second Driver")).Id;
+        }
+        var client = app.ClientFor(UserId);
+        var form = await client.GetAsync("/Insurance/Create");
+        Assert.Contains($"id=\"driver-{driverId}\"", form.Html);
+
+        // The policyholder ticked too is dropped: they're not their own named driver.
+        var fields = Fields(ownerId, vehicleId, At(Today, 0, 0), At(Today.AddYears(1).AddDays(-1), 23, 59));
+        fields["Policy.NamedDrivers"] = "Grandad";
+        var policyId = PolicyIdFrom(await client.PostFormAsync("/Insurance/Create", form, fields.Concat(new Dictionary<string, string> { ["Policy.DriverIds"] = driverId.ToString() }).ToDictionary()));
+        await using (var db = Db())
+            Assert.Equal([driverId], await db.InsurancePolicyDrivers.Where(d => d.InsurancePolicyId == policyId).Select(d => d.OwnerId).ToListAsync());
+
+        var details = await client.GetAsync($"/Insurance/Details/{policyId}");
+        Assert.Contains($"href=\"/Owners/Details/{driverId}\">Second Driver</a>", details.Html);
+        Assert.Contains("Grandad", details.Text);
+
+        var renew = await client.GetAsync($"/Insurance/Create?renew={policyId}");
+        Assert.Matches($@"id=""driver-{driverId}"" value=""{driverId}""\s+checked=""checked""", renew.Html);
+    }
+
+    [DatabaseFact]
     public async Task A_new_policy_defaults_to_midnight_today_until_2359_a_year_on()
     {
         await AddVehicleAsync();

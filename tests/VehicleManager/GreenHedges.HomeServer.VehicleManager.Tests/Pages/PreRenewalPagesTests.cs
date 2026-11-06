@@ -85,4 +85,39 @@ public class PreRenewalPagesTests(AppFactory app) : DatabaseTest, IClassFixture<
         Assert.Contains("Claims to declare (0)", page.Text);
         Assert.Equal(HttpStatusCode.NotFound, (await app.ClientFor(UserId).GetAsync("/Insurance/PreRenewal?ownerId=999999")).Status);
     }
+
+    [DatabaseFact]
+    public async Task A_named_drivers_claims_and_licence_are_on_the_policyholders_pre_renewal()
+    {
+        int wifeId, meId;
+        var renewal = Today.AddDays(31);
+        await using (var db = Db())
+        {
+            var vehicle = await TestData.AddVehicleAsync(db, "RENEW 3");
+            var me = await db.Owners.SingleAsync();
+            (me.DriverNumber, me.LicenceIssueDate) = ("TESTA801015AB9CD", renewal.AddYears(-20));
+            var wife = new Owner { Name = "Wife Owner", LicenceIssueDate = renewal.AddYears(-8) };
+            db.Owners.Add(wife);
+            await db.SaveChangesAsync();
+            var policy = TestData.Policy(vehicle, Today.AddDays(31).AddYears(-1), Today.AddDays(30));
+            policy.OwnerId = wife.Id;
+            policy.Drivers.Add(new InsurancePolicyDriver { OwnerId = me.Id });
+            db.InsurancePolicies.Add(policy);
+            db.Claims.Add(new Claim { OwnerId = me.Id, VehicleId = vehicle.Id, Date = renewal.AddYears(-1), Fault = ClaimFault.Owner, TotalValue = 3100m });
+            await db.SaveChangesAsync();
+            (wifeId, meId) = (wife.Id, me.Id);
+        }
+
+        var page = await app.ClientFor(UserId).GetAsync($"/Insurance/PreRenewal?ownerId={wifeId}");
+        var mine = page.Html[page.Html.IndexOf($"data-person=\"{meId}\"", StringComparison.Ordinal)..];
+        var hers = page.Html[page.Html.IndexOf($"data-person=\"{wifeId}\"", StringComparison.Ordinal)..page.Html.IndexOf($"data-person=\"{meId}\"", StringComparison.Ordinal)];
+        Assert.Contains("Policyholder", hers);
+        Assert.Contains("data-pre-renewal=\"years-held\">8</span>", hers);
+        Assert.Contains("Claims to declare (0)", hers);
+        Assert.Contains("Named driver", mine);
+        Assert.Contains("data-pre-renewal=\"years-held\">20</span>", mine);
+        Assert.Contains("TESTA801015AB9CD", mine);
+        Assert.Contains("Claims to declare (1)", mine);
+        Assert.Contains("3,100.00", mine);
+    }
 }

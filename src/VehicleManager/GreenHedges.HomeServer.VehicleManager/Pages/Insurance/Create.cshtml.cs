@@ -55,6 +55,7 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
             Policy.Cover = from.Cover;
             Policy.Excess = from.Excess;
             Policy.NamedDrivers = from.NamedDrivers;
+            Policy.DriverIds = from.Drivers.Select(d => d.OwnerId).ToList();
             Policy.NoClaimsYears = from.NoClaimsYears is { } years ? Math.Min(years + 1, InsurancePolicy.MaxNoClaimsYears) : null;
             Policy.ProtectedNoClaims = from.ProtectedNoClaims;
         }
@@ -84,6 +85,7 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
         }
         if (Policy.OwnerId is { } ownerId && !await Db.Owners.AnyAsync(o => o.Id == ownerId))
             ModelState.AddModelError("Policy.OwnerId", "Choose one of your owners.");
+        await ValidateDriversAsync(Policy);
         if (!ModelState.IsValid)
         {
             await LoadOptionsAsync(Policy.VehicleId);
@@ -92,6 +94,7 @@ public class CreateModel(AppDbContext db) : InsuranceFormPageModel(db)
 
         var policy = new InsurancePolicy();
         Policy.ApplyTo(policy);
+        SetDrivers(policy, Policy.DriverIds);
         foreach (var vehicleId in vehicleIds)
             policy.Vehicles.Add(new InsurancePolicyVehicle { VehicleId = vehicleId, From = policy.StartDate, To = policy.EndDate });
         Db.InsurancePolicies.Add(policy);

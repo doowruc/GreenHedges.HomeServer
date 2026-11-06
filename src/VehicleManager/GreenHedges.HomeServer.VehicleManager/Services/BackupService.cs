@@ -71,6 +71,12 @@ public class BackupService(AppDbContext db)
                 InsurancePolicyId = v.InsurancePolicyId, VehicleId = v.VehicleId, From = v.From, To = v.To, Adjustment = v.Adjustment,
                 AddedDate = v.AddedDate, AddedBy = v.AddedBy, ModifiedDate = v.ModifiedDate, ModifiedBy = v.ModifiedBy
             }).ToListAsync(),
+        InsurancePolicyDrivers = await db.InsurancePolicyDrivers.OrderBy(d => d.InsurancePolicyId).ThenBy(d => d.Id)
+            .Select(d => new InsurancePolicyDriverBackup
+            {
+                InsurancePolicyId = d.InsurancePolicyId, OwnerId = d.OwnerId,
+                AddedDate = d.AddedDate, AddedBy = d.AddedBy, ModifiedDate = d.ModifiedDate, ModifiedBy = d.ModifiedBy
+            }).ToListAsync(),
         Claims = await db.Claims.OrderBy(c => c.Id).Select(c => new ClaimBackup
         {
             Id = c.Id, OwnerId = c.OwnerId, VehicleId = c.VehicleId, InsurancePolicyId = c.InsurancePolicyId, Date = c.Date,
@@ -164,6 +170,8 @@ public class BackupService(AppDbContext db)
             {
                 Vehicle = vehicles[v.VehicleId], From = v.From, To = v.To, Adjustment = v.Adjustment
             }));
+        foreach (var d in backup.InsurancePolicyDrivers)
+            policies[d.InsurancePolicyId].Drivers.Add(Audited(d, new InsurancePolicyDriver { Owner = owners[d.OwnerId] }));
         foreach (var c in backup.Claims)
             owners[c.OwnerId].Claims.Add(Audited(c, new Claim
             {

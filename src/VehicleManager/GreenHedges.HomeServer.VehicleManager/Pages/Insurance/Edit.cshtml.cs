@@ -26,10 +26,11 @@ public class EditModel(AppDbContext db) : InsuranceFormPageModel(db)
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        var existing = await Db.InsurancePolicies.Include(p => p.Vehicles).ThenInclude(v => v.Vehicle).FirstOrDefaultAsync(p => p.Id == id);
+        var existing = await Db.InsurancePolicies.Include(p => p.Vehicles).ThenInclude(v => v.Vehicle).Include(p => p.Drivers).FirstOrDefaultAsync(p => p.Id == id);
         if (existing is null) return NotFound();
         if (Policy.OwnerId is { } ownerId && !await Db.Owners.AnyAsync(o => o.Id == ownerId))
             ModelState.AddModelError("Policy.OwnerId", "Choose one of your owners.");
+        await ValidateDriversAsync(Policy);
         if (!ModelState.IsValid)
         {
             await LoadOptionsAsync();
@@ -38,6 +39,7 @@ public class EditModel(AppDbContext db) : InsuranceFormPageModel(db)
 
         var (oldStart, oldEnd) = (existing.StartDate, existing.EndDate);
         Policy.ApplyTo(existing);
+        SetDrivers(existing, Policy.DriverIds);
         foreach (var v in existing.Vehicles)
         {
             if (v.From == oldStart) v.From = existing.StartDate;

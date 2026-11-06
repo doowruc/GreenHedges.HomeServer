@@ -16,6 +16,13 @@ public class InsurancePolicyView
     public decimal Premium { get; init; }
     public decimal? Excess { get; init; }
     public string? NamedDrivers { get; init; }
+
+    /// <summary>Owners who are named drivers on it, by name.</summary>
+    public List<PolicyDriverView> Drivers { get; init; } = [];
+
+    /// <summary>Every named driver: the owners, then the others typed in.</summary>
+    public string? AllNamedDrivers => string.Join(", ", Drivers.Select(d => d.Name).Append(NamedDrivers).Where(n => !string.IsNullOrEmpty(n))) is { Length: > 0 } all ? all : null;
+
     public int? NoClaimsYears { get; init; }
     public bool ProtectedNoClaims { get; init; }
     public string? Notes { get; init; }
@@ -80,9 +87,17 @@ public class InsurancePolicyView
         Premium = p.Premium,
         Excess = p.Excess,
         NamedDrivers = p.NamedDrivers,
+        Drivers = p.Drivers.AsQueryable().OrderBy(d => d.Owner!.Name).Select(d => new PolicyDriverView { OwnerId = d.OwnerId, Name = d.Owner!.Name }).ToList(),
         NoClaimsYears = p.NoClaimsYears,
         ProtectedNoClaims = p.ProtectedNoClaims,
         Notes = p.Notes,
         Vehicles = p.Vehicles.AsQueryable().OrderBy(v => v.From).ThenBy(v => v.Id).Select(InsurancePeriodView.Projection).ToList()
     };
+}
+
+/// <summary>An owner who's a named driver on a policy.</summary>
+public class PolicyDriverView
+{
+    public int OwnerId { get; init; }
+    public string Name { get; init; } = string.Empty;
 }
