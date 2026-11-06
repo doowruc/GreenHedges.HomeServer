@@ -1,0 +1,87 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Statements/Paste/{typeId:int}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Statements.PasteModel
+@{
+    ViewData["Title"] = $"Paste {Model.TypeName} statements";
+    static string Money(decimal? value) => value is { } v ? v.ToString("N2") : "";
+    static string Signed(decimal? value) => value is { } v ? (v > 0 ? "+" : "") + v.ToString("N2") : "";
+    static string Percent(decimal? value) => value is { } v ? (v > 0 ? "+" : "") + v.ToString("P1") : "";
+    var result = Model.Result;
+}
+
+<h1 class="h3 mb-3">Paste @Model.PensionName's @Model.TypeName statements</h1>
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <p class="text-body-secondary">
+            In the spreadsheet, select the statements with their heading row and copy them, then paste them here. The
+            columns are found by their headings: <strong>Date</strong> and <strong>Value</strong>, and if there is one
+            <strong>Label</strong> (or When)@if (Model.HasProjections) {<text>, and the projections, <strong>Retirement</strong> (or Fund) and <strong>Annual</strong> (or Annual income)</text>}.
+            Other columns are ignored, so the sheet's worked-out ones can come too. Dates @Model.TypeName already has are
+            left as they are.
+        </p>
+        <label asp-for="Text" class="form-label">Pasted rows</label>
+        <textarea asp-for="Text" class="form-control font-monospace small" rows="10" autofocus spellcheck="false"></textarea>
+        <span asp-validation-for="Text" class="text-danger small"></span>
+        <div class="mt-3">
+            <button type="submit" asp-page-handler="Preview" class="btn btn-outline-primary">Preview</button>
+            <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+
+        @if (result is { Error: null })
+        {
+            <hr class="my-4" />
+            <p class="mb-2"><strong>@Model.New.Count</strong> @(Model.New.Count == 1 ? "statement" : "statements") to import@(Model.New.Count > 0 ? $": {Model.New[0].Statement.Date:dd/MM/yyyy} to {Model.New[^1].Statement.Date:dd/MM/yyyy}" : "").</p>
+            @if (Model.Existing.Count > 0)
+            {
+                <p class="mb-2 text-body-secondary">@Model.Existing.Count dates @Model.TypeName already has: left as they are.</p>
+            }
+            @if (result.Ignored.Count > 0)
+            {
+                <p class="mb-2 text-body-secondary">Columns ignored: @string.Join(", ", result.Ignored).</p>
+            }
+            @if (result.Skipped.Count > 0)
+            {
+                <div class="alert alert-warning">
+                    <p class="mb-1">@result.Skipped.Count @(result.Skipped.Count == 1 ? "row is" : "rows are") skipped:</p>
+                    <ul class="mb-0">@foreach (var reason in result.Skipped) {<li>@reason</li>}</ul>
+                </div>
+            }
+            @if (Model.OfferedStartDate is { } start)
+            {
+                <div class="form-check mb-3">
+                    <input asp-for="SetStartDate" class="form-check-input" />
+                    <label asp-for="SetStartDate" class="form-check-label">Set @Model.PensionName's start date to @start.ToString("d MMMM yyyy") (the 0 first row)</label>
+                </div>
+            }
+            @if (Model.New.Count > 0)
+            {
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm align-middle mb-0 payslip-table" data-preview>
+                        <thead class="table-head">
+                            <tr>
+                                <th>Row</th><th>Date</th><th>Label</th><th class="text-end">Value</th><th class="text-end">Change</th><th class="text-end">Growth</th>
+                                @if (Model.HasProjections) { <th class="text-end">At retirement</th><th class="text-end">Annual income</th> }
+                            </tr>
+                        </thead>
+                        <tbody class="amount">
+                        @foreach (var r in Model.New)
+                        {
+                            <tr>
+                                <td>@r.Statement.Row</td>
+                                <td>@r.Statement.Date.ToString("dd/MM/yy")</td>
+                                <td>@r.Statement.Label</td>
+                                <td class="text-end">@Money(r.Statement.Value)</td>
+                                <td class="text-end">@Signed(r.Figures.Change)</td>
+                                <td class="text-end">@Percent(r.Figures.Growth)</td>
+                                @if (Model.HasProjections) { <td class="text-end">@Money(r.Statement.ProjectedFund)</td><td class="text-end">@Money(r.Statement.ProjectedAnnualIncome)</td> }
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="form-text">Check the changes against the spreadsheet's own before importing.</p>
+                <button type="submit" asp-page-handler="Import" class="btn btn-primary">Import @Model.New.Count @(Model.New.Count == 1 ? "statement" : "statements")</button>
+            }
+        }
+    </form>
+</div></div>
