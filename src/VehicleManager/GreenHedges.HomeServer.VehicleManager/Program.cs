@@ -58,14 +58,13 @@ builder.Services.AddScoped<FuelStatsService>();
 builder.Services.AddScoped<FuelImportService>();
 builder.Services.AddScoped<BackupService>();
 
-// Backups are emailed through Resend (see README). The sender's domain must be verified in Resend.
+// Reminders are emailed through Resend (see README). The sender's domain must be verified in Resend.
 builder.Services.AddResend(options =>
 {
     options.ApiToken = RequiredSetting("Resend:ApiKey");
     options.ThrowExceptions = true;
 });
 builder.Services.AddSingleton(new EmailOptions(RequiredSetting("Resend:From")));
-builder.Services.AddScoped<BackupEmailer>();
 builder.Services.AddScoped<ReminderEmailer>();
 
 // MOT and tax lookups (see README). Both are optional: without their settings, those dates are typed in.
@@ -115,7 +114,6 @@ if (builder.Configuration.GetValue("Alerts:Monitor", !builder.Environment.IsDeve
     builder.Services.AddHostedService<VehicleManagerAlertMonitor>();
 
 builder.Services.AddScheduler();
-builder.Services.AddTransient<ScheduledBackups>();
 builder.Services.AddTransient<ScheduledReminders>();
 
 var app = builder.Build();
@@ -135,11 +133,6 @@ if (app.Configuration.GetValue("MigrateOnStartup", true))
 
 app.Services.UseScheduler(scheduler =>
     {
-        // Nightly, email each user a backup if their data has changed since their last one.
-        scheduler.Schedule<ScheduledBackups>()
-            .DailyAt(1, 0)
-            .Zoned(TimeZoneInfo.Utc)
-            .PreventOverlapping(nameof(ScheduledBackups));
         // Each morning (UK time), update MOT and tax dates and email any reminders due.
         scheduler.Schedule<ScheduledReminders>()
             .DailyAt(7, 0)
