@@ -62,6 +62,8 @@ public class TransactionCsvTests
     [InlineData("URI1", "Unit Rebate Re-Investment Example Fund", null, 3, TransactionKind.Rebate)]
     [InlineData("B1", "Example Fund 10 @ 100", 10, -10, TransactionKind.Purchase)]
     [InlineData("S1", "Example Fund 10 @ 100", 10, 10, TransactionKind.Sale)]
+    [InlineData("S2", "Example Fund Fee Sale - 10 @ 100", 10, 10, TransactionKind.Sale)]          // units sold to pay a fee
+    [InlineData("B2", "Example Contribution Rebate Fund 10 @ 100", 10, -10, TransactionKind.Purchase)]
     [InlineData("Z", "Something else", null, 1, TransactionKind.Other)]
     public void Kinds_are_worked_out_from_the_reference_and_description(string reference, string description, int? quantity, int value, TransactionKind kind) =>
         Assert.Equal(kind, TransactionCsv.Kind(reference, description, quantity, value));
@@ -69,6 +71,7 @@ public class TransactionCsvTests
     [Theory]
     [InlineData("Example Fund Class I - Accumulation (GBP) 459.749 @  399.472300", "Example Fund Class I - Accumulation (GBP)")]
     [InlineData("Example Fund 17,667.688 @ 401.2238", "Example Fund")]
+    [InlineData("Example Fund Class I - Accumulation (GBP) Fee Sale - 1.234 @  399.472300", "Example Fund Class I - Accumulation (GBP)")]
     [InlineData("SIPP Contribution", null)]
     [InlineData("Interest From 01/01/2020 TO 31/01/2020", null)]
     public void The_fund_is_the_description_before_its_units_and_price(string description, string? fund) =>

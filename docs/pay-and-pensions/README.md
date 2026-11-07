@@ -45,6 +45,12 @@ row paid in together), paid in the four months before it, oldest first. The prev
 contribution would mark. Payslips with a received date already are left alone. For payslips assigned to the pension
 after its transactions were imported, the Transactions page's **Match payslips** does the same.
 
+A pension's **Holdings** (from its Transactions or Statements page, or the pensions list) shows each fund's units,
+worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: what they cost
+(purchases less sales), and their value and gain at the fund's last purchase or sale price, as an export has no other
+prices. Cash isn't included. A switch from one share class to another doesn't appear in the exports, so the old class
+still shows the units it had.
+
 And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).

@@ -36,8 +36,11 @@ public static class TransactionCsv
 
     private static readonly string[] DateFormats = ["dd/MM/yyyy", "d/M/yyyy", "yyyy-MM-dd"];
 
-    // "Some Fund Class I - Accumulation (GBP) 459.749 @  399.472300": the fund, then units @ price.
-    private static readonly Regex FundDeal = new(@"^(?<fund>.*?)\s+[\d,]+(\.\d+)?\s+@\s+[\d,]+(\.\d+)?\s*$", RegexOptions.CultureInvariant);
+    // "Some Fund Class I - Accumulation (GBP) 459.749 @  399.472300": the fund, then units @ price. Units sold to pay
+    // a fee have a note between: "Some Fund … (GBP) Fee Sale - 1.234 @  399.472300".
+    private static readonly Regex FundDeal = new(
+        @"^(?<fund>.*?)(\s+(Fee\s+)?(Sale|Sell|Purchase|Buy))?(\s*-)?\s+[\d,]+(\.\d+)?\s+@\s+[\d,]+(\.\d+)?\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
     public static TransactionCsvResult Read(byte[] bytes)
     {
@@ -87,12 +90,14 @@ public static class TransactionCsv
     }
 
     /// <summary>
-    /// What a line is, worked out from the provider's reference and description: a contribution, transfer in, interest,
-    /// fee or rebate by their words; otherwise a line with units is a purchase (money out) or a sale (money in).
+    /// What a line is, worked out from the provider's reference and description: a deal in a fund ("units @ price", with
+    /// units) is a purchase (money out) or a sale (money in), whatever the fund's name says; otherwise a contribution,
+    /// transfer in, interest, fee or rebate by their words, and any other line with units is a purchase or sale.
     /// </summary>
     public static TransactionKind Kind(string reference, string description, decimal? quantity, decimal value)
     {
         static bool Has(string text, string word) => text.Contains(word, StringComparison.OrdinalIgnoreCase);
+        if (quantity is { } units && units != 0 && FundDeal.IsMatch(description)) return value < 0 ? TransactionKind.Purchase : TransactionKind.Sale;
         if (reference.StartsWith("FPC", StringComparison.OrdinalIgnoreCase) || Has(description, "Contribution")) return TransactionKind.Contribution;
         if (Has(description, "Transfer") && value > 0) return TransactionKind.TransferIn;
         if (Has(reference, "INTEREST") || description.StartsWith("Interest", StringComparison.OrdinalIgnoreCase)) return TransactionKind.Interest;
@@ -102,7 +107,10 @@ public static class TransactionCsv
         return TransactionKind.Other;
     }
 
-    /// <summary>The fund a purchase or sale is in: the description before its "units @ price". Null for other lines.</summary>
+    /// <summary>
+    /// The fund a purchase or sale is in: the description before its "units @ price", less a note such as "Fee Sale -".
+    /// Null for other lines.
+    /// </summary>
     public static string? Fund(string description)
     {
         var match = FundDeal.Match(description);
