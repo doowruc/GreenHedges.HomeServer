@@ -804,17 +804,6 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                     b.Property<DateTime>("AddedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("BackupEmail")
-                        .HasMaxLength(254)
-                        .HasColumnType("nvarchar(254)");
-
-                    b.Property<DateTime?>("LastBackupDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LastBackupHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasMaxLength(128)

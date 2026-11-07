@@ -10,34 +10,12 @@
     <h2 class="h5">Reminders</h2>
     <p>Each morning, if a vehicle's MOT, tax, insurance or service is due in 30 or 7 days (or is overdue and you haven't
        been reminded), a reminder is emailed to this address. Leave it blank to turn reminders off.</p>
-    <div class="mb-4" style="max-width: 28rem">
+    <div class="mb-3" style="max-width: 28rem">
         <label asp-for="Settings.ReminderEmail" class="form-label"></label>
         <input asp-for="Settings.ReminderEmail" type="email" class="form-control" autocomplete="email" />
         <span asp-validation-for="Settings.ReminderEmail" class="text-danger small"></span>
     </div>
-
-    <h2 class="h5">Scheduled backups</h2>
-    <p>Every night at 01:00 UTC, if your data has changed since the last scheduled backup, a
-       <a asp-page="/Backup/Index">backup</a> is emailed to this address. Leave it blank to turn scheduled backups off.</p>
-    <div class="mb-3" style="max-width: 28rem">
-        <label asp-for="Settings.BackupEmail" class="form-label"></label>
-        <input asp-for="Settings.BackupEmail" type="email" class="form-control" autocomplete="email" />
-        <span asp-validation-for="Settings.BackupEmail" class="text-danger small"></span>
-    </div>
     <button type="submit" class="btn btn-primary">Save</button>
 </div></form>
-
-<div class="card shadow-sm"><div class="card-body">
-    <h2 class="h6">Backup now</h2>
-    <p class="text-muted small mb-2">
-        Last scheduled backup: @(Model.LastScheduledBackup?.ToString("dd/MM/yyyy HH:mm") ?? "never")
-    </p>
-    <form method="post" asp-page-handler="Send">
-        <button type="submit" class="btn btn-outline-secondary btn-sm" disabled="@string.IsNullOrEmpty(Model.Settings.BackupEmail)">
-            <i class="bi bi-envelope me-1"></i>Email a backup now
-        </button>
-        <span class="text-muted small ms-2">Doesn't affect the schedule.</span>
-    </form>
-</div></div>
 
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

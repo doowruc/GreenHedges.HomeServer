@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using GreenHedges.HomeServer.VehicleManager.Models;
@@ -51,13 +50,6 @@ public sealed record BackupFile
 
     /// <summary>The name to save the compressed backup as.</summary>
     public string FileName => $"vehicle-manager-backup-{CreatedDate:yyyy-MM-dd-HHmm}.json.gz";
-
-    /// <summary>
-    /// A SHA-256 hash of the data (ignoring when the backup was made), so two backups of unchanged
-    /// data have the same hash. Unlike the audit dates, it also notices deletions.
-    /// </summary>
-    public string ContentHash() =>
-        Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(this with { CreatedDate = default }, JsonOptions)));
 
     /// <summary>The backup as gzip-compressed JSON.</summary>
     public async Task<byte[]> ToBytesAsync()

@@ -333,16 +333,6 @@ public class BackupFileTests
     }
 
     [Fact]
-    public void The_content_hash_ignores_when_the_backup_was_made_but_not_the_data()
-    {
-        var hash = Sample().ContentHash();
-        Assert.Matches("^[0-9A-F]{64}$", hash);
-        Assert.Equal(hash, Sample(b => b with { CreatedDate = DateTime.UtcNow }).ContentHash());
-        Assert.NotEqual(hash, Sample(b => { b.FuelEntryStops.RemoveAt(1); return b; }).ContentHash());
-        Assert.NotEqual(hash, Sample(b => { b.FuelEntries[0] = b.FuelEntries[0] with { Litres = 40.6m }; return b; }).ContentHash());
-    }
-
-    [Fact]
     public void File_name_has_when_the_backup_was_made() =>
         Assert.Equal("vehicle-manager-backup-2026-10-07-0900.json.gz", Sample().FileName);
 }

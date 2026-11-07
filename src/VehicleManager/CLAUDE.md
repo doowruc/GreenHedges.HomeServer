@@ -34,7 +34,7 @@ so test pages through the in-memory host rather than relying on the browser.
 
 - `Unit/` – pure logic, no database (calculations, stats, allow-list, text splitting, reminders, DVLA/DVSA lookups via the fake).
 - `Data/` – EF Core against the tests' throwaway database: per-user isolation, audit columns, concurrency, stops,
-  brands/stations, scheduled backups and reminders.
+  brands/stations, reminders.
 - `Pages/` – the whole app in memory (`Infrastructure/AppFactory`, a `WebApplicationFactory<Program>`). It loads pages,
   follows links and submits forms through `PageClient`, which sends a form's current values like a browser.
   Auth0 is replaced by a test sign-in, as whichever user the client is for; Auth0 and Resend settings and `AllowedEmails` are
@@ -81,7 +81,6 @@ GreenHedges.HomeServer.VehicleManager/
   Services/    FuelStatsService (summaries), SpendStats (dashboard spend by month/year and vehicle, year on year), FuelImportService (ClosedXML .xlsx import), FuelCalculations,
                ExistingDataClaim, FuelStops (typed names → stops),
                BackupFile (backup JSON format: read/validate/write) + BackupService (create, restore, record),
-               BackupEmailer (emails a backup via Resend), ScheduledBackups (Coravel invocable, nightly),
                Reminders (when to remind; pure) + ReminderEmailer + ScheduledReminders (Coravel, each morning),
                MileageTrend (recent miles per day from fill-up and MOT odometer readings, for service-by-mileage estimates),
                MileageEstimate (+ MileageReading: a vehicle's mileage on a date, for the service form's Estimate button), ServiceSchedule (next service from intervals),
@@ -159,7 +158,7 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 - Fuel brands are managed at `/FuelBrands` (Manage menu); a brand's stations are a sub-page, `/FuelBrands/{brandId}/Stations/...` (`Pages/FuelBrands/Stations`, base `StationPageModel`, which 404s a station not under the brand in the URL). Links and redirects between station pages must pass `brandId`: ASP.NET doesn't carry a route value over to a different page, and the link comes out empty. A station's own page (`Stations/Details`, `/FuelBrands/{brandId}/Stations/{id}`) shows its fill-ups and a pump-price chart with a polynomial trend curve, one tab per fuel type (the vehicle's `FuelType`). `_FuelTable` links each stop there with `?fuelType=` of that row's vehicle, which picks the tab (else the latest fill-up's). `FuelPlaceList<T>` (`Pages/FuelBrands/FuelPlaceList.cs`) holds the database logic shared by both, with `FuelBrandList`/`FuelStationList` subclasses.
 - Fuel import de-duplicates on (vehicle, date, litres) so re-importing is safe. ClosedXML reads `CachedValue` so formula cells use Excel's saved results.
 
-**Backup / restore** (`/Backup`, `/Backup/Restore`, under Manage; scheduled backups set up at `/Settings`)
+**Backup / restore** (`/Backup`, `/Backup/Restore`, under Manage)
 - A backup is gzip-compressed JSON (`BackupFile`): `format`/`version` plus a flat list per table, rows linked by their ids in
   the file. No user id is stored. Restore accepts gzip or plain JSON (detected by the gzip header, not the file name).
 - `BackupFile.Read` validates everything (links, required values, lengths, case-insensitive uniqueness) before any data is
@@ -167,16 +166,11 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
 - `BackupService.RestoreAsync` deletes the user's rows (filtered `ExecuteDelete`) and inserts the backup's in one transaction
   in the execution strategy. It sets `AppDbContext.KeepAuditValues` so restored rows keep their audit values; `UserId` is always
   the current user. Don't use `KeepAuditValues` elsewhere.
-- Scheduled backups: `ScheduledBackups` runs daily at 01:00 UTC (Coravel, `Program.cs`). For each user with a
-  `UserSettings.BackupEmail` it acts as them (`CurrentUser.ActAs`, background work only, in its own DI scope) and
-  `BackupEmailer` emails the `.json.gz` via Resend if the data changed. "Changed" = the backup's `ContentHash()` (SHA-256 of
-  the JSON minus `createdDate`) differs from `UserSettings.LastBackupHash`, so deletions count. Only scheduled emails set
-  `LastBackupDate`/`LastBackupHash`; downloads and "Email a backup now" (`EmailAsync(scheduled: false)`) don't.
-- `Resend:ApiKey` and `Resend:From` come from user secrets (required at startup, like Auth0's). `EmailOptions.From` is
-  used for both backups and reminders.
+- Backups aren't emailed (removed 2026-11-07): the scheduled copies are the nightly database backups, off-site copies
+  and the Mac's pull. Don't add a per-user emailed copy back without a reason the database backups don't cover.
+- `Resend:ApiKey` and `Resend:From` come from user secrets (required at startup, like Auth0's); they're for reminders.
 - Tests: `AppFactory` swaps `IResend` for `Infrastructure/FakeResend` (records emails; addresses containing "fail" fail)
-  and removes Coravel's hosted service (so neither scheduled backups nor reminders run). Never call `ScheduledBackups.Invoke()` in tests: it covers every user, real ones
-  included. Test `BackUpAsync(testUserId)`, or `RunAsync([testUserIds])` for a whole run (it records the run in `AppHealth`).
+  and removes Coravel's hosted service (so reminders don't run).
 
 **Service history**
 - The vehicle page (`Vehicles/Details`) has Fuel, Services, MOT and Insurance tabs (Bootstrap `nav-tabs`). The active one is rendered
@@ -342,7 +336,7 @@ Shared with the other web apps, in `src/Common/GreenHedges.HomeServer.Common.Web
   `Common`'s `AddAlerting()` and `AddHeartbeat()`. Both are off until configured (`Alerts:ResendApiKey`/`From`/`To`,
   `Heartbeat:PingUrl`); without a key, alerts are only logged. `--test-alert` sends one and exits.
 - `VehicleManagerAlertMonitor` (a `Common` `AlertMonitorService`, every `Alerts:CheckInterval`) probes the database and
-  raises, with stable keys: `Database` (not answering for `Alerts:DatabaseDownAfter`, 5 min), `NightlyBackups` and
+  raises, with stable keys: `Database` (not answering for `Alerts:DatabaseDownAfter`, 5 min) and
   `MorningReminders` (the latest run had failures, or none completed for `Alerts:JobOverdueAfter`, 26 h, from startup).
   Job alerts wait while the database is failing. Alerts resolve only on positive evidence since startup.
 - The scheduled jobs record each run (users, failures, last error) in `AppHealth`, including a run that fails before

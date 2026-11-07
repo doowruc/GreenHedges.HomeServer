@@ -86,17 +86,17 @@ public sealed class VehicleManagerAlertMonitorTests : IDisposable
     [Fact]
     public async Task A_run_with_failures_alerts_and_a_clean_run_resolves_it()
     {
-        Run(ScheduledJob.NightlyBackups, users: 3, failures: 1);
+        Run(ScheduledJob.MorningReminders, users: 3, failures: 1);
         await CheckAfter(TimeSpan.FromMinutes(1));
 
         var problem = Assert.Single(_sender.Sent);
-        Assert.Equal("[VehicleManager] PROBLEM: Nightly backups failing", problem.Subject);
+        Assert.Equal("[VehicleManager] PROBLEM: Morning reminders failing", problem.Subject);
         Assert.Contains("failed for 1 of 3 users", problem.Body);
         Assert.Contains("InvalidOperationException: Resend said no", problem.Body);
 
-        Run(ScheduledJob.NightlyBackups);
+        Run(ScheduledJob.MorningReminders);
         await CheckAfter(TimeSpan.FromMinutes(1));
-        Assert.Equal("[VehicleManager] RESOLVED: Nightly backups failing", _sender.Sent[^1].Subject);
+        Assert.Equal("[VehicleManager] RESOLVED: Morning reminders failing", _sender.Sent[^1].Subject);
     }
 
     [Fact]
@@ -105,16 +105,14 @@ public sealed class VehicleManagerAlertMonitorTests : IDisposable
         await CheckAfter(TimeSpan.FromHours(26));
         Assert.Empty(_sender.Sent); // a grace period from startup
 
-        Run(ScheduledJob.NightlyBackups);
         Run(ScheduledJob.MorningReminders);
         await CheckAfter(TimeSpan.FromMinutes(2));
         Assert.Empty(_sender.Sent);
 
         await CheckAfter(TimeSpan.FromHours(26));
-        Assert.Equal(2, _sender.Sent.Count);
-        var problem = Assert.Single(_sender.Sent, e => e.Subject == "[VehicleManager] PROBLEM: Nightly backups failing");
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Equal("[VehicleManager] PROBLEM: Morning reminders failing", problem.Subject);
         Assert.Contains("No run has completed for 26h", problem.Body);
-        Assert.Contains(_sender.Sent, e => e.Subject == "[VehicleManager] PROBLEM: Morning reminders failing");
     }
 
     [Fact]
@@ -135,7 +133,7 @@ public sealed class VehicleManagerAlertMonitorTests : IDisposable
     [Fact]
     public async Task A_restart_doesnt_resolve_without_evidence_or_repeat_the_email()
     {
-        Run(ScheduledJob.NightlyBackups, users: 1, failures: 1);
+        Run(ScheduledJob.MorningReminders, users: 1, failures: 1);
         await CheckAfter(TimeSpan.FromMinutes(1));
         Assert.Single(_sender.Sent);
 
@@ -144,9 +142,9 @@ public sealed class VehicleManagerAlertMonitorTests : IDisposable
         await CheckAfter(TimeSpan.FromHours(1));
         Assert.Single(_sender.Sent);
 
-        Run(ScheduledJob.NightlyBackups);
+        Run(ScheduledJob.MorningReminders);
         await CheckAfter(TimeSpan.FromMinutes(1));
-        Assert.Equal("[VehicleManager] RESOLVED: Nightly backups failing", _sender.Sent[^1].Subject);
+        Assert.Equal("[VehicleManager] RESOLVED: Morning reminders failing", _sender.Sent[^1].Subject);
     }
 
     [Fact]
@@ -156,7 +154,6 @@ public sealed class VehicleManagerAlertMonitorTests : IDisposable
         Start();
         for (var hour = 0; hour < 37; hour++)
         {
-            Run(ScheduledJob.NightlyBackups);
             Run(ScheduledJob.MorningReminders);
             await CheckAfter(TimeSpan.FromHours(1));
         }

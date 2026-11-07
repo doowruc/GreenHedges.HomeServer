@@ -218,14 +218,11 @@ public class DueDatePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         var form = await client.GetAsync("/Settings");
         Assert.Contains("Reminders", form.Text);
 
-        var saved = await client.PostFormAsync("/Settings", form, new()
-        {
-            ["Settings.ReminderEmail"] = " remind@tests.invalid ", ["Settings.BackupEmail"] = "backup@tests.invalid"
-        });
+        var saved = await client.PostFormAsync("/Settings", form, new() { ["Settings.ReminderEmail"] = " remind@tests.invalid " });
         Assert.Equal(HttpStatusCode.Redirect, saved.Status);
 
         await using var db = Db();
         var settings = await db.UserSettings.SingleAsync();
-        Assert.Equal(("remind@tests.invalid", "backup@tests.invalid"), (settings.ReminderEmail, settings.BackupEmail));
+        Assert.Equal("remind@tests.invalid", settings.ReminderEmail);
     }
 }
