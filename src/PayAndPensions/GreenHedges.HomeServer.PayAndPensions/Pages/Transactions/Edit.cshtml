@@ -15,13 +15,21 @@
         @if (d.Quantity is { } q) { <dt class="col-sm-3">Units</dt><dd class="col-sm-9">@q.ToString("#,##0.######")</dd> }
         <dt class="col-sm-3">Value</dt><dd class="col-sm-9">£@d.Value.ToString("N2")</dd>
     </dl>
+    @if (d.IsConversion)
+    {
+        <div class="alert alert-info">This is a fund conversion, so it can't be changed: delete it (both its lines go) and
+            <a asp-page="/Holdings/Convert" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">record it again</a>.</div>
+        <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-year="@GreenHedges.HomeServer.PayAndPensions.Services.TaxYears.Of(d.TradeDate)" class="btn btn-outline-secondary">Back</a>
+    }
+    else
+    {
     <form method="post">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
         <input type="hidden" asp-for="Transaction.RowVersion" />
         <div class="row g-3">
             <div class="col-md-4">
                 <label asp-for="Transaction.Kind" class="form-label"></label>
-                <select asp-for="Transaction.Kind" asp-items="Html.GetEnumSelectList<TransactionKind>()" class="form-select"></select>
+                <select asp-for="Transaction.Kind" asp-items="Html.GetEnumSelectList<TransactionKind>().Where(i => i.Value != ((int)TransactionKind.Conversion).ToString())" class="form-select"></select>
                 <span asp-validation-for="Transaction.Kind" class="text-danger small"></span>
             </div>
             <div class="col-md-8">
@@ -35,6 +43,7 @@
             <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-year="@GreenHedges.HomeServer.PayAndPensions.Services.TaxYears.Of(d.TradeDate)" class="btn btn-outline-secondary">Cancel</a>
         </div>
     </form>
+    }
 </div></div>
 
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

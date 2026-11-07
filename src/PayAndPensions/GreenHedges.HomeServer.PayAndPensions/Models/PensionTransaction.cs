@@ -27,13 +27,14 @@ public class PensionTransaction : AuditedEntity
     /// <summary>Worked out on import from the reference and description; changeable.</summary>
     public TransactionKind Kind { get; set; }
 
-    /// <summary>The fund bought or sold, from the description; changeable.</summary>
+    /// <summary>The fund bought, sold or converted, from the description; changeable (not on a conversion).</summary>
     [StringLength(200)]
     public string? Fund { get; set; }
 
     /// <summary>The price per unit, in pence, as the export gives it.</summary>
     public decimal? UnitPrice { get; set; }
 
+    /// <summary>Units: positive on a purchase or sale; on a conversion, negative for the units converted away.</summary>
     public decimal? Quantity { get; set; }
 
     /// <summary>In pounds: money in is positive, out negative.</summary>
@@ -49,5 +50,10 @@ public enum TransactionKind
     Rebate,
     Purchase,
     Sale,
+    /// <summary>
+    /// A fund's units converted to another's (a share class change), recorded by hand as the exports leave it out: one
+    /// line takes the old fund's units away (negative quantity), one adds the new fund's; their values move the cost.
+    /// </summary>
+    Conversion,
     Other,
 }

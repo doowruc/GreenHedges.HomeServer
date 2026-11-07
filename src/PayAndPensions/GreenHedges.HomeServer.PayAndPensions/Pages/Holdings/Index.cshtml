@@ -12,6 +12,7 @@
         <h1 class="h3 mb-0">@Model.PensionName holdings</h1>
         <div class="text-body-secondary">@Model.PersonName's pension with @Model.ProviderName</div>
     </div>
+    <div class="d-flex gap-2">
     <form method="get" class="input-group input-group-sm flex-nowrap w-auto">
         <label for="asAt" class="input-group-text">As at</label>
         <input id="asAt" name="asAt" type="date" class="form-control" value="@Model.AsAt?.ToString("yyyy-MM-dd")" />
@@ -21,6 +22,12 @@
             <a asp-route-asAt="" class="btn btn-outline-secondary" title="Every transaction">All</a>
         }
     </form>
+    @if (Model.HasTransactions)
+    {
+        <a asp-page="Convert" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary text-nowrap"
+           title="A fund's units converted to another's, such as a share class change: the exports leave these out"><i class="bi bi-arrow-repeat me-1"></i>Record a conversion</a>
+    }
+    </div>
 </div>
 
 @if (Model.Funds.Count == 0)
@@ -49,7 +56,7 @@ else
                 @foreach (var f in Model.Funds)
                 {
                     <tr class="@(f.SoldOut ? "text-body-secondary" : null)">
-                        <td>@f.Fund@(f.SoldOut ? " (sold)" : "")</td>
+                        <td>@f.Fund@(f.Converted ? " (converted)" : f.SoldOut ? " (sold)" : "")</td>
                         <td class="text-end">@f.Deals</td>
                         <td class="text-end">@Number(f.Units)</td>
                         <td class="text-end"><span title="@f.PriceDate?.ToString("dd/MM/yyyy")">@Number(f.Price)</span></td>
@@ -71,7 +78,7 @@ else
         </div>
     </div>
     <p class="form-text mt-1 mb-0">Values are at each fund's last purchase or sale price (hover a price for its date), not today's price,
-        and leave out cash. Cost is what the purchases cost less what the sales raised.</p>
+        and leave out cash. Cost is what the purchases cost less what the sales raised; a conversion moves a fund's units and cost to another.</p>
 }
 @if (Model.WithoutFund > 0)
 {

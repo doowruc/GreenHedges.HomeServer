@@ -39,6 +39,23 @@ public class HoldingsTests
     }
 
     [Fact]
+    public void A_conversion_moves_the_units_and_cost_to_the_new_fund()
+    {
+        var holdings = Holdings.Of(
+        [
+            Buy("Class A", 1, 100, 200),
+            new FundDeal("Class A", new DateOnly(2020, 6, 10), TransactionKind.Conversion, -100, null, 200),
+            new FundDeal("Class I", new DateOnly(2020, 6, 10), TransactionKind.Conversion, 95, null, -200),
+            Buy("Class I", 20, 10, 220),
+        ]);
+
+        var (classI, classA) = (holdings[0], holdings[1]);
+        Assert.Equal(("Class I", 105m, 222m, 231m), (classI.Fund, classI.Units, classI.Cost, classI.Value));   // 105 at 220p
+        Assert.False(classI.Converted);
+        Assert.Equal((0m, 0m, true, true), (classA.Units, classA.Cost, classA.SoldOut, classA.Converted));
+    }
+
+    [Fact]
     public void Without_a_price_there_is_no_value()
     {
         var holding = Assert.Single(Holdings.Of([new FundDeal("Fund A", new DateOnly(2020, 6, 1), TransactionKind.Purchase, 10, null, -20)]));

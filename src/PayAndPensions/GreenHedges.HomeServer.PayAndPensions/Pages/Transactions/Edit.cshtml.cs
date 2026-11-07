@@ -7,10 +7,16 @@ using GreenHedges.HomeServer.PayAndPensions.ViewModels;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Transactions;
 
-/// <summary>Changes a transaction's kind or fund; the rest is as the provider's export had it.</summary>
+/// <summary>
+/// Changes a transaction's kind or fund; the rest is as the provider's export had it. A conversion (recorded on the
+/// Holdings page, as two lines) can't be changed, nor can another line become one: delete it and record it again.
+/// </summary>
 public class EditModel(AppDbContext db) : PensionPageModel(db)
 {
-    public sealed record Details(DateOnly TradeDate, string Reference, string Description, decimal? Quantity, decimal Value);
+    public sealed record Details(DateOnly TradeDate, string Reference, string Description, TransactionKind Kind, decimal? Quantity, decimal Value)
+    {
+        public bool IsConversion => Kind == TransactionKind.Conversion;
+    }
 
     [BindProperty]
     public TransactionInput Transaction { get; set; } = new();
@@ -33,7 +39,10 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
         var existing = await Find(id).FirstOrDefaultAsync();
         if (existing is null) return NotFound();
 
-        if (!Enum.IsDefined(Transaction.Kind)) ModelState.AddModelError("Transaction.Kind", "Choose a kind.");
+        if (existing.Kind == TransactionKind.Conversion)
+            ModelState.AddModelError(string.Empty, "A conversion can't be changed: delete it and record it again on the Holdings page.");
+        else if (!Enum.IsDefined(Transaction.Kind) || Transaction.Kind == TransactionKind.Conversion)
+            ModelState.AddModelError("Transaction.Kind", "Choose a kind.");
         if (!ModelState.IsValid)
         {
             await LoadDetailsAsync(id);
@@ -61,5 +70,5 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
         Db.PensionTransactions.Where(tx => tx.Id == id && tx.PensionId == PensionId);
 
     private async Task LoadDetailsAsync(int id) =>
-        Shown = await Find(id).Select(tx => new Details(tx.TradeDate, tx.Reference, tx.Description, tx.Quantity, tx.Value)).FirstOrDefaultAsync();
+        Shown = await Find(id).Select(tx => new Details(tx.TradeDate, tx.Reference, tx.Description, tx.Kind, tx.Quantity, tx.Value)).FirstOrDefaultAsync();
 }
