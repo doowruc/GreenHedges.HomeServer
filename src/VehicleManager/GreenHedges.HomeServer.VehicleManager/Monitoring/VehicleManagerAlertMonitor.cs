@@ -7,8 +7,8 @@ using GreenHedges.HomeServer.Common.Web.Data;
 namespace GreenHedges.HomeServer.VehicleManager.Monitoring;
 
 /// <summary>
-/// Vehicle Manager's checks, every <c>Alerts:CheckInterval</c>: the database answering, the nightly emailed backups and
-/// morning reminders completing without failures, and (through <see cref="BackupMonitor"/>) the nightly database
+/// Vehicle Manager's checks, every <c>Alerts:CheckInterval</c>: the database answering, the morning reminders completing
+/// without failures, and (through <see cref="BackupMonitor"/>) the nightly database
 /// backups and their off-site copies. Emails and their persistence are the shared <see cref="AlertBook"/>'s.
 /// </summary>
 /// <remarks>
@@ -34,10 +34,7 @@ public sealed class VehicleManagerAlertMonitor(
         /// <summary>The database hasn't answered for <see cref="VehicleManagerAlertOptions.DatabaseDownAfter"/>.</summary>
         Database,
 
-        /// <summary>The latest nightly backup run had failures, or none has completed for <see cref="VehicleManagerAlertOptions.JobOverdueAfter"/>.</summary>
-        NightlyBackups,
-
-        /// <summary>The same, for the morning reminders.</summary>
+        /// <summary>The latest morning reminders run had failures, or none has completed for <see cref="VehicleManagerAlertOptions.JobOverdueAfter"/>.</summary>
         MorningReminders,
     }
 
@@ -60,7 +57,6 @@ public sealed class VehicleManagerAlertMonitor(
         // if they still apply.
         if (snapshot.DatabaseFailingSince is null)
         {
-            await CheckJobAsync(ScheduledJob.NightlyBackups, AlertKind.NightlyBackups, snapshot, now, context, cancellationToken);
             await CheckJobAsync(ScheduledJob.MorningReminders, AlertKind.MorningReminders, snapshot, now, context, cancellationToken);
         }
 
@@ -125,7 +121,6 @@ public sealed class VehicleManagerAlertMonitor(
 
     private static string Name(ScheduledJob job) => job switch
     {
-        ScheduledJob.NightlyBackups => "Nightly backups",
         ScheduledJob.MorningReminders => "Morning reminders",
         _ => job.ToString(),
     };

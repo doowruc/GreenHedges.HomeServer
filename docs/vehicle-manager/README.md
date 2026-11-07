@@ -86,7 +86,7 @@ dotnet user-secrets set "ConnectionStrings:VehicleManager" "Server=localhost,143
 ```
 
 This replaces the Azure connection string in your user secrets, so keep a copy of it first. While the app runs
-locally against real data, its scheduled backups and reminders still send email.
+locally against real data, its reminders still send email.
 
 ## Signing in (Auth0)
 
@@ -162,8 +162,7 @@ Heartbeat__PingUrl=https://hc-ping.com/<uuid>
 | Email subject | Meaning |
 |---|---|
 | **Database unreachable** | The database hasn't answered for 5 minutes. Pages and the scheduled jobs fail until it's back. |
-| **Nightly backups failing** | The latest nightly emailed backup run failed for some users, or none has completed for 26 hours. |
-| **Morning reminders failing** | The same, for the morning MOT/tax check and reminder emails. |
+| **Morning reminders failing** | The latest morning MOT/tax check and reminder run failed for some users, or none has completed for 26 hours. |
 
 Each PROBLEM email is followed by one RESOLVED email, including across restarts (open alerts are kept in
 `alert-state.json` in the working directory). Job alerts wait while the database is failing. The heartbeat pings
@@ -375,26 +374,24 @@ Under **Manage**:
   transaction, so if it fails your data is left as it was. Restored rows keep their original audit
   dates and "added by" values, and become yours, so a backup can also be restored into another account.
 
-**Scheduled backups** – every night at 01:00 UTC, each user who has set a backup email address under
-**Settings** (in the account menu, top right) is emailed a backup, as an attachment, if their data has
-changed since the last scheduled backup. Settings also has **Email a backup now**, to check it works;
-like downloading a backup, it doesn't affect the schedule. Leave the address blank to turn scheduled backups off. Settings aren't part of a backup.
+Settings (in the account menu, top right) aren't part of a backup. Backups aren't emailed: the nightly database
+backups below are the scheduled copies.
 
-Email is sent through [Resend](https://resend.com). Create an API key (sending access is enough) and
+Reminder emails are sent through [Resend](https://resend.com). Create an API key (sending access is enough) and
 verify the domain you'll send from, then store both in user secrets, from the `src/VehicleManager/GreenHedges.HomeServer.VehicleManager` folder:
 
 ```bash
 dotnet user-secrets set "Resend:ApiKey" "re_..."
-dotnet user-secrets set "Resend:From" "Vehicle Manager <backups@example.com>"
+dotnet user-secrets set "Resend:From" "Vehicle Manager <reminders@example.com>"
 ```
 
-The app won't start without them (elsewhere, use `Resend__ApiKey` and `Resend__From`). The schedule
-runs inside the app (Coravel), so the app must be running at 01:00 UTC; if several copies are running
-(e.g. locally and deployed), each one sends. The same goes for reminders at 07:00 UK time.
+The app won't start without them (elsewhere, use `Resend__ApiKey` and `Resend__From`). Reminders are scheduled
+inside the app (Coravel) at 07:00 UK time, so the app must be running then; if several copies are running (e.g. locally
+and deployed), each one sends.
 
 ### Database backups (the home server)
 
-Separately from those per-user emails, the whole database is backed up each night at 03:30 (server time), as the home
+Separately from those per-user downloads, the whole database is backed up each night at 03:30 (server time), as the home
 server's collectors are, through `GreenHedges.HomeServer.Common`:
 
 1. SQL Server writes a full backup (`BACKUP DATABASE … WITH CHECKSUM, COPY_ONLY`: every page's checksum is checked as
@@ -445,7 +442,6 @@ src/VehicleManager/GreenHedges.HomeServer.VehicleManager/
   ViewModels/    View (output) and input models used by the pages, with the calculated figures
   Data/          AppDbContext (EF Core + SQL Server), Migrations/
   Services/      FuelStatsService, FuelImportService (reads .xlsx via ClosedXML), FuelStops, BackupFile + BackupService,
-                 BackupEmailer + ScheduledBackups (nightly emailed backups via Resend, scheduled with Coravel),
                  Reminders + ReminderEmailer + ScheduledReminders (due-date reminders), VehicleLookup + DvlaClient +
                  MotHistoryClient (MOT and tax dates from the DVLA and DVSA), MotTests (stored MOT history),
                  Telemetry (OpenTelemetry setup)

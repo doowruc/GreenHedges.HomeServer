@@ -60,6 +60,10 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
         a source choose its file extension (`.bak.gz`); off-site copies (`<stack>-vehicles`, prefix `vehiclemanager/`, in
         `deploy/aws/offsite.yaml`) and the Mac's pull (`install-backup-pull.sh vehicle-manager`); "Backups failing" and
         "Off-site backup failing" alerts. The emailed JSON backups stay as a user-level copy.
+  - [x] **Stop emailing backups** (2026-11-07). The nightly database backups, off-site copies and the Mac's pull cover
+        them, and an emailed copy sat unencrypted in the inbox. Removed the 01:00 job, the Settings fields and
+        "Email a backup now", the `NightlyBackups` alert, and `UserSettings.BackupEmail`/`LastBackupDate`/`LastBackupHash`
+        (migration `RemoveEmailedBackups`). Download and restore under Manage stay.
   - [x] After merging: update the `greenhedges-offsite` stack (the new IAM user), then create its access key (done
         2026-10-23).
 - [x] **The server's side** (read and update `notes/server/SERVER.md`; done 2026-10-23):

@@ -122,8 +122,8 @@ then merged), so the 50 commits and their reasoning stay with the code.
   DISK … WITH CHECKSUM, COPY_ONLY` into a folder shared with the container, then the usual gzip, 7 kept,
   age-encrypted off-site copy and the Mac's pull. `Common` names backups `*.db.gz`; let a source choose its extension
   (`.bak.gz`). Off-site: a `vehiclemanager/` prefix and write-only IAM user in `deploy/aws/offsite.yaml` (a stack
-  update); `vehicle-manager` in `deploy/mac/install-backup-pull.sh`. The app's own emailed JSON backups stay as a
-  user-level copy.
+  update); `vehicle-manager` in `deploy/mac/install-backup-pull.sh`. The app's own emailed JSON backups stayed as a
+  user-level copy (removed 2026-11-07: the database backups cover them).
 - **Uploads** (import, restore): keep a request-size limit and rate limiting (both in the TODO).
 - **Logging**: to the console, so the journal keeps it; OpenTelemetry stays optional (OTLP only when configured).
 
@@ -163,7 +163,7 @@ Read `notes/server/SERVER.md` first, and update it after (service, port, user, f
   case and its project path). Migrations apply at startup, as now (a single instance, so that's safe).
 - **Auth0:** add `https://vehicles.<tailnet>.ts.net/callback` and `/Account/SignedOut` to the allowed callback and logout
   URLs (keep localhost for development). Auth0 still decides who's allowed; the tailnet limits who can reach it at all.
-- Coravel jobs (01:00 UTC backups, 07:00 UK reminders) run on the server from then on. Stop running a local copy against
+- Coravel jobs (01:00 UTC backups, until 2026-11-07; 07:00 UK reminders) run on the server from then on. Stop running a local copy against
   real data, or both send.
 - Phone access: Tailscale on the phone, as for Nightscout. Revisit the PWA item then.
 
