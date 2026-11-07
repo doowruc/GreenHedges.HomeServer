@@ -120,7 +120,10 @@ GreenHedges.HomeServer.PayAndPensions/
 - **Holdings** (`Holdings`, `Holdings/Index`): each fund's units from its purchases (adding) and sales (taking away;
   the exports give both as positive quantities), as at a date; cost is purchases less sales, value is the units at the
   fund's latest deal's price (pence), so only as recent as that deal. Purchases or sales without a fund aren't counted,
-  and the page says how many.
+  and the page says how many. A **conversion** (`Holdings/Convert`; the exports leave them out) is two lines of kind
+  Conversion with reference `CONVERSION` on its date: the old fund's units held then (negative quantity, value its
+  cost) and the units received of the new one (value minus that cost), so cost moves and cash doesn't change. It
+  can't be edited, nor can a line become one; deleting either line deletes both.
 - **Contributions to payslips** (`ContributionMatching`, `PensionPayslips`): an import, or the Transactions page's
   Match payslips, sets the pension received date on the pension's payslips without one. A contribution (kind
   Contribution, positive) matches the oldest run of such payslips in a row by pay date, up to 6, paid in the 120 days

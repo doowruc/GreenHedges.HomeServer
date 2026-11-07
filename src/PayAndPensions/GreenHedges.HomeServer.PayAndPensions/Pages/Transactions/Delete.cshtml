@@ -5,7 +5,10 @@
 <h1 class="h3 mb-3">Delete @Model.PensionName's transaction</h1>
 <div class="card shadow-sm border-danger"><div class="card-body">
     <p>Are you sure you want to delete @Model.Description?</p>
-    <p class="text-body-secondary">Importing a file that has it will add it again.</p>
+    @if (!Model.IsConversion)
+    {
+        <p class="text-body-secondary">Importing a file that has it will add it again.</p>
+    }
     <form method="post">
         <button type="submit" class="btn btn-danger">Delete</button>
         <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-year="@GreenHedges.HomeServer.PayAndPensions.Services.TaxYears.Of(Model.TradeDate)" class="btn btn-outline-secondary">Cancel</a>

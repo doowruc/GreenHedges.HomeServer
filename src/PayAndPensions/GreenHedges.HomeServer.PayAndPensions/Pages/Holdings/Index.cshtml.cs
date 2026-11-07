@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.PayAndPensions.Data;
-using GreenHedges.HomeServer.PayAndPensions.Models;
 using GreenHedges.HomeServer.PayAndPensions.Services;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Holdings;
@@ -36,12 +35,10 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
         var transactions = Db.PensionTransactions.Where(tx => tx.PensionId == PensionId);
         HasTransactions = await transactions.AnyAsync();
         if (AsAt is { } asAt) transactions = transactions.Where(tx => tx.TradeDate <= asAt);
-        var deals = transactions.Where(tx => (tx.Kind == TransactionKind.Purchase || tx.Kind == TransactionKind.Sale) && tx.Quantity != null);
+        var deals = transactions.Deals();
 
         WithoutFund = await deals.CountAsync(tx => tx.Fund == null);
-        Funds = Services.Holdings.Of(await deals.Where(tx => tx.Fund != null)
-            .Select(tx => new FundDeal(tx.Fund!, tx.TradeDate, tx.Kind, tx.Quantity!.Value, tx.UnitPrice, tx.Value))
-            .ToListAsync());
+        Funds = Services.Holdings.Of(await deals.ToFundDealsAsync());
         return Page();
     }
 }
