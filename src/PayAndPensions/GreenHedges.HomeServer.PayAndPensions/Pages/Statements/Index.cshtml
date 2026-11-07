@@ -106,6 +106,7 @@
 <div class="d-flex gap-2 mt-3">
     <a asp-page="/Pensions/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>@Model.PersonName's pensions</a>
     <a asp-page="/Transactions/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right me-1"></i>Transactions</a>
+    <a asp-page="/Holdings/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pie-chart me-1"></i>Holdings</a>
 </div>
 
 @section Scripts { <script src="~/js/row-menu.js" asp-append-version="true"></script> }

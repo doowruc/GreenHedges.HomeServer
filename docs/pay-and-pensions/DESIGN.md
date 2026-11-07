@@ -152,7 +152,8 @@ One branch and PR each:
    contributions to the payslips whose pension amounts (employee's and employer's, over one or more months in a row,
    paid in the 120 days before) add up to them exactly, oldest first, and set those payslips' pension received date.
    Done.
-7. **Units held:** each fund's units and value, from the purchases and sales.
+7. **Units held:** each fund's units, cost and value (at its last dealing price), from the purchases and sales, as at
+   any date. Done. An export leaves out a switch between share classes, so the old class still shows its units.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.

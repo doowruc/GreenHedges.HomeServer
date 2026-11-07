@@ -43,6 +43,7 @@ else if (Model.Pensions.Count == 0)
                     <td class="text-end text-nowrap">
                         <a asp-page="/Statements/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Statements"><i class="bi bi-file-earmark-text"></i></a>
                         <a asp-page="/Transactions/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Transactions"><i class="bi bi-arrow-left-right"></i></a>
+                        <a asp-page="/Holdings/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Holdings"><i class="bi bi-pie-chart"></i></a>
                         <a asp-page="Assign" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Assign to payslips"><i class="bi bi-link-45deg"></i></a>
                         <a asp-page="Edit" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
                         <a asp-page="Delete" asp-route-personId="@Model.PersonId" asp-route-id="@pn.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>

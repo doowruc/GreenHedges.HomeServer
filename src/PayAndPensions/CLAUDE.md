@@ -60,6 +60,7 @@ GreenHedges.HomeServer.PayAndPensions/
                Import/ (PayslipWorkbook reads a spreadsheet; PayslipImporter plans and imports it; StatementPaste reads
                statements pasted from one; TransactionCsv reads a provider's transaction export and picks the new
                lines; pure, unit tested),
+               Holdings (each fund's units, cost and value from a pension's purchases and sales; pure, unit tested),
                ContributionMatching (which payslips each pension contribution came from; pure, unit tested) and
                PensionPayslips (runs it for a pension and sets the payslips' pension received date),
                PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
@@ -68,7 +69,7 @@ GreenHedges.HomeServer.PayAndPensions/
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions
   Pages/       Index (dashboard: one person at a time, ?person=), PayCharts (the charts' JSON), People/*, Employers/*,
                PayElements/*, Payslips/*, Pensions/* (add and edit share PensionFormModel; Assign sets one on a range
-               of payslips), Statements/*, StatementTypes/* and Transactions/* (a pension's, at /People/{id}/Pensions/{pensionId}/…,
+               of payslips), Statements/*, StatementTypes/*, Transactions/* and Holdings/ (a pension's, at /People/{id}/Pensions/{pensionId}/…,
                through PensionPageModel), Import/ and Years/ (tax years, at /People/{id}/TaxYears; the folder isn't
                TaxYears, which would hide the TaxYears class) (per person, under
                /People/{personId}/…, through PersonPageModel; Payslips' add and edit share PayslipFormModel),
@@ -114,7 +115,12 @@ GreenHedges.HomeServer.PayAndPensions/
   overlapping files count once, but two identical lines in one file both count). Upload, preview, import: only the
   files are kept between steps (base64, 2 MB together). Log counts only. The list is by tax year, latest first, with
   totals per kind, paid in (contributions and transfers in) and the change in cash. A pension (or person) with
-  transactions can't be deleted (FK `Restrict`).
+  transactions can't be deleted (FK `Restrict`). A line with units whose description is a deal ("fund units @ price",
+  perhaps with a note such as "Fee Sale -" before the units) is a purchase or sale whatever the fund's name says.
+- **Holdings** (`Holdings`, `Holdings/Index`): each fund's units from its purchases (adding) and sales (taking away;
+  the exports give both as positive quantities), as at a date; cost is purchases less sales, value is the units at the
+  fund's latest deal's price (pence), so only as recent as that deal. Purchases or sales without a fund aren't counted,
+  and the page says how many.
 - **Contributions to payslips** (`ContributionMatching`, `PensionPayslips`): an import, or the Transactions page's
   Match payslips, sets the pension received date on the pension's payslips without one. A contribution (kind
   Contribution, positive) matches the oldest run of such payslips in a row by pay date, up to 6, paid in the 120 days

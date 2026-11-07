@@ -1,0 +1,86 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Holdings"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Holdings.IndexModel
+@{
+    ViewData["Title"] = $"{Model.PensionName} holdings";
+    // Only digits and £, which would otherwise be encoded.
+    static Microsoft.AspNetCore.Html.HtmlString Money(decimal? value) => new(value is { } v ? "£" + v.ToString("N2") : "");
+    static string Number(decimal? value) => value is { } v ? v.ToString("#,##0.######") : "";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">@Model.PensionName holdings</h1>
+        <div class="text-body-secondary">@Model.PersonName's pension with @Model.ProviderName</div>
+    </div>
+    <form method="get" class="input-group input-group-sm flex-nowrap w-auto">
+        <label for="asAt" class="input-group-text">As at</label>
+        <input id="asAt" name="asAt" type="date" class="form-control" value="@Model.AsAt?.ToString("yyyy-MM-dd")" />
+        <button type="submit" class="btn btn-outline-secondary">Show</button>
+        @if (Model.AsAt is not null)
+        {
+            <a asp-route-asAt="" class="btn btn-outline-secondary" title="Every transaction">All</a>
+        }
+    </form>
+</div>
+
+@if (Model.Funds.Count == 0)
+{
+    <div class="alert alert-info">
+        No purchases or sales of funds@(Model.AsAt is { } d ? $" up to {d:dd/MM/yyyy}" : "").
+        @if (!Model.HasTransactions)
+        {
+            <a asp-page="/Transactions/Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Import</a> <text>the provider's transaction history (CSV).</text>
+        }
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0 amount" data-holdings>
+                <thead class="table-head">
+                    <tr>
+                        <th>Fund</th><th class="text-end">Deals</th><th class="text-end">Units</th>
+                        <th class="text-end" title="The fund's last purchase or sale">Last price (p)</th>
+                        <th class="text-end">Value</th><th class="text-end" title="Purchases less sales">Cost</th><th class="text-end">Gain</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var f in Model.Funds)
+                {
+                    <tr class="@(f.SoldOut ? "text-body-secondary" : null)">
+                        <td>@f.Fund@(f.SoldOut ? " (sold)" : "")</td>
+                        <td class="text-end">@f.Deals</td>
+                        <td class="text-end">@Number(f.Units)</td>
+                        <td class="text-end"><span title="@f.PriceDate?.ToString("dd/MM/yyyy")">@Number(f.Price)</span></td>
+                        <td class="text-end">@Money(f.Value)</td>
+                        <td class="text-end">@Money(f.Cost)</td>
+                        <td class="text-end @(f.Gain < 0 ? "text-danger-emphasis" : null)">@Money(f.Gain)</td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot>
+                    <tr class="fw-semibold">
+                        <th scope="row" colspan="4">Total</th>
+                        <td class="text-end">@Money(Model.TotalValue)</td>
+                        <td class="text-end">@Money(Model.TotalCost)</td>
+                        <td class="text-end">@(Model.AllValued ? Money(Model.TotalValue - Model.TotalCost) : Money(null))</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    <p class="form-text mt-1 mb-0">Values are at each fund's last purchase or sale price (hover a price for its date), not today's price,
+        and leave out cash. Cost is what the purchases cost less what the sales raised.</p>
+}
+@if (Model.WithoutFund > 0)
+{
+    <div class="alert alert-warning mt-3">
+        @Model.WithoutFund @(Model.WithoutFund == 1 ? "purchase or sale has no fund, so isn't" : "purchases or sales have no fund, so aren't") counted:
+        edit them on the <a asp-page="/Transactions/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">transactions</a> page to give them one.</div>
+}
+<div class="d-flex gap-2 mt-3">
+    <a asp-page="/Pensions/Index" asp-route-personId="@Model.PersonId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>@Model.PersonName's pensions</a>
+    <a asp-page="/Transactions/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left-right me-1"></i>Transactions</a>
+    <a asp-page="/Statements/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark-text me-1"></i>Statements</a>
+</div>
