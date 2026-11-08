@@ -28,6 +28,9 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
 
     public bool AllValued => Funds.All(f => f.Value is not null);
 
+    /// <summary>The total gain as a percentage of the total cost; null unless every fund has a value.</summary>
+    public decimal? TotalGainPercent => AllValued ? Services.Holdings.GainPercent(TotalValue - TotalCost, TotalCost) : null;
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadPensionAsync()) return NotFound();

@@ -152,7 +152,7 @@ One branch and PR each:
    contributions to the payslips whose pension amounts (employee's and employer's, over one or more months in a row,
    paid in the 120 days before) add up to them exactly, oldest first, and set those payslips' pension received date.
    Done.
-7. **Units held:** each fund's units, cost and value (at its last dealing price), from the purchases and sales, as at
+7. **Units held:** each fund's units, average cost and value (at its last dealing price), from the purchases and sales, as at
    any date. An export leaves out a conversion between funds (a share class change), so it's recorded by hand: the
    units received, with the old fund's cost. Done.
 
