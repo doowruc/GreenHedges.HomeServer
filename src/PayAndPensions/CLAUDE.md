@@ -64,7 +64,8 @@ GreenHedges.HomeServer.PayAndPensions/
                Holdings (each fund's units, cost and value from a pension's purchases and sales; pure, unit tested),
                ContributionMatching (which payslips each pension contribution came from; pure, unit tested) and
                PensionPayslips (runs it for a pension and sets the payslips' pension received date),
-               PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years)
+               PayHistory (a person's payslips and tax years, worked out: for the dashboard and Years),
+               PensionOverview (a pension's value, gain and projection for the dashboard; pure, unit tested; PensionHistory loads it)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PayAndPensionsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PayAndPensionsAlertOptions

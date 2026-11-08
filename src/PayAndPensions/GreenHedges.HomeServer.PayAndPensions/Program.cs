@@ -43,6 +43,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.RequiredSetting("ConnectionStrings:PayAndPensions"),
         sql => sql.EnableRetryOnFailure()));
 builder.Services.AddScoped<PayHistory>();
+builder.Services.AddScoped<PensionHistory>();
 builder.Services.AddScoped<PayslipImporter>();
 builder.Services.AddScoped<PensionPayslips>();
 

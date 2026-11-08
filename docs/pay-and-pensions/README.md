@@ -8,7 +8,8 @@ Salary, Tax, Employer pension, each with a kind and a category; a pension deduct
 which leaves it out of the higher-rate pension relief); and **payslips**, a table per tax year with the
 figures the spreadsheets worked out and the year's totals. A new payslip starts from the latest one, so usually only
 a few amounts change. **Importing** a person's existing spreadsheet (below). The **dashboard**, one person at a time:
-their latest payslip, the tax year so far and predicted, and charts of gross and net by month and by tax year. And
+their latest payslip, the tax year so far and predicted, charts of gross and net by month and by tax year, and their
+pensions' total value, gain, contributions, projection and value over time. And
 **tax years**: every year's totals, with the change on the same months of the year before. **Pensions**: pension
 providers (shared by the people, with their websites) and each person's pensions with them (type and policy number),
 and the pension each payslip's pension amounts go to: chosen on the payslip (a new one takes the latest's), or set on

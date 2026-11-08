@@ -50,14 +50,10 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
         return Page();
     }
 
-    /// <summary>Each fund with an ISIN's latest price on or before the date shown. A few hundred rows a fund: picked here.</summary>
+    /// <summary>Each fund with an ISIN's latest price on or before the date shown.</summary>
     private async Task<Dictionary<string, SourcePrice>> DailyPricesAsync()
     {
-        var isins = Isins.Values.Distinct().ToList();
-        var prices = await Db.FundPrices.Where(p => isins.Contains(p.Isin) && (AsAt == null || p.Date <= AsAt))
-            .Select(p => new { p.Isin, p.Date, p.Price }).ToListAsync();
-        var latest = prices.GroupBy(p => p.Isin).ToDictionary(g => g.Key, g => g.MaxBy(p => p.Date)!);
-        return Isins.Where(f => latest.ContainsKey(f.Value))
-            .ToDictionary(f => f.Key, f => new SourcePrice(latest[f.Value].Date, latest[f.Value].Price), StringComparer.OrdinalIgnoreCase);
+        var latest = await Db.LatestPricesAsync(Isins.Values.Distinct().ToList(), AsAt);
+        return Isins.Where(f => latest.ContainsKey(f.Value)).ToDictionary(f => f.Key, f => latest[f.Value], StringComparer.OrdinalIgnoreCase);
     }
 }
