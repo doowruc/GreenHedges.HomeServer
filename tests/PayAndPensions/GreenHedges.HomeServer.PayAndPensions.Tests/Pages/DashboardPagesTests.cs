@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using GreenHedges.HomeServer.PayAndPensions.Data;
 using GreenHedges.HomeServer.PayAndPensions.Models;
 using GreenHedges.HomeServer.PayAndPensions.Tests.Infrastructure;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Tests.Pages;
 
-/// <summary>The dashboard and the tax years page, with made-up payslips.</summary>
+/// <summary>The dashboard and the tax years page, with made-up payslips and pensions.</summary>
 public class DashboardPagesTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactory>
 {
     /// <summary>A full 2025-26 at 3,000 a month, and two months of 2026-27 at 3,300.</summary>
@@ -56,6 +57,98 @@ public class DashboardPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.DoesNotContain("£2,575.00", (await app.ClientFor(stranger).GetAsync($"/?person={alex.Id}")).Text);
         await using (var db = TestDatabase.As(stranger)) await TestData.AddPersonAsync(db, "Someone");
         Assert.Equal(HttpStatusCode.NotFound, (await app.ClientFor(stranger).GetAsync($"/?person={alex.Id}")).Status);
+    }
+
+    /// <summary>A SIPP with a fund bought at 200p and now valued at its last deal, 300p, and two statements with a projection.</summary>
+    private async Task<Pension> AddSippAsync(Person person, AppDbContext db)
+    {
+        var sipp = await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db), "Example SIPP", PensionType.Sipp);
+        var type = await TestData.AddStatementTypeAsync(db, sipp, "Annual illustration", hasProjections: true);
+        await TestData.AddStatementAsync(db, type, new DateOnly(2025, 4, 5), 900m, projectedFund: 40000m, projectedAnnualIncome: 1600m);
+        await TestData.AddStatementAsync(db, type, new DateOnly(2026, 4, 5), 950m, projectedFund: 50000m, projectedAnnualIncome: 2000m);
+        var bought = await TestData.AddTransactionAsync(db, sipp, new DateOnly(2026, 5, 1), -600m, TransactionKind.Purchase, "B1", "Fund 300 @ 200");
+        (bought.Fund, bought.Quantity, bought.UnitPrice) = ("Fund", 300m, 200m);
+        var more = await TestData.AddTransactionAsync(db, sipp, new DateOnly(2026, 6, 1), -300m, TransactionKind.Purchase, "B2", "Fund 100 @ 300");
+        (more.Fund, more.Quantity, more.UnitPrice) = ("Fund", 100m, 300m);
+        await db.SaveChangesAsync();
+        return sipp;
+    }
+
+    [DatabaseFact]
+    public async Task The_dashboard_sums_up_the_persons_pensions()
+    {
+        var person = await PersonWithPayAsync();
+        Pension sipp;
+        await using (var db = Db())
+        {
+            sipp = await AddSippAsync(person, db);
+            // Valued from a statement alone: in the total and the table, not the gain.
+            var workplace = await TestData.AddPensionAsync(db, person, await TestData.AddProviderAsync(db, "Other Pensions"), "Example workplace");
+            await TestData.AddStatementAsync(db, await TestData.AddStatementTypeAsync(db, workplace), new DateOnly(2026, 3, 31), 500m);
+            await TestData.AddPayslipAsync(db, person, 2026, 3, ("Salary", 3300m), ("Pension", 165m), ("Employer pension", 200m));
+        }
+
+        var page = await app.ClientFor(UserId).GetAsync("/");
+
+        Assert.Contains("£1,700.00", page.Text);               // 400 units at 300p, and the statement
+        Assert.Contains("2 pensions, oldest figure 31/03/2026", page.Text);
+        Assert.Contains("+£300.00", page.Text);                // 1,200 less 900
+        Assert.Contains("+33.33% on £900.00 cost, pensions with holdings only", page.Text);
+        Assert.Contains("£695.00", page.Text);                 // 2026-27: 3 × 165 yours and 200 employer
+        Assert.Contains("£495.00 yours, £200.00 employer; 2025-26 was £1,800.00", page.Text);
+        Assert.Contains("£50,000.00", page.Text);
+        Assert.Contains("£2,000.00 a year", page.Text);
+        Assert.Contains("data-pension-values=", page.Html);
+        Assert.Contains("Example workplace", page.Text);
+        Assert.Contains($"href=\"/People/{person.Id}/Pensions/{sipp.Id}/Holdings\"", page.Html);
+        Assert.Contains($"href=\"/People/{person.Id}/Pensions/{sipp.Id}/Statements\"", page.Html);
+    }
+
+    [DatabaseFact]
+    public async Task Someone_with_a_pension_but_no_payslips_still_sees_it()
+    {
+        await using var db = Db();
+        var person = await TestData.AddPersonAsync(db);
+        await AddSippAsync(person, db);
+
+        var page = await app.ClientFor(UserId).GetAsync($"/?person={person.Id}");
+
+        Assert.Contains("Alex has no payslips yet", page.Text);
+        Assert.Contains("£1,200.00", page.Text);
+        Assert.DoesNotContain("contributions", page.Text);
+        Assert.Contains("data-pension-values=", page.Html);
+        Assert.Contains("/js/pay-charts", page.Html);          // the chart has its script without the pay charts
+    }
+
+    [DatabaseFact]
+    public async Task A_pension_with_only_one_value_gets_no_chart_and_a_pension_with_none_is_still_listed()
+    {
+        var person = await PersonWithPayAsync();
+        await using (var db = Db())
+        {
+            var provider = await TestData.AddProviderAsync(db);
+            var one = await TestData.AddPensionAsync(db, person, provider, "One statement");
+            await TestData.AddStatementAsync(db, await TestData.AddStatementTypeAsync(db, one), new DateOnly(2026, 3, 31), 500m);
+            await TestData.AddPensionAsync(db, person, provider, "Brand new");
+        }
+
+        var page = await app.ClientFor(UserId).GetAsync("/");
+
+        Assert.Contains("One statement", page.Text);
+        Assert.Contains("Brand new", page.Text);
+        Assert.Contains("as at 31/03/2026", page.Text);
+        Assert.DoesNotContain("data-pension-values=", page.Html);
+    }
+
+    [DatabaseFact]
+    public async Task Without_pensions_the_dashboard_has_no_pension_section()
+    {
+        await PersonWithPayAsync();
+
+        var page = await app.ClientFor(UserId).GetAsync("/");
+
+        Assert.DoesNotContain("Each pension", page.Text);
+        Assert.DoesNotContain("data-pension-values=", page.Html);
     }
 
     [DatabaseFact]

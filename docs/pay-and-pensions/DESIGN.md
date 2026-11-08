@@ -76,7 +76,9 @@ feed its history without typing them twice, and the pension received date become
 ## Pages
 
 - **Dashboard:** choose a person; the latest payslip, this tax year to date and predicted, gross and net over time
-  (Chart.js), totals by tax year.
+  (Chart.js), totals by tax year; then, if they have pensions, the total value, gain, this tax year's contributions and
+  the projection, each pension's value over time, and a row per pension. A pension counts once: from its holdings when
+  every fund held has a price, else its latest statement.
 - **Payslips:** one table per tax year, laid out like the workbook with the derived columns (DataTables).
 - **Add / edit payslip:** a new payslip starts from the previous month's lines, so usually only a few figures change.
 - **Tax years:** totals, change on the year before, take-home %, pension and relief.

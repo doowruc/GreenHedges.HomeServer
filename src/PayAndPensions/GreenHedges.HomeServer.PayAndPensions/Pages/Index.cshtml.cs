@@ -8,14 +8,20 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages;
 
 /// <summary>
 /// The dashboard, one person at a time: their latest payslip, the tax year so far, and charts of their pay by month and
-/// by tax year. A person without payslips gets the links to set them up instead.
+/// by tax year (a person without payslips gets the links to set them up instead), then their pensions if they have any.
 /// </summary>
-public class IndexModel(AppDbContext db, PayHistory history) : PageModel
+public class IndexModel(AppDbContext db, PayHistory history, PensionHistory pensionHistory) : PageModel
 {
     public record PersonOption(int Id, string Name, int Employers, int PayElements, int Payslips);
 
     /// <param name="Net">Net for the tax year so far.</param>
     public record YearSoFar(int TaxYear, int Payslips, decimal Gross, decimal Net, decimal PredictedGross);
+
+    /// <summary>A tax year's pension contributions from payslips.</summary>
+    public record Contributions(int TaxYear, decimal Yours, decimal Employer)
+    {
+        public decimal Total => Yours + Employer;
+    }
 
     /// <summary>The person shown: the one asked for, else the first with payslips, else the first.</summary>
     [BindProperty(SupportsGet = true)]
@@ -37,6 +43,16 @@ public class IndexModel(AppDbContext db, PayHistory history) : PageModel
 
     public string YearlyChartJson { get; private set; } = "{}";
 
+    public PersonPensions Pensions { get; private set; } = new([]);
+
+    /// <summary>The latest payslip's tax year, so far; null without payslips or pension lines on them.</summary>
+    public Contributions? ContributionsThisYear { get; private set; }
+
+    public Contributions? ContributionsLastYear { get; private set; }
+
+    /// <summary>Null when there's no line to draw.</summary>
+    public string? PensionChartJson { get; private set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         People = await db.People.OrderBy(p => p.Name)
@@ -48,6 +64,9 @@ public class IndexModel(AppDbContext db, PayHistory history) : PageModel
             ? People.FirstOrDefault(p => p.Id == id)
             : People.FirstOrDefault(p => p.Payslips > 0) ?? People[0];
         if (Shown is null) return NotFound();
+
+        Pensions = await pensionHistory.LoadAsync(Shown.Id);
+        PensionChartJson = PayCharts.PensionValues(Pensions.Pensions);
         if (Shown.Payslips == 0) return Page();
 
         var pay = await history.LoadAsync(Shown.Id);
@@ -58,6 +77,13 @@ public class IndexModel(AppDbContext db, PayHistory history) : PageModel
         LastYear = pay.TaxYears.FirstOrDefault(t => t.TaxYear == Latest.TaxYear - 1);
         MonthlyChartJson = PayCharts.Monthly(pay.Payslips);
         YearlyChartJson = PayCharts.Yearly(pay.TaxYears);
+        ContributionsThisYear = ContributionsIn(pay, Latest.TaxYear);
+        ContributionsLastYear = ContributionsIn(pay, Latest.TaxYear - 1);
         return Page();
     }
+
+    private static Contributions? ContributionsIn(PersonPay pay, int taxYear) =>
+        pay.TaxYears.FirstOrDefault(t => t.TaxYear == taxYear) is { } year && year.EmployeePension + year.EmployerPension != 0
+            ? new Contributions(taxYear, year.EmployeePension, year.EmployerPension)
+            : null;
 }

@@ -21,6 +21,19 @@ public static class PayCharts
         }, Json);
     }
 
+    /// <summary>
+    /// Each pension's value over time, for those with any; null unless one has at least two points, so a line to draw.
+    /// </summary>
+    public static string? PensionValues(IEnumerable<PensionSummary> pensions)
+    {
+        var series = pensions.Where(p => p.History.Count > 0).ToList();
+        if (series.All(p => p.History.Count < 2)) return null;
+        return JsonSerializer.Serialize(new
+        {
+            series = series.Select(p => new { label = p.Name, points = p.History.Select(h => new { date = h.Date, value = h.Value }) })
+        }, Json);
+    }
+
     /// <summary>Gross and net per payslip, oldest first, labelled by pay date (e.g. "Apr 26").</summary>
     public static string Monthly(IEnumerable<PayslipSummary> payslips)
     {

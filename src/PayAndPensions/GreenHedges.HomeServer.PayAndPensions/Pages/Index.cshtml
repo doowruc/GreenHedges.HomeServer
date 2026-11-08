@@ -6,6 +6,8 @@
     // The navbar's people switcher shows who's on show (the dashboard's person isn't in its route).
     ViewData[GreenHedges.HomeServer.PayAndPensions.Pages.Shared.PersonSwitcherViewComponent.CurrentPersonKey] = Model.Shown?.Id;
     static string Money(decimal value) => "£" + value.ToString("N2");
+    static string Signed(decimal value) => (value < 0 ? "-£" : "+£") + Math.Abs(value).ToString("N2");
+    static string Percent(decimal? value) => value is { } v ? (v > 0 ? "+" : "") + v.ToString("N2") + "%" : "";
     var p = Model.Shown;
 }
 
@@ -85,8 +87,104 @@ else
     </div>
 }
 
+@if (p is not null && Model.Pensions.Pensions.Count > 0)
+{
+    var pensions = Model.Pensions;
+    var thisYear = Model.ContributionsThisYear;
+    var lastYear = Model.ContributionsLastYear;
+    <h2 class="h5 mt-4 mb-3">Pensions</h2>
+    <div class="row g-3 mb-3">
+        @if (pensions.ValuedCount > 0)
+        {
+            <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+                <div class="label">Pension value</div>
+                <div class="value">@Money(pensions.TotalValue)</div>
+                <div class="small text-body-secondary">
+                    @(pensions.ValuedCount == 1 ? $"as at {pensions.OldestValueDate:d}" : $"{pensions.ValuedCount} pensions, oldest figure {pensions.OldestValueDate:d}")
+                </div>
+            </div></div></div>
+        }
+        @if (pensions.WithHoldingsCount > 0)
+        {
+            <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+                <div class="label">Gain</div>
+                <div class="value">@Signed(pensions.TotalGain)</div>
+                <div class="small text-body-secondary">
+                    @Percent(pensions.TotalGainPercent) on @Money(pensions.TotalCost) cost@(pensions.WithHoldingsCount < pensions.Pensions.Count ? ", pensions with holdings only" : "")
+                </div>
+            </div></div></div>
+        }
+        @if (thisYear is not null)
+        {
+            <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+                <div class="label">@TaxYears.Label(thisYear.TaxYear) contributions</div>
+                <div class="value">@Money(thisYear.Total)</div>
+                <div class="small text-body-secondary">
+                    @Money(thisYear.Yours) yours, @Money(thisYear.Employer) employer@(lastYear is null ? "" : $"; {TaxYears.Label(lastYear.TaxYear)} was {Money(lastYear.Total)}")
+                </div>
+            </div></div></div>
+        }
+        @if (pensions.HasProjections)
+        {
+            <div class="col-6 col-lg-3"><div class="card shadow-sm h-100 stat-card"><div class="card-body">
+                <div class="label">Projected at retirement</div>
+                <div class="value">@(pensions.ProjectedFund is { } fund && fund != 0 ? Money(fund) : Money(pensions.ProjectedAnnualIncome ?? 0) + " a year")</div>
+                <div class="small text-body-secondary">
+                    @(pensions.ProjectedFund is { } shown && shown != 0 && pensions.ProjectedAnnualIncome is { } income && income != 0 ? $"{Money(income)} a year; " : "")from statements to @pensions.OldestProjectionDate?.ToString("d")
+                </div>
+            </div></div></div>
+        }
+    </div>
+
+    <div class="row g-3">
+        @if (Model.PensionChartJson is not null)
+        {
+            <div class="col-lg-6"><div class="card shadow-sm h-100"><div class="card-body">
+                <h2 class="h6">Value over time</h2>
+                <div class="chart-box"><canvas data-pension-values="@Model.PensionChartJson" role="img" aria-label="Each pension's value over time"></canvas></div>
+            </div></div></div>
+        }
+        <div class="@(Model.PensionChartJson is null ? "col-12" : "col-lg-6")"><div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Each pension</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr><th>Pension</th><th class="text-end">Value</th><th>As at</th><th class="text-end">Gain</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pension in pensions.Pensions)
+                        {
+                            <tr>
+                                <td>@pension.Name<div class="small text-body-secondary">@pension.Provider</div></td>
+                                <td class="text-end">@(pension.Value is { } value ? Money(value) : "")</td>
+                                <td>
+                                    @pension.ValueDate?.ToString("d")
+                                    @if (pension.Value is not null)
+                                    {
+                                        <div class="small text-body-secondary">@(pension.FromHoldings ? "Holdings" : "Statement")</div>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (pension.Gain is { } gain)
+                                    {
+                                        @Signed(gain)<div class="small text-body-secondary">@Percent(pension.GainPercent)</div>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-page="/Holdings/Index" asp-route-personId="@p.Id" asp-route-pensionId="@pension.Id" class="btn btn-sm btn-outline-secondary">Holdings</a>
+                                    <a asp-page="/Statements/Index" asp-route-personId="@p.Id" asp-route-pensionId="@pension.Id" class="btn btn-sm btn-outline-secondary">Statements</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div></div></div>
+    </div>
+}
+
 @section Scripts {
-    @if (Model.Latest is not null)
+    @if (Model.Latest is not null || Model.PensionChartJson is not null)
     {
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
         <script src="~/js/pay-charts.js" asp-append-version="true"></script>
