@@ -15,6 +15,9 @@ public sealed record MileageTrend(DateOnly LatestDate, int LatestOdometer, doubl
 
     public double MilesPerMonth => MilesPerDay * 365.25 / 12;
 
+    /// <summary>The estimated miles a year at this rate, to the nearest 100 (as insurance quotes ask for it).</summary>
+    public int MilesPerYear => (int)(Math.Round(MilesPerDay * 365.25 / 100, MidpointRounding.AwayFromZero) * 100);
+
     /// <summary>When the odometer will reach (or reached) <paramref name="mileage"/>, at this rate.</summary>
     public DateOnly DateAt(int mileage) =>
         LatestDate.AddDays((int)Math.Clamp(Math.Round((mileage - LatestOdometer) / MilesPerDay), -36500, 36500));

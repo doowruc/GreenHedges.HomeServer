@@ -60,6 +60,8 @@ public class ValuationPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Contains("data-pre-renewal=\"mileage\">40,000</span>", page.Html);   // 39,700 + 10 days at 30 a day
         Assert.Contains("data-copy=\"VALUE 1\"", page.Html);
         Assert.Contains("data-copy=\"40000\"", page.Html);
+        Assert.Contains("data-pre-renewal=\"miles-per-year\">11,000</span>", page.Html);   // 30 a day
+        Assert.Contains("data-copy=\"11000\"", page.Html);
         foreach (var site in ValuationSites.All) Assert.Contains($"href=\"{site.Url}\"", page.Html);
         Assert.Contains("No values yet.", page.Text);
     }
@@ -197,5 +199,7 @@ public class ValuationPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         var page = await app.ClientFor(UserId).GetAsync("/Insurance/PreRenewal");
         Assert.Contains($"data-vehicle=\"{vehicleId}\"", page.Html);
         Assert.Contains("No odometer readings.", page.Text);
+        Assert.Contains("Not enough readings to estimate.", page.Text);
+        Assert.DoesNotContain("data-pre-renewal=\"miles-per-year\"", page.Html);
     }
 }

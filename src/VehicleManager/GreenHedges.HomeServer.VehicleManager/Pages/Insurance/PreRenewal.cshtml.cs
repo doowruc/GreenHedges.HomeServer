@@ -54,9 +54,10 @@ public class PreRenewalModel(AppDbContext db) : PageModel
 
     /// <summary>
     /// A vehicle to value: the mileage to look it up at (the latest reading moved on to today; null without readings),
-    /// its values by type and grade (null without any), and the latest value (the form starts from its type, grade and source).
+    /// the estimated miles a year (null without a trend), its values by type and grade (null without any), and the
+    /// latest value (the form starts from its type, grade and source).
     /// </summary>
-    public record VehicleRow(int VehicleId, string Name, string RegistrationNumber, int? SuggestedMileage,
+    public record VehicleRow(int VehicleId, string Name, string RegistrationNumber, int? SuggestedMileage, int? MilesPerYear,
         ValuationSummary? Summary, VehicleValuationView? Latest);
 
     /// <summary>The vehicles on <see cref="BasisPolicy"/> at its end (without one, the owner's), less those disposed of.</summary>
@@ -143,7 +144,8 @@ public class PreRenewalModel(AppDbContext db) : PageModel
         {
             var history = values[v.Id].ToList();
             return new VehicleRow(v.Id, $"{v.Make} {v.Model}".Trim(), v.RegistrationNumber,
-                MileageTrend.SuggestedMileage(readings[v.Id], today), ValuationSummary.For(history), history.FirstOrDefault());
+                MileageTrend.SuggestedMileage(readings[v.Id], today), MileageTrend.From(readings[v.Id])?.MilesPerYear,
+                ValuationSummary.For(history), history.FirstOrDefault());
         }).ToList();
     }
 }
