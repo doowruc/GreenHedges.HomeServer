@@ -46,8 +46,8 @@ contribution would mark. Payslips with a received date already are left alone. F
 after its transactions were imported, the Transactions page's **Match payslips** does the same.
 
 A pension's **Holdings** (from its Transactions or Statements page, or the pensions list) shows each fund's units,
-worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: what they cost
-(purchases less sales), and their value and gain at the fund's last purchase or sale price, as an export has no other
+worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: their cost
+(the average cost of the units held, so a sale takes off its share of it), and their value and gain at the fund's last purchase or sale price, as an export has no other
 prices. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
 exports: **Record a conversion** with its date, the two funds and the units received (from the provider's statement
 or current holdings). All the old fund's units held on that date become the new fund's, which takes over their cost.

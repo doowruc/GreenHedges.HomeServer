@@ -49,7 +49,7 @@ else
                     <tr>
                         <th>Fund</th><th class="text-end">Deals</th><th class="text-end">Units</th>
                         <th class="text-end" title="The fund's last purchase or sale">Last price (p)</th>
-                        <th class="text-end">Value</th><th class="text-end" title="Purchases less sales">Cost</th><th class="text-end">Gain</th>
+                        <th class="text-end">Value</th><th class="text-end" title="The average cost of the units held">Cost</th><th class="text-end">Gain</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,7 +78,7 @@ else
         </div>
     </div>
     <p class="form-text mt-1 mb-0">Values are at each fund's last purchase or sale price (hover a price for its date), not today's price,
-        and leave out cash. Cost is what the purchases cost less what the sales raised; a conversion moves a fund's units and cost to another.</p>
+        and leave out cash. Cost is the average cost of the units held: a sale takes off its share of it, and a conversion moves a fund's units and cost to another.</p>
 }
 @if (Model.WithoutFund > 0)
 {

@@ -17,10 +17,10 @@ public class HoldingsTests
         var holding = Assert.Single(Holdings.Of([Buy("Fund A", 1, 100, 200), Sell("Fund A", 20, 30, 250), Buy("Fund A", 10, 50, 220)]));
 
         Assert.Equal(("Fund A", 3, 120m), (holding.Fund, holding.Deals, holding.Units));
-        Assert.Equal(200m + 110m - 75m, holding.Cost);
+        Assert.Equal(248m, holding.Cost);   // 310 for 150 units, less the 30 sold's share: not the 75 they raised
         Assert.Equal((250m, new DateOnly(2020, 6, 20)), (holding.Price, holding.PriceDate));
         Assert.Equal(300m, holding.Value);
-        Assert.Equal(65m, holding.Gain);
+        Assert.Equal(52m, holding.Gain);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class HoldingsTests
         Assert.Equal(["big", "Small", "Gone"], holdings.Select(h => h.Fund));   // a fund's name ignoring case
         Assert.Equal([101m, 10m, 0m], holdings.Select(h => h.Units));
         Assert.True(holdings[2].SoldOut);
-        Assert.Equal(-2m, holdings[2].Cost);   // sold for more than it cost
+        Assert.Equal(0m, holdings[2].Cost);   // nothing held, however much it was sold for
     }
 
     [Fact]
@@ -53,6 +53,14 @@ public class HoldingsTests
         Assert.Equal(("Class I", 105m, 222m, 231m), (classI.Fund, classI.Units, classI.Cost, classI.Value));   // 105 at 220p
         Assert.False(classI.Converted);
         Assert.Equal((0m, 0m, true, true), (classA.Units, classA.Cost, classA.SoldOut, classA.Converted));
+    }
+
+    [Fact]
+    public void A_sale_takes_its_share_of_the_cost_in_date_order_and_units_bought_that_day_count()
+    {
+        var holding = Assert.Single(Holdings.Of([Sell("Fund A", 5, 50, 300), Buy("Fund A", 5, 50, 100), Buy("Fund A", 1, 50, 300)]));
+
+        Assert.Equal((50m, 100m), (holding.Units, holding.Cost));   // 150 + 50 = 200 for 100 units; half of them sold
     }
 
     [Fact]

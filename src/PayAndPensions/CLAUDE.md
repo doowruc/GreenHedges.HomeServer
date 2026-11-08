@@ -118,7 +118,7 @@ GreenHedges.HomeServer.PayAndPensions/
   transactions can't be deleted (FK `Restrict`). A line with units whose description is a deal ("fund units @ price",
   perhaps with a note such as "Fee Sale -" before the units) is a purchase or sale whatever the fund's name says.
 - **Holdings** (`Holdings`, `Holdings/Index`): each fund's units from its purchases (adding) and sales (taking away;
-  the exports give both as positive quantities), as at a date; cost is purchases less sales, value is the units at the
+  the exports give both as positive quantities), as at a date; cost is average cost (a sale takes off its share, whatever it raised), value is the units at the
   fund's latest deal's price (pence), so only as recent as that deal. Purchases or sales without a fund aren't counted,
   and the page says how many. A **conversion** (`Holdings/Convert`; the exports leave them out) is two lines of kind
   Conversion with reference `CONVERSION` on its date: the old fund's units held then (negative quantity, value its
