@@ -25,6 +25,9 @@ public sealed record FundHolding(string Fund, int Deals, decimal Units, decimal 
 
     /// <summary>Value less cost; null without a value.</summary>
     public decimal? Gain => Value - Cost;
+
+    /// <summary>The gain as a percentage of the cost; null without a value or a cost.</summary>
+    public decimal? GainPercent => Holdings.GainPercent(Gain, Cost);
 }
 
 /// <summary>
@@ -73,6 +76,9 @@ public static class Holdings
         var bookCost = Math.Round(cost, 2, MidpointRounding.AwayFromZero);
         return new FundHolding(fund.Key, fund.Count(), units, bookCost, priced?.UnitPrice, priced?.TradeDate, value, converted);
     }
+
+    /// <summary>A gain as a percentage of its cost; null without a gain or a cost above nothing.</summary>
+    public static decimal? GainPercent(decimal? gain, decimal cost) => gain is { } g && cost > 0 ? g / cost * 100 : null;
 
     private static bool TakesUnitsAway(FundDeal deal) => deal.Kind == TransactionKind.Sale || deal.Quantity < 0;
 }

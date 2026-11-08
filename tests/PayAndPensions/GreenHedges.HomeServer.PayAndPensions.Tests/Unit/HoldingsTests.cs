@@ -21,6 +21,7 @@ public class HoldingsTests
         Assert.Equal((250m, new DateOnly(2020, 6, 20)), (holding.Price, holding.PriceDate));
         Assert.Equal(300m, holding.Value);
         Assert.Equal(52m, holding.Gain);
+        Assert.Equal(20.97m, Math.Round(holding.GainPercent!.Value, 2));   // 52 on 248
     }
 
     [Fact]
@@ -36,6 +37,7 @@ public class HoldingsTests
         Assert.Equal([101m, 10m, 0m], holdings.Select(h => h.Units));
         Assert.True(holdings[2].SoldOut);
         Assert.Equal(0m, holdings[2].Cost);   // nothing held, however much it was sold for
+        Assert.Null(holdings[2].GainPercent);   // no cost to be a percentage of
     }
 
     [Fact]
@@ -69,5 +71,6 @@ public class HoldingsTests
         var holding = Assert.Single(Holdings.Of([new FundDeal("Fund A", new DateOnly(2020, 6, 1), TransactionKind.Purchase, 10, null, -20)]));
 
         Assert.Equal((10m, 20m, (decimal?)null, (decimal?)null), (holding.Units, holding.Cost, holding.Price, holding.Value));
+        Assert.Null(holding.GainPercent);
     }
 }

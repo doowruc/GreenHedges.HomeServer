@@ -40,6 +40,8 @@ public class HoldingsPagesTests(AppFactory app) : DatabaseTest, IClassFixture<Ap
         Assert.Contains("<td class=\"text-end\">£810.00</td>", page.Html);     // 450 at 180p
         Assert.Contains("<td class=\"text-end\">£855.00</td>", page.Html);     // cost: 950 for 500 units, less the 50 sold's share
         Assert.Contains("£-45.00", page.Html);                                 // gain
+        Assert.Contains("text-danger-emphasis\">-5.26%</td>", page.Html);      // 45 lost on 855
+        Assert.Contains("<td class=\"text-end\">-5.26%</td>", page.Html);      // and the total
 
         var earlier = await client.GetAsync($"{Url(ids)}?asAt=2020-06-30");
         Assert.Contains("<td class=\"text-end\">400</td>", earlier.Html);

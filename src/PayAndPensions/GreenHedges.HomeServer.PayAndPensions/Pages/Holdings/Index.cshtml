@@ -4,6 +4,7 @@
     ViewData["Title"] = $"{Model.PensionName} holdings";
     // Only digits and £, which would otherwise be encoded.
     static Microsoft.AspNetCore.Html.HtmlString Money(decimal? value) => new(value is { } v ? "£" + v.ToString("N2") : "");
+    static string Percent(decimal? value) => value is { } v ? v.ToString("N2") + "%" : "";
     static string Number(decimal? value) => value is { } v ? v.ToString("#,##0.######") : "";
 }
 
@@ -49,7 +50,7 @@ else
                     <tr>
                         <th>Fund</th><th class="text-end">Deals</th><th class="text-end">Units</th>
                         <th class="text-end" title="The fund's last purchase or sale">Last price (p)</th>
-                        <th class="text-end">Value</th><th class="text-end" title="The average cost of the units held">Cost</th><th class="text-end">Gain</th>
+                        <th class="text-end">Value</th><th class="text-end" title="The average cost of the units held">Cost</th><th class="text-end">Gain</th><th class="text-end" title="The gain as a percentage of the cost">Gain %</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,6 +64,7 @@ else
                         <td class="text-end">@Money(f.Value)</td>
                         <td class="text-end">@Money(f.Cost)</td>
                         <td class="text-end @(f.Gain < 0 ? "text-danger-emphasis" : null)">@Money(f.Gain)</td>
+                        <td class="text-end @(f.GainPercent < 0 ? "text-danger-emphasis" : null)">@Percent(f.GainPercent)</td>
                     </tr>
                 }
                 </tbody>
@@ -72,6 +74,7 @@ else
                         <td class="text-end">@Money(Model.TotalValue)</td>
                         <td class="text-end">@Money(Model.TotalCost)</td>
                         <td class="text-end">@(Model.AllValued ? Money(Model.TotalValue - Model.TotalCost) : Money(null))</td>
+                        <td class="text-end">@Percent(Model.TotalGainPercent)</td>
                     </tr>
                 </tfoot>
             </table>
