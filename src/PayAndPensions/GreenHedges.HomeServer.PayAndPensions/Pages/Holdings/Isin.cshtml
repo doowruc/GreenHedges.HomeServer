@@ -1,0 +1,27 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Holdings/Isin"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Holdings.IsinModel
+@{ ViewData["Title"] = "Fund ISIN"; }
+
+<h1 class="h3 mb-1">Fund ISIN</h1>
+<p class="text-body-secondary">@Model.Fund</p>
+<div class="card shadow-sm"><div class="card-body">
+    <p>With the fund's ISIN, its value uses a daily price instead of the last purchase or sale. A UK fund's ISIN is on its factsheet.</p>
+    @if (!Model.FeedConfigured)
+    {
+        <div class="alert alert-info">The price feed has no key yet, so prices won't be fetched until it does.</div>
+    }
+    <form method="post" asp-route-fund="@Model.Fund">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Input.RowVersion" />
+        <div class="col-md-4">
+            <label asp-for="Input.Isin" class="form-label"></label>
+            <input asp-for="Input.Isin" class="form-control" maxlength="12" autocomplete="off" />
+            <span asp-validation-for="Input.Isin" class="text-danger small"></span>
+            <div class="form-text">Leave blank to stop fetching prices.</div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div></div>

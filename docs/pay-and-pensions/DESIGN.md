@@ -155,7 +155,8 @@ One branch and PR each:
 7. **Units held:** each fund's units, average cost and value (at its last dealing price), from the purchases and sales, as at
    any date. An export leaves out a conversion between funds (a share class change), so it's recorded by hand: the
    units received, with the old fund's cost, or imported from a fund's security movements export, which also has the
-   cost adjustments that bring the cost into line with the provider's book cost. Done.
+   cost adjustments that bring the cost into line with the provider's book cost. A fund with an ISIN is valued at its
+   daily price from EODHD. Done.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.

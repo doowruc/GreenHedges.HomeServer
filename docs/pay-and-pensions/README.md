@@ -47,8 +47,10 @@ after its transactions were imported, the Transactions page's **Match payslips**
 
 A pension's **Holdings** (from its Transactions or Statements page, or the pensions list) shows each fund's units,
 worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: their cost
-(the average cost of the units held, so a sale takes off its share of it), and their value, gain and % gain at the fund's last purchase or sale price, as an export has no other
-prices. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
+(the average cost of the units held, so a sale takes off its share of it), and their value, gain and % gain at the fund's latest price. That's the fund's last purchase or sale,
+as an export has no other prices, unless you give it an **ISIN** (the Set link in its row): the app then fetches its
+daily price from [EODHD](https://eodhd.com), a year's history at once and then each morning at 08:00, and the value
+uses the latest one on or before the date shown, unless a deal is more recent. The price and its date are in the row. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
 exports: **Record a conversion** with its date, the two funds and the units received (from the provider's statement
 or current holdings). All the old fund's units held on that date become the new fund's, which takes over their cost.
 A conversion shows as two lines on the Transactions page; it can't be edited, and deleting it deletes both.

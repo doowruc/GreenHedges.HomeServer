@@ -13,12 +13,12 @@ public sealed record FundDeal(string Fund, DateOnly TradeDate, TransactionKind K
 
 /// <summary>
 /// A fund's units held, from its purchases and sales: their book cost (the average cost of the units held), and their
-/// value at the last price the fund was dealt at (<paramref name="Price"/> in pence, on <paramref name="PriceDate"/>):
-/// null without one.
+/// value at its latest price (<paramref name="Price"/> in pence, on <paramref name="PriceDate"/>): null without one.
 /// </summary>
 /// <param name="Converted">Its units were all converted to another fund.</param>
+/// <param name="DailyPrice">The price is from the daily feed, not the fund's last deal.</param>
 public sealed record FundHolding(string Fund, int Deals, decimal Units, decimal Cost, decimal? Price, DateOnly? PriceDate, decimal? Value,
-    bool Converted = false)
+    bool Converted = false, bool DailyPrice = false)
 {
     /// <summary>Every unit bought has been sold (or converted).</summary>
     public bool SoldOut => Units == 0;
@@ -36,20 +36,21 @@ public sealed record FundHolding(string Fund, int Deals, decimal Units, decimal 
 /// another (<see cref="TransactionKind.Conversion"/>). Book cost is average cost: a purchase adds what it cost, and a
 /// sale takes off its share of the cost so far, whatever it raised, and a cost adjustment changes it with no units. A
 /// conversion away takes everything held when it's within a unit of it, as a provider's movements round it down. The value is the units at the latest deal's price:
-/// an export has no prices but its deals, so it's only as recent as the last purchase or sale. Pure, so unit tested.
+/// an export has no prices but its deals, so a fund with an ISIN uses the daily price instead, unless a deal is more
+/// recent. Pure, so unit tested.
 /// </summary>
 public static class Holdings
 {
     /// <summary>The funds dealt in, largest value first (then by name), those sold out last.</summary>
-    public static List<FundHolding> Of(IEnumerable<FundDeal> deals) =>
+    public static List<FundHolding> Of(IEnumerable<FundDeal> deals, IReadOnlyDictionary<string, SourcePrice>? dailyPrices = null) =>
         deals.Where(d => d.Kind == TransactionKind.CostAdjustment
                 || (d.Kind is TransactionKind.Purchase or TransactionKind.Sale or TransactionKind.Conversion && d.Quantity != 0))
             .GroupBy(d => d.Fund, StringComparer.OrdinalIgnoreCase)
-            .Select(Holding)
+            .Select(fund => Holding(fund, dailyPrices?.GetValueOrDefault(fund.Key)))
             .OrderBy(h => h.SoldOut).ThenByDescending(h => h.Value ?? 0).ThenBy(h => h.Fund, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-    private static FundHolding Holding(IGrouping<string, FundDeal> fund)
+    private static FundHolding Holding(IGrouping<string, FundDeal> fund, SourcePrice? daily)
     {
         decimal units = 0, cost = 0;
         foreach (var deal in fund.OrderBy(d => d.TradeDate).ThenBy(DayOrder))
@@ -77,10 +78,14 @@ public static class Holdings
             if (units == 0) cost = 0;
         }
         var priced = fund.Where(d => d.UnitPrice is > 0).OrderBy(d => d.TradeDate).LastOrDefault();
-        var value = priced is null ? (decimal?)null : Math.Round(units * priced.UnitPrice!.Value / 100, 2, MidpointRounding.AwayFromZero);
+        var useDaily = daily is not null && (priced is null || daily.Date >= priced.TradeDate);
+        var price = useDaily ? daily!.Price : priced?.UnitPrice;
+        var priceDate = useDaily ? daily!.Date : priced?.TradeDate;
+        // To the penny, as the providers show them, before multiplying: it's what their valuations come from.
+        var value = price is { } p ? Math.Round(units * Math.Round(p, 2, MidpointRounding.AwayFromZero) / 100, 2, MidpointRounding.AwayFromZero) : (decimal?)null;
         var converted = units == 0 && fund.Where(d => d.Kind != TransactionKind.CostAdjustment).MaxBy(d => d.TradeDate) is { Kind: TransactionKind.Conversion, Quantity: < 0 };
         var bookCost = Math.Round(cost, 2, MidpointRounding.AwayFromZero);
-        return new FundHolding(fund.Key, fund.Count(d => d.Kind != TransactionKind.CostAdjustment), units, bookCost, priced?.UnitPrice, priced?.TradeDate, value, converted);
+        return new FundHolding(fund.Key, fund.Count(d => d.Kind != TransactionKind.CostAdjustment), units, bookCost, price, priceDate, value, converted, useDaily);
     }
 
     /// <summary>A gain as a percentage of its cost; null without a gain or a cost above nothing.</summary>

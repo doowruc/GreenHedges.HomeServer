@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using GreenHedges.HomeServer.PayAndPensions.Services;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Tests.Infrastructure;
 
@@ -20,6 +21,9 @@ public sealed class AppFactory : WebApplicationFactory<Program>
 {
     public const string UserHeader = "X-Test-User";
     public const string Email = "tests@payandpensions.invalid";
+
+    /// <summary>What the app's price feed returns.</summary>
+    public FakeFundPriceSource FundPriceSource { get; } = new();
 
     static AppFactory()
     {
@@ -36,6 +40,9 @@ public sealed class AppFactory : WebApplicationFactory<Program>
             TestDatabase.IsConfigured ? TestDatabase.ConnectionString : "Server=tests.invalid;Database=none;Connect Timeout=1");
         Environment.SetEnvironmentVariable("MigrateOnStartup", "false");
 
+        // No daily job, and never the real feed (a fake replaces it below), whatever the user secrets hold.
+        Environment.SetEnvironmentVariable("Eodhd__ApiToken", "");
+
         // The alert monitor runs (it's off by default in Development), but sends no email and no heartbeat pings
         // (neither is configured), and keeps open alerts out of the working folder.
         Environment.SetEnvironmentVariable("Alerts__Monitor", "true");
@@ -49,6 +56,7 @@ public sealed class AppFactory : WebApplicationFactory<Program>
         builder.ConfigureLogging(logging => logging.SetMinimumLevel(LogLevel.Warning));
         builder.ConfigureTestServices(services =>
         {
+            services.AddSingleton<IFundPriceSource>(FundPriceSource);
             services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, TestSignIn>(TestSignIn.SchemeName, _ => { });
             services.PostConfigure<AuthenticationOptions>(o =>
             {

@@ -52,7 +52,8 @@ figures, and never a real spreadsheet.
 GreenHedges.HomeServer.PayAndPensions/
   Models/      EF Core entities: Person (the user-owned root), Employer, PayElement (+ PayElementKind, PayCategory),
                Payslip, PayslipLine, PensionProvider (user-owned, shared by the people), Pension (+ PensionType),
-               StatementType (a pension's kinds of statement), PensionStatement, PensionTransaction (+ TransactionKind)
+               StatementType (a pension's kinds of statement), PensionStatement, PensionTransaction (+ TransactionKind),
+               PensionFund (a fund's ISIN), FundPrice (daily prices, shared)
   ViewModels/  *Input classes for the forms (PayslipInput with a PayslipLineInput per pay element)
   Services/    TaxYears (6 April to 5 April; labels "2026-27", tax months), PayCalculations (each payslip's figures and
                each tax year's totals, as the spreadsheets worked them out; pure, unit tested), StatementCalculations
@@ -124,6 +125,13 @@ GreenHedges.HomeServer.PayAndPensions/
   Conversion with reference `CONVERSION` on its date: the old fund's units held then (negative quantity, value its
   cost) and the units received of the new one (value minus that cost), so cost moves and cash doesn't change. It
   can't be edited, nor can a line become one; deleting either line deletes both.
+- **Daily prices** (`FundPrices`, `FundPriceJob`, `EodhdPriceSource`, `Holdings/Isin`): a pension's fund can have an ISIN
+  (`PensionFund`). Prices (`FundPrice`: ISIN and date, in pence) are public data shared by ISIN, with no owner or audit
+  columns. Each ISIN asks for everything since its last price (a year back on the first), when saved and at startup and
+  08:00 UK time; 20 calls a day on the free tier. Off until `Eodhd:ApiToken` is set. The key is in the request's URL, so
+  that URL must never reach a log or trace (`Program`'s log filter, `Redact`, and logging only an exception's type). A
+  fund's price is the latest on or before the date shown, unless its last deal is newer; the value uses the price
+  rounded to 2 places, as the provider's does.
 - **Security movements** (`TransactionCsv.Read` spots them by a heading row with Date, Type and Total cost; the same
   Import page): one fund's export, named on its first line. Corp.A lines become **cost adjustments** (kind
   CostAdjustment, value the cost taken off, no units); Conversion in/out become a conversion with the provider's cost
