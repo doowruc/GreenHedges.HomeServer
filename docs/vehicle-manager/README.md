@@ -203,7 +203,7 @@ for each owner who is a named driver on their current policy (or latest, if none
 and licence are there too.
 Below them come the vehicles on the policy (those still on it at its end; with no policy, the owner's current ones),
 for the current value quotes ask for: the mileage now (the latest odometer reading moved on at its recent rate, to the
-nearest 100), copy buttons for it and the registration, links to the Parkers, Auto Trader and What Car? valuation
+nearest 100), the estimated miles per year at that rate (also to the nearest 100), copy buttons for them and the registration, links to the Parkers, Auto Trader and What Car? valuation
 pages, a form to save a value (date, mileage, value, type: private, retail, trade or part exchange; an optional
 grade: poor, average or good; and source), and a table of the latest values by type and grade: each site's figure,
 their average, and the previous round's average with the change. A round is the values within 30 days of its newest

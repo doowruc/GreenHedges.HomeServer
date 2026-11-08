@@ -71,6 +71,13 @@ public class MileageTrendTests
         Assert.Equal(Latest.AddDays(36500), new MileageTrend(Latest, 0, 0.001).DateAt(9_999_999));
 
     [Fact]
+    public void Estimates_the_miles_a_year_to_the_nearest_100()
+    {
+        Assert.Equal(11000, new MileageTrend(Latest, 40000, 30).MilesPerYear);   // 10,957.5
+        Assert.Equal(3700, new MileageTrend(Latest, 40000, 10).MilesPerYear);   // 3,652.5
+    }
+
+    [Fact]
     public void Suggests_the_mileage_for_a_valuation_from_the_latest_reading_and_the_trend()
     {
         // 30 miles a day since the latest reading of 40,000: 100 days on is 43,000; rounded to the nearest 100.
