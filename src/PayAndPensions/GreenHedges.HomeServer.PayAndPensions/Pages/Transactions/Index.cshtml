@@ -103,7 +103,7 @@ else
                 <tr><th scope="row" class="fw-normal">@Label(t.Kind) <span class="text-body-secondary small">(@t.Count)</span></th><td class="text-end">£@Money(t.Value)</td></tr>
             }
             <tr class="fw-semibold"><th scope="row" title="Contributions and transfers in">Paid in</th><td class="text-end">£@Money(Model.PaidIn)</td></tr>
-            <tr><th scope="row" class="fw-normal" title="Every line together">Change in cash</th><td class="text-end">£@Money(Model.CashChange)</td></tr>
+            <tr><th scope="row" class="fw-normal" title="Every line that moved cash: not conversions or cost adjustments">Change in cash</th><td class="text-end">£@Money(Model.CashChange)</td></tr>
             </tbody>
         </table>
     </div>

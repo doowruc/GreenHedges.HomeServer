@@ -25,7 +25,13 @@ public sealed record TransactionCsvResult(string? Error, List<CsvTransaction> Ro
 /// kept: they hold the client's name and number), then a heading row with Trade date and Value, then a line per
 /// transaction. Columns by heading: Trade date, Settle date, Reference, Description, Unit cost (p), Quantity, Value (£).
 /// Dates are UK; amounts may have commas, and "n/a" means none. Each line's kind and fund are worked out from its
-/// reference and description (<see cref="Kind"/>, <see cref="Fund"/>). Pure, so unit tested; text in en-GB.
+/// reference and description (<see cref="Kind"/>, <see cref="Fund"/>).
+/// <para>
+/// Also reads a fund's security movements export (a first line naming the fund, then the account's lines, then a heading
+/// row with Date, Type and Total cost), for what the history leaves out: its corporate actions' cost adjustments and
+/// its conversions. Bought and Sold lines are ignored, as the history has them with exact units. Pure, so unit tested;
+/// text in en-GB.
+/// </para>
 /// </summary>
 public static class TransactionCsv
 {
@@ -49,6 +55,9 @@ public static class TransactionCsv
             .Where(l => l.Cells.Any(c => c.Length > 0))
             .ToList();
         if (lines.Count == 0) return Failed("The file is empty.");
+
+        var movementsAt = lines.FindIndex(l => Column(l.Cells, "Date") >= 0 && Column(l.Cells, "Type") >= 0 && Column(l.Cells, "Total cost") >= 0);
+        if (movementsAt >= 0) return ReadMovements(lines, movementsAt);
 
         var headingAt = lines.FindIndex(l => Column(l.Cells, "Trade date") >= 0 && Column(l.Cells, "Value") >= 0);
         if (headingAt < 0) return Failed("It has no heading row with Trade date and Value: is it a transaction history export?");
@@ -140,6 +149,60 @@ public static class TransactionCsv
             .SelectMany(kv => kv.Value.Take(Math.Max(0, kv.Value.Count - have.GetValueOrDefault(kv.Key))))
             .OrderBy(r => r.TradeDate).ThenBy(r => r.Row)
             .ToList();
+    }
+
+    /// <summary>
+    /// A security movements export's corporate actions and conversions. Values follow the history's sign (a cost added
+    /// is negative, a cost taken off positive). A conversion's unit cost is its book cost per unit, not a price, so it's
+    /// left out.
+    /// </summary>
+    private static TransactionCsvResult ReadMovements(List<(int Row, string[] Cells)> lines, int headingAt)
+    {
+        var title = lines.Take(headingAt).Select(l => l.Cells).FirstOrDefault(c => c[0].StartsWith("Security movements", StringComparison.OrdinalIgnoreCase));
+        var fund = title is null ? string.Empty : string.Join(' ', title.Skip(1).Where(c => c.Length > 0));
+        if (fund.Length == 0) return Failed("It has no first line saying which fund it's for.");
+        if (fund.Length > MaxFund) return Failed($"Its fund's name is over {MaxFund} characters.");
+
+        var heading = lines[headingAt].Cells;
+        int date = Column(heading, "Date"), type = Column(heading, "Type"), reference = Column(heading, "Reference"),
+            quantity = Column(heading, "Quantity"), cost = Column(heading, "Total cost");
+
+        var rows = new List<CsvTransaction>();
+        var skipped = new List<string>();
+        foreach (var (row, cells) in lines.Skip(headingAt + 1))
+        {
+            string Cell(int i) => i >= 0 && i < cells.Length ? cells[i] : string.Empty;
+            var kind = Cell(type).ToLowerInvariant();
+            if (kind is "bought" or "sold") continue;
+
+            DateOnly on = default;
+            decimal total = 0;
+            decimal? units = null;
+            var reason =
+                kind is not ("corp.a" or "conversion in" or "conversion out") ? $"the type \"{Cell(type)}\" isn't one this reads"
+                : !TryDate(Cell(date), out on) ? $"the date \"{Cell(date)}\" isn't a date"
+                : !TryAmount(Cell(cost), out total) ? $"the total cost \"{Cell(cost)}\" isn't an amount"
+                : !TryOptionalAmount(Cell(quantity), out units) ? $"the quantity \"{Cell(quantity)}\" isn't an amount"
+                : Cell(reference).Length is 0 or > MaxReference ? $"the reference is missing or over {MaxReference} characters"
+                : kind != "corp.a" && units is null or 0 ? "a conversion needs a quantity"
+                : null;
+            if (reason is not null)
+            {
+                skipped.Add(string.Create(UkCulture, $"Line {row}: {reason}."));
+                continue;
+            }
+
+            if (kind == "corp.a")
+            {
+                if (total != 0)
+                    rows.Add(new CsvTransaction(row, on, on, Cell(reference), "Cost adjustment (corporate action)", TransactionKind.CostAdjustment, fund, null, null, -total));
+                continue;
+            }
+            var received = kind == "conversion in";
+            rows.Add(new CsvTransaction(row, on, on, Cell(reference), received ? $"Converted into {fund}" : $"Converted out of {fund}",
+                TransactionKind.Conversion, fund, null, received ? Math.Abs(units!.Value) : -Math.Abs(units!.Value), -total));
+        }
+        return new TransactionCsvResult(null, rows, skipped);
     }
 
     /// <summary>UTF-8 if it is (with or without a byte order mark), else Windows-1252 as Excel saves it (£ is one byte).</summary>

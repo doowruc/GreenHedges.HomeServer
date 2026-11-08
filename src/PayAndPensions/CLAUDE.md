@@ -124,6 +124,13 @@ GreenHedges.HomeServer.PayAndPensions/
   Conversion with reference `CONVERSION` on its date: the old fund's units held then (negative quantity, value its
   cost) and the units received of the new one (value minus that cost), so cost moves and cash doesn't change. It
   can't be edited, nor can a line become one; deleting either line deletes both.
+- **Security movements** (`TransactionCsv.Read` spots them by a heading row with Date, Type and Total cost; the same
+  Import page): one fund's export, named on its first line. Corp.A lines become **cost adjustments** (kind
+  CostAdjustment, value the cost taken off, no units); Conversion in/out become a conversion with the provider's cost
+  and reference, replacing one recorded by hand on that date. Bought and Sold are ignored: the history has them, with
+  exact units. A conversion's unit cost is a book cost, so it's never stored as a price, and a conversion away within a
+  unit of what's held takes it all, as these files round down. Conversions and cost adjustments aren't in the change in
+  cash. The lines above the heading hold the client's name and number, as in the history: never store, log or show them.
 - **Contributions to payslips** (`ContributionMatching`, `PensionPayslips`): an import, or the Transactions page's
   Match payslips, sets the pension received date on the pension's payslips without one. A contribution (kind
   Contribution, positive) matches the oldest run of such payslips in a row by pay date, up to 6, paid in the 120 days

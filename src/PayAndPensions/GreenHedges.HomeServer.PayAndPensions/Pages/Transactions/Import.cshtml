@@ -21,6 +21,10 @@
             each year. Each needs a heading row with <strong>Trade date</strong> and <strong>Value</strong>; the lines
             above it (the account's details) are ignored and never kept.
         </p>
+        <p>
+            A fund's <strong>security movements</strong> export can go in with them. Only its cost adjustments and
+            conversions are used, as the history already has its purchases and sales.
+        </p>
         <p class="text-body-secondary">Nothing is saved until you've seen what it would import. Transactions the
             pension already has are left out, so files can overlap, and the latest can be imported again as it grows.
             Each transaction's kind is worked out from its description; you can change it afterwards.</p>
@@ -68,6 +72,10 @@ else
                 @if (Model.AlreadyThere > 0)
                 {
                     <li>@Model.AlreadyThere the pension already has, which are left out.</li>
+                }
+                @foreach (var date in Model.ReplacedConversions)
+                {
+                    <li>Replaces the conversion recorded by hand on @date.ToString("dd/MM/yyyy") with the file's.</li>
                 }
                 @{ var matches = Model.Matches!; }
                 @if (matches.Matches.Count > 0)

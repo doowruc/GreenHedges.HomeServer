@@ -55,5 +55,10 @@ public enum TransactionKind
     /// line takes the old fund's units away (negative quantity), one adds the new fund's; their values move the cost.
     /// </summary>
     Conversion,
+    /// <summary>
+    /// A change to a fund's book cost with no units or cash (a corporate action), from the provider's security
+    /// movements: the value is the cost taken off, positive to reduce it.
+    /// </summary>
+    [Display(Name = "Cost adjustment")] CostAdjustment,
     Other,
 }

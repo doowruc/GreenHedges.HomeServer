@@ -13,7 +13,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.Transactions;
 /// two steps but the files themselves, carried in the preview's form, so the import reads exactly what was previewed.
 /// Transactions the pension already has are left out (<see cref="TransactionCsv.NewRows"/>), so overlapping or
 /// repeated files are fine. Importing also matches the pension's contributions to its payslips and sets their pension
-/// received date (<see cref="PensionPayslips"/>), in the same save.
+/// received date (<see cref="PensionPayslips"/>), in the same save. A fund's security movements export can go in with
+/// them, for its cost adjustments and conversions; a conversion from one replaces any recorded by hand on its date.
 /// </summary>
 [RequestSizeLimit(MaxBytes * 2 + 64 * 1024)]
 public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogger<ImportModel> logger) : PensionPageModel(db)
@@ -42,6 +43,9 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
 
     /// <summary>The contributions, new and old, that payslips would be marked received by; null before a preview.</summary>
     public ContributionMatches? Matches { get; private set; }
+
+    /// <summary>The dates of conversions recorded by hand that a file's conversions replace.</summary>
+    public List<DateOnly> ReplacedConversions { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync() => await LoadPensionAsync() ? Page() : NotFound();
 
@@ -93,6 +97,8 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
             PensionId = PensionId, TradeDate = r.TradeDate, SettleDate = r.SettleDate, Reference = r.Reference,
             Description = r.Description, Kind = r.Kind, Fund = r.Fund, UnitPrice = r.UnitPrice, Quantity = r.Quantity, Value = r.Value
         }));
+        if (ReplacedConversions.Count > 0)
+            Db.PensionTransactions.RemoveRange(await HandRecordedConversions().Where(tx => ReplacedConversions.Contains(tx.TradeDate)).ToListAsync());
         var received = await pensionPayslips.SetReceivedAsync(Matches!);
         await Db.SaveChangesAsync();
 
@@ -113,6 +119,9 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
             return months.Count == 1 ? $"{TaxYears.Label(g.Key)} month {months[0]}"
                 : $"{TaxYears.Label(g.Key)} months {string.Join(", ", months[..^1])} and {months[^1]}";
         }));
+
+    private IQueryable<PensionTransaction> HandRecordedConversions() => Db.PensionTransactions
+        .Where(tx => tx.PensionId == PensionId && tx.Kind == TransactionKind.Conversion && tx.Reference == Holdings.ConvertModel.Reference);
 
     /// <summary>Reads the files and works out the new transactions. False (with the reason) when there's nothing to read.</summary>
     private async Task<bool> PlanAsync()
@@ -139,6 +148,10 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
             .Select(tx => new { tx.TradeDate, tx.Reference, tx.Description, tx.Value }).ToListAsync();
         var keys = existing.Select(e => new TransactionKey(e.TradeDate, e.Reference, e.Description, e.Value)).ToList();
         NewRows = TransactionCsv.NewRows(read, keys);
+
+        var converted = NewRows.Where(r => r.Kind == TransactionKind.Conversion).Select(r => r.TradeDate).Distinct().ToList();
+        ReplacedConversions = (await HandRecordedConversions().Select(tx => tx.TradeDate).Distinct().ToListAsync())
+            .Where(converted.Contains).Order().ToList();
 
         // Each transaction in the files once (as many times as one file has it), less those to add.
         AlreadyThere = TransactionCsv.NewRows(read, []).Count - NewRows.Count;

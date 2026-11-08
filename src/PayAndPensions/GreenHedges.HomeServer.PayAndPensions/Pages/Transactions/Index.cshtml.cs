@@ -38,8 +38,8 @@ public class IndexModel(AppDbContext db, PensionPayslips pensionPayslips) : Pens
     /// <summary>Money paid in: contributions and transfers in.</summary>
     public decimal PaidIn => Totals.Where(t => t.Kind is TransactionKind.Contribution or TransactionKind.TransferIn).Sum(t => t.Value);
 
-    /// <summary>Every line together: the change in the pension's cash over the year.</summary>
-    public decimal CashChange => Totals.Sum(t => t.Value);
+    /// <summary>Every line that moved cash together (not conversions or cost adjustments): the change in the pension's cash over the year.</summary>
+    public decimal CashChange => Totals.Where(t => t.Kind is not (TransactionKind.Conversion or TransactionKind.CostAdjustment)).Sum(t => t.Value);
 
     public async Task<IActionResult> OnGetAsync()
     {
