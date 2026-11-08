@@ -68,6 +68,24 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.ToTable("Employers");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.FundPrice", b =>
+                {
+                    b.Property<string>("Isin")
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("decimal(19,6)");
+
+                    b.HasKey("Isin", "Date");
+
+                    b.ToTable("FundPrices");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PayElement", b =>
                 {
                     b.Property<int>("Id")
@@ -314,6 +332,57 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Pensions");
+                });
+
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionFund", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("AddedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Fund")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Isin")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<string>("ModifiedBy")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PensionId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PensionId", "Fund")
+                        .IsUnique();
+
+                    b.ToTable("PensionFunds");
                 });
 
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionProvider", b =>
@@ -692,6 +761,17 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionFund", b =>
+                {
+                    b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.Pension", "Pension")
+                        .WithMany("Funds")
+                        .HasForeignKey("PensionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pension");
+                });
+
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.PensionStatement", b =>
                 {
                     b.HasOne("GreenHedges.HomeServer.PayAndPensions.Models.StatementType", "StatementType")
@@ -742,6 +822,8 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
 
             modelBuilder.Entity("GreenHedges.HomeServer.PayAndPensions.Models.Pension", b =>
                 {
+                    b.Navigation("Funds");
+
                     b.Navigation("Payslips");
 
                     b.Navigation("StatementTypes");

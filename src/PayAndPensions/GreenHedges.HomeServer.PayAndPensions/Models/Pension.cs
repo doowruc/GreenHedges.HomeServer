@@ -31,6 +31,8 @@ public class Pension : AuditedEntity
     public List<StatementType> StatementTypes { get; set; } = [];
 
     public List<PensionTransaction> Transactions { get; set; } = [];
+
+    public List<PensionFund> Funds { get; set; } = [];
 }
 
 public enum PensionType

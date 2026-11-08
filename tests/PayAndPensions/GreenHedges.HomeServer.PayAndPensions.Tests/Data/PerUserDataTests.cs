@@ -37,6 +37,7 @@ public class PerUserDataTests : DatabaseTest
         Assert.False(await other.PensionProviders.AnyAsync());
         Assert.False(await other.Pensions.AnyAsync());
         Assert.False(await other.PensionTransactions.AnyAsync());
+        Assert.False(await other.PensionFunds.AnyAsync());
         Assert.Equal(0, await other.People.Where(p => p.Id == personId).ExecuteDeleteAsync());
         Assert.Equal(0, await other.PayslipLines.ExecuteUpdateAsync(s => s.SetProperty(l => l.Amount, 0m)));
     }

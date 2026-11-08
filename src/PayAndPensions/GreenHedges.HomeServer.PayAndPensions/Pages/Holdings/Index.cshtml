@@ -49,8 +49,8 @@ else
                 <thead class="table-head">
                     <tr>
                         <th>Fund</th><th class="text-end">Deals</th><th class="text-end">Units</th>
-                        <th class="text-end" title="The fund's last purchase or sale">Last price (p)</th>
-                        <th class="text-end">Value</th><th class="text-end" title="The average cost of the units held">Cost</th><th class="text-end">Gain</th><th class="text-end" title="The gain as a percentage of the cost">Gain %</th>
+                        <th class="text-end" title="The daily price if the fund has an ISIN, otherwise its last purchase or sale">Price (p)</th>
+                        <th class="text-end">Value</th><th class="text-end" title="The average cost of the units held">Cost</th><th class="text-end">Gain</th><th class="text-end" title="The gain as a percentage of the cost">Gain %</th><th title="For the fund's daily price">ISIN</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -60,11 +60,20 @@ else
                         <td>@f.Fund@(f.Converted ? " (converted)" : f.SoldOut ? " (sold)" : "")</td>
                         <td class="text-end">@f.Deals</td>
                         <td class="text-end">@Number(f.Units)</td>
-                        <td class="text-end"><span title="@f.PriceDate?.ToString("dd/MM/yyyy")">@Number(f.Price)</span></td>
+                        <td class="text-end">
+                            @Number(f.Price)
+                            <span class="d-block small text-body-secondary" title="@(f.DailyPrice ? "Daily price" : "Last purchase or sale")">@f.PriceDate?.ToString("dd/MM/yy")</span>
+                        </td>
                         <td class="text-end">@Money(f.Value)</td>
                         <td class="text-end">@Money(f.Cost)</td>
                         <td class="text-end @(f.Gain < 0 ? "text-danger-emphasis" : null)">@Money(f.Gain)</td>
                         <td class="text-end @(f.GainPercent < 0 ? "text-danger-emphasis" : null)">@Percent(f.GainPercent)</td>
+                        <td>
+                            @if (!f.SoldOut)
+                            {
+                                <a asp-page="Isin" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-fund="@f.Fund">@(Model.Isins.GetValueOrDefault(f.Fund) ?? "Set")</a>
+                            }
+                        </td>
                     </tr>
                 }
                 </tbody>
@@ -75,12 +84,13 @@ else
                         <td class="text-end">@Money(Model.TotalCost)</td>
                         <td class="text-end">@(Model.AllValued ? Money(Model.TotalValue - Model.TotalCost) : Money(null))</td>
                         <td class="text-end">@Percent(Model.TotalGainPercent)</td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
-    <p class="form-text mt-1 mb-0">Values are at each fund's last purchase or sale price (hover a price for its date), not today's price,
+    <p class="form-text mt-1 mb-0">Values are at each fund's latest price, with its date: the daily price for a fund with an ISIN, otherwise its last purchase or sale,
         and leave out cash. Cost is the average cost of the units held: a sale takes off its share of it, a cost adjustment changes it, and a conversion moves a fund's units and cost to another.</p>
 }
 @if (Model.WithoutFund > 0)

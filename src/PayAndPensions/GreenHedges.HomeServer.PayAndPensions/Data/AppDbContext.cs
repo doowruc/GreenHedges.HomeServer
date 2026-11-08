@@ -8,7 +8,7 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data;
 /// <remarks>
 /// Each signed-in user has their own data. Query filters limit every query to the current user's people and pension
 /// providers, and (through their person) employers, pay elements, payslips, payslip lines, pensions, statement types,
-/// statements and transactions.
+/// statements, transactions and fund ISINs. Fund prices are public data, so they have no filter.
 /// Saving stamps new people and pension providers with the current user's id and fills in every table's audit columns
 /// (<see cref="AuditedDbContext"/>). With no signed-in user (e.g. at startup) queries return nothing and saving throws. Use
 /// <c>IgnoreQueryFilters()</c> only for deliberate cross-user work.
@@ -26,6 +26,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
     public DbSet<StatementType> StatementTypes => Set<StatementType>();
     public DbSet<PensionStatement> PensionStatements => Set<PensionStatement>();
     public DbSet<PensionTransaction> PensionTransactions => Set<PensionTransaction>();
+    public DbSet<PensionFund> PensionFunds => Set<PensionFund>();
+    public DbSet<FundPrice> FundPrices => Set<FundPrice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -85,6 +87,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, CurrentUser? c
              .WithOne(tx => tx.Pension)
              .HasForeignKey(tx => tx.PensionId)
              .OnDelete(DeleteBehavior.Restrict);
+            e.HasMany(pn => pn.Funds)
+             .WithOne(f => f.Pension)
+             .HasForeignKey(f => f.PensionId)
+             .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PensionFund>(e =>
+        {
+            e.HasQueryFilter(f => f.Pension!.Person!.UserId == CurrentUserId);
+            e.HasIndex(f => new { f.PensionId, f.Fund }).IsUnique();
+        });
+
+        modelBuilder.Entity<FundPrice>(e =>
+        {
+            e.HasKey(p => new { p.Isin, p.Date });
+            e.Property(p => p.Price).HasPrecision(19, 6);
         });
 
         // Not unique: an export can have two identical lines (the import counts them).

@@ -85,6 +85,9 @@ Offsite__SecretAccessKey=…
 
 `setup-database.sh` (§5) adds the connection string.
 
+Optional, for daily fund prices on the Holdings page: `Eodhd__ApiToken=…`, a key from an EODHD account (the free plan
+is enough). Without it the feed stays off.
+
 ## 5. Database and login (on the Mac)
 
 ```bash

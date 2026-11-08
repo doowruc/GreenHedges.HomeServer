@@ -22,7 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSystemd();
 
 // Logs, traces and metrics over OTLP when an endpoint is set: on the server, to Grafana (deploy/telemetry/).
-builder.AddTelemetry("PayAndPensions");
+builder.AddTelemetry("PayAndPensions", EodhdPriceSource.Redact);
 
 // Auth0 sign-in, and every page requires a signed-in user whose verified email is on the allow-list (AllowedEmails),
 // unless it opts out with [AllowAnonymous]. Signed-in users who aren't allowed are sent to Account/AccessDenied.
@@ -45,6 +45,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<PayHistory>();
 builder.Services.AddScoped<PayslipImporter>();
 builder.Services.AddScoped<PensionPayslips>();
+
+// Daily fund prices (EODHD), off until Eodhd:ApiToken is set. Its URLs hold the key, so this client's requests aren't logged.
+builder.Services.AddOptions<EodhdOptions>().BindConfiguration(EodhdOptions.SectionName);
+builder.Services.AddHttpClient<IFundPriceSource, EodhdPriceSource>(http => http.Timeout = TimeSpan.FromSeconds(30));
+builder.Logging.AddFilter($"System.Net.Http.HttpClient.{nameof(IFundPriceSource)}", LogLevel.Warning);
+builder.Services.AddScoped<FundPrices>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Eodhd:ApiToken"]))
+    builder.Services.AddHostedService<FundPriceJob>();
 
 // Alert emails (through Resend) and the off-machine heartbeat (healthchecks.io), shared with the other services
 // (GreenHedges.HomeServer.Common). Both are off until configured: Alerts:ResendApiKey, From and To; Heartbeat:PingUrl.

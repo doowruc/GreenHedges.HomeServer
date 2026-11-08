@@ -17,6 +17,9 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
 
     public List<FundHolding> Funds { get; private set; } = [];
 
+    /// <summary>The funds' ISINs, by the fund's name.</summary>
+    public Dictionary<string, string> Isins { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Purchases and sales without a fund (changed to one by hand), which aren't counted.</summary>
     public int WithoutFund { get; private set; }
 
@@ -41,7 +44,20 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
         var deals = transactions.Deals();
 
         WithoutFund = await deals.CountAsync(tx => tx.Fund == null);
-        Funds = Services.Holdings.Of(await deals.ToFundDealsAsync());
+        Isins = (await Db.PensionFunds.Where(f => f.PensionId == PensionId).Select(f => new { f.Fund, f.Isin }).ToListAsync())
+            .ToDictionary(f => f.Fund, f => f.Isin, StringComparer.OrdinalIgnoreCase);
+        Funds = Services.Holdings.Of(await deals.ToFundDealsAsync(), await DailyPricesAsync());
         return Page();
+    }
+
+    /// <summary>Each fund with an ISIN's latest price on or before the date shown. A few hundred rows a fund: picked here.</summary>
+    private async Task<Dictionary<string, SourcePrice>> DailyPricesAsync()
+    {
+        var isins = Isins.Values.Distinct().ToList();
+        var prices = await Db.FundPrices.Where(p => isins.Contains(p.Isin) && (AsAt == null || p.Date <= AsAt))
+            .Select(p => new { p.Isin, p.Date, p.Price }).ToListAsync();
+        var latest = prices.GroupBy(p => p.Isin).ToDictionary(g => g.Key, g => g.MaxBy(p => p.Date)!);
+        return Isins.Where(f => latest.ContainsKey(f.Value))
+            .ToDictionary(f => f.Key, f => new SourcePrice(latest[f.Value].Date, latest[f.Value].Price), StringComparer.OrdinalIgnoreCase);
     }
 }

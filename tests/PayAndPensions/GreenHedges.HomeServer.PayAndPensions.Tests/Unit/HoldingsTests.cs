@@ -90,6 +90,31 @@ public class HoldingsTests
         Assert.Equal((0m, 0m, true), (holding.Units, holding.Cost, holding.Converted));
     }
 
+    private static Dictionary<string, SourcePrice> Daily(int day, decimal price) => new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["fund a"] = new SourcePrice(new DateOnly(2020, 6, day), price),
+    };
+
+    [Fact]
+    public void A_daily_price_newer_than_the_last_deal_values_the_units_to_the_penny()
+    {
+        var holding = Assert.Single(Holdings.Of([Buy("Fund A", 1, 98652.459m, 399.4723m)], Daily(5, 389.333m)));
+
+        Assert.Equal((389.333m, new DateOnly(2020, 6, 5), true), (holding.Price, holding.PriceDate, holding.DailyPrice));
+        Assert.Equal(384083.62m, holding.Value);   // at 389.33, as a provider's valuation is
+    }
+
+    [Theory]
+    [InlineData(1, true)]    // the same day: the published price
+    [InlineData(2, false)]   // a day before the deal, whose price is newer
+    public void A_deal_newer_than_the_daily_price_wins(int deal, bool daily)
+    {
+        var holding = Assert.Single(Holdings.Of([Buy("Fund A", deal, 10, 300)], Daily(1, 100)));
+
+        Assert.Equal(daily, holding.DailyPrice);
+        Assert.Equal(daily ? 10m : 30m, holding.Value);
+    }
+
     [Fact]
     public void Without_a_price_there_is_no_value()
     {
