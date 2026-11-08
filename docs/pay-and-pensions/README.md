@@ -53,6 +53,11 @@ exports: **Record a conversion** with its date, the two funds and the units rece
 or current holdings). All the old fund's units held on that date become the new fund's, which takes over their cost.
 A conversion shows as two lines on the Transactions page; it can't be edited, and deleting it deletes both.
 
+If your provider exports a fund's **security movements**, import those (one per fund) on the same Import page. Only
+what the transaction history leaves out is used: the fund's **cost adjustments** (corporate actions, which change its
+cost but not its units or the cash) and its conversions, with the provider's own cost, so there's nothing to record by
+hand; a file's conversion replaces one recorded by hand on the same date. Import the file for each side of a conversion.
+
 And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
 (below). It runs on the home server at `https://pay.<home domain>`: [host setup](../../deploy/pay-and-pensions/HOST-SETUP.md).

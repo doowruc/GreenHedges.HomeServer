@@ -52,6 +52,38 @@ public class TransactionCsvTests
         Assert.Equal(TransactionKind.Interest, Assert.Single(result.Rows).Kind);
     }
 
+    [Fact]
+    public void Security_movements_give_only_cost_adjustments_and_conversions()
+    {
+        var result = TransactionCsv.Read(TestCsv.Movements("Example Fund", "Class I - Accumulation (GBP)",
+            TestCsv.Movement("30/10/2023", "Corp.A", "E 1", "0.00", "0.0000", "-22.28"),
+            TestCsv.Movement("29/10/2023", "Bought", "B1", "270.00", "10.0000", "27.00"),
+            TestCsv.Movement("28/10/2023", "Sold", "S1", "270.00", "10.0000", "-27.00"),
+            TestCsv.Movement("21/08/2023", "Conversion in", "X 1", "171.16", "95.5000", "1000.50"),
+            TestCsv.Movement("21/08/2023", "Conversion out", "X 1", "165.19", "100.0000", "-1000.50"),
+            TestCsv.Movement("20/08/2023", "Corp.A", "E 2", "0.00", "0.0000", "0.00"),
+            TestCsv.Movement("19/08/2023", "Mystery", "Q 1", "0.00", "0.0000", "1.00")));
+
+        const string fund = "Example Fund Class I - Accumulation (GBP)";
+        Assert.Null(result.Error);
+        Assert.Equal(
+        [
+            (TransactionKind.CostAdjustment, fund, (decimal?)null, 22.28m, "E 1"),
+            (TransactionKind.Conversion, fund, 95.5m, -1000.5m, "X 1"),
+            (TransactionKind.Conversion, fund, -100m, 1000.5m, "X 1"),
+        ], result.Rows.Select(r => (r.Kind, r.Fund!, r.Quantity, r.Value, r.Reference)));
+        Assert.All(result.Rows, r => Assert.Null(r.UnitPrice));   // a conversion's is a book cost, not a price
+        Assert.Equal(["Line 16: the type \"Mystery\" isn't one this reads."], result.Skipped);
+    }
+
+    [Fact]
+    public void Security_movements_need_their_fund()
+    {
+        var result = TransactionCsv.Read(System.Text.Encoding.Latin1.GetBytes("Client Name: Test Person\r\nDATE, TYPE, REFERENCE, UNIT COST (p), QUANTITY, TOTAL COST (£)\r\n"));
+
+        Assert.Equal("It has no first line saying which fund it's for.", result.Error);
+    }
+
     [Theory]
     [InlineData("FPC1", "SIPP Contribution", null, 100, TransactionKind.Contribution)]
     [InlineData("ABC", "Employer contribution", null, 100, TransactionKind.Contribution)]

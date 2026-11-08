@@ -9,13 +9,15 @@ namespace GreenHedges.HomeServer.PayAndPensions.Pages.Transactions;
 
 /// <summary>
 /// Changes a transaction's kind or fund; the rest is as the provider's export had it. A conversion (recorded on the
-/// Holdings page, as two lines) can't be changed, nor can another line become one: delete it and record it again.
+/// Holdings page or imported, as two lines) or a cost adjustment can't be changed, nor can another line become one.
 /// </summary>
 public class EditModel(AppDbContext db) : PensionPageModel(db)
 {
     public sealed record Details(DateOnly TradeDate, string Reference, string Description, TransactionKind Kind, decimal? Quantity, decimal Value)
     {
         public bool IsConversion => Kind == TransactionKind.Conversion;
+
+        public bool IsCostAdjustment => Kind == TransactionKind.CostAdjustment;
     }
 
     [BindProperty]
@@ -41,7 +43,9 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
 
         if (existing.Kind == TransactionKind.Conversion)
             ModelState.AddModelError(string.Empty, "A conversion can't be changed: delete it and record it again on the Holdings page.");
-        else if (!Enum.IsDefined(Transaction.Kind) || Transaction.Kind == TransactionKind.Conversion)
+        else if (existing.Kind == TransactionKind.CostAdjustment)
+            ModelState.AddModelError(string.Empty, "A cost adjustment can't be changed: it's as the provider's security movements have it.");
+        else if (!Enum.IsDefined(Transaction.Kind) || Transaction.Kind is TransactionKind.Conversion or TransactionKind.CostAdjustment)
             ModelState.AddModelError("Transaction.Kind", "Choose a kind.");
         if (!ModelState.IsValid)
         {

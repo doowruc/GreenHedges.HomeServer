@@ -33,4 +33,13 @@ public static class TestCsv
     }
 
     public static byte[] Export(params string[] lines) => Export(lines, utf8: false);
+
+    /// <summary>A movement line, as the provider writes them: unquoted, with a trailing comma.</summary>
+    public static string Movement(string date, string type, string reference, string price, string quantity, string cost) =>
+        $"{date},{type},{reference},{price},{quantity},{cost},";
+
+    /// <summary>A fund's security movements export (the fund's name in two cells, as the provider splits it).</summary>
+    public static byte[] Movements(string name, string share, params string[] lines) => Encoding.Latin1.GetBytes(string.Join("\r\n",
+        new[] { $"Security movements for:, {name}, {share} , , ,", "Client Name: Test Person , , , , ,", "Client Number: 000000 , , , , ,", "",
+            "Example SIPP , , , ,", "", "", "DATE, TYPE, REFERENCE, UNIT COST (p), QUANTITY, TOTAL COST (£)", "" }.Concat(lines)) + "\r\n");
 }

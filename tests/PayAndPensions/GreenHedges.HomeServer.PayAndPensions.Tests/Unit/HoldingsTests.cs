@@ -66,6 +66,31 @@ public class HoldingsTests
     }
 
     [Fact]
+    public void A_cost_adjustment_changes_the_cost_alone()
+    {
+        var holding = Assert.Single(Holdings.Of(
+        [
+            Buy("Fund A", 1, 100, 200),
+            new FundDeal("Fund A", new DateOnly(2020, 6, 2), TransactionKind.CostAdjustment, 0, null, 20),
+            Sell("Fund A", 3, 50, 250),
+        ]));
+
+        Assert.Equal((1 + 1, 50m, 90m), (holding.Deals, holding.Units, holding.Cost));   // (200 - 20) less half
+    }
+
+    [Fact]
+    public void A_conversion_rounded_down_still_takes_everything_held()
+    {
+        var holding = Assert.Single(Holdings.Of(
+        [
+            Buy("Class A", 1, 100.547m, 200),
+            new FundDeal("Class A", new DateOnly(2020, 6, 10), TransactionKind.Conversion, -100, null, 201.09m),
+        ]));
+
+        Assert.Equal((0m, 0m, true), (holding.Units, holding.Cost, holding.Converted));
+    }
+
+    [Fact]
     public void Without_a_price_there_is_no_value()
     {
         var holding = Assert.Single(Holdings.Of([new FundDeal("Fund A", new DateOnly(2020, 6, 1), TransactionKind.Purchase, 10, null, -20)]));

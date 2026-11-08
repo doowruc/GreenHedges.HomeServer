@@ -55,7 +55,7 @@ earnings columns, so the columns can't be fixed in the schema.
 | `Pension` | Belongs to a person: provider, name, policy number, **type** (Workplace, SIPP, Personal pension, Stakeholder, Other), optional **start date**. Payslips point at the pension their pension lines go to |
 | `StatementType` | Belongs to a pension: name (e.g. "Investment report", "Annual illustration"), **has projections** |
 | `PensionStatement` | Belongs to a statement type: date (one per type), label (e.g. "Spring 2026"), value, and with projections the projected fund at retirement and annual income; notes |
-| `PensionTransaction` | Belongs to a pension: a line of the provider's transaction history, as its CSV export has it (trade and settle dates, reference, description, unit price in pence, units, value in £, money in positive), with a **kind** (Contribution, Transfer in, Interest, Fee, Rebate, Purchase, Sale, Other) and **fund**, both worked out on import and changeable; or one of a fund conversion's two lines (kind Conversion), recorded by hand |
+| `PensionTransaction` | Belongs to a pension: a line of the provider's transaction history, as its CSV export has it (trade and settle dates, reference, description, unit price in pence, units, value in £, money in positive), with a **kind** (Contribution, Transfer in, Interest, Fee, Rebate, Purchase, Sale, Other) and **fund**, both worked out on import and changeable; or one of a fund conversion's two lines (kind Conversion), recorded by hand or from a security movements export; or a cost adjustment from one (kind Cost adjustment: cost only, no units or cash) |
 
 Every table inherits `AuditedEntity`. Child tables are filtered through their person; providers through the user.
 
@@ -154,7 +154,8 @@ One branch and PR each:
    Done.
 7. **Units held:** each fund's units, average cost and value (at its last dealing price), from the purchases and sales, as at
    any date. An export leaves out a conversion between funds (a share class change), so it's recorded by hand: the
-   units received, with the old fund's cost. Done.
+   units received, with the old fund's cost, or imported from a fund's security movements export, which also has the
+   cost adjustments that bring the cost into line with the provider's book cost. Done.
 
 **Later:** documents (payslip PDFs, P60s, P11Ds, statement PDFs); pension values (designed from the pensions workbook when we get
 there); a JSON export.
