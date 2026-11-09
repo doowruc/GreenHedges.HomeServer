@@ -13,6 +13,7 @@
         <div class="text-muted small">
             @Model.Vehicle.Type · @Model.Vehicle.FuelType · Owned by @Model.Vehicle.OwnerName
             @if (Model.Vehicle.RegistrationDate is { } rd) { <text> · Registered @rd.ToString("dd MMM yyyy")</text> }
+            @if (Model.Vehicle.RegistrationTransferredDate is { } transferred) { <text> · Registration transferred @transferred.ToString("dd MMM yyyy")</text> }
             @if (Model.Vehicle.PurchasedDate is { } pd) { <text> · Purchased @pd.ToString("dd MMM yyyy")</text> }
             @if (Model.Vehicle.PurchasePrice is { } paid) { <text> for @paid.ToString("C0")</text> }
             @if (Model.Vehicle.DisposalMethod is { } method && Model.Vehicle.DisposalPrice is { } got) { <text> · @VehicleView.DisposalPriceNames(method) @got.ToString("C0")</text> }

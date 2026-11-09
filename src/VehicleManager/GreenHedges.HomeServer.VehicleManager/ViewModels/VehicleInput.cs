@@ -31,6 +31,10 @@ public class VehicleInput
     public DateOnly? RegistrationDate { get; set; }
 
     [DataType(DataType.Date)]
+    [Display(Name = "Registration transferred (V5C)")]
+    public DateOnly? RegistrationTransferredDate { get; set; }
+
+    [DataType(DataType.Date)]
     [Display(Name = "Purchased date")]
     public DateOnly? PurchasedDate { get; set; }
 
@@ -76,6 +80,7 @@ public class VehicleInput
         Model = v.Model,
         RegistrationNumber = v.RegistrationNumber,
         RegistrationDate = v.RegistrationDate,
+        RegistrationTransferredDate = v.RegistrationTransferredDate,
         PurchasedDate = v.PurchasedDate,
         PurchasePrice = v.PurchasePrice,
         MotDueDate = v.MotDueDate,
@@ -96,6 +101,7 @@ public class VehicleInput
         vehicle.Model = Model;
         vehicle.RegistrationNumber = RegistrationNumber;
         vehicle.RegistrationDate = RegistrationDate;
+        vehicle.RegistrationTransferredDate = RegistrationTransferredDate;
         vehicle.PurchasedDate = PurchasedDate;
         vehicle.PurchasePrice = PurchasePrice;
         vehicle.MotDueDate = MotDueDate;
