@@ -25,7 +25,7 @@ public class BackupService(AppDbContext db)
         Vehicles = await db.Vehicles.OrderBy(v => v.Id).Select(v => new VehicleBackup
         {
             Id = v.Id, OwnerId = v.OwnerId, Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
-            RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
+            RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, RegistrationTransferredDate = v.RegistrationTransferredDate, PurchasedDate = v.PurchasedDate,
             PurchasePrice = v.PurchasePrice, DisposalMethod = v.DisposalMethod, DisposedDate = v.DisposedDate, DisposalPrice = v.DisposalPrice,
             MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles,
@@ -143,7 +143,7 @@ public class BackupService(AppDbContext db)
         var vehicles = backup.Vehicles.ToDictionary(v => v.Id, v => Audited(v, new Vehicle
         {
             Owner = owners[v.OwnerId], Type = v.Type, FuelType = v.FuelType, Make = v.Make, Model = v.Model,
-            RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, PurchasedDate = v.PurchasedDate,
+            RegistrationNumber = v.RegistrationNumber, RegistrationDate = v.RegistrationDate, RegistrationTransferredDate = v.RegistrationTransferredDate, PurchasedDate = v.PurchasedDate,
             PurchasePrice = v.PurchasePrice, DisposalMethod = v.DisposalMethod, DisposedDate = v.DisposedDate, DisposalPrice = v.DisposalPrice,
             MotDueDate = v.MotDueDate, TaxDueDate = v.TaxDueDate, ServiceDueDate = v.ServiceDueDate,
             ServiceDueMileage = v.ServiceDueMileage, ServiceIntervalMonths = v.ServiceIntervalMonths, ServiceIntervalMiles = v.ServiceIntervalMiles

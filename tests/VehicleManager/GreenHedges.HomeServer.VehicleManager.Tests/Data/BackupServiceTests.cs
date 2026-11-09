@@ -14,6 +14,7 @@ public class BackupServiceTests : DatabaseTest
         var vehicle = await TestData.AddVehicleAsync(db, "BACK 1");
         (vehicle.Owner!.DriverNumber, vehicle.Owner.LicenceIssueDate) = ("TESTA801015AB9CD", new DateOnly(2005, 6, 1));
         vehicle.FuelType = FuelType.Diesel;
+        vehicle.RegistrationTransferredDate = new DateOnly(2024, 5, 20);
         vehicle.MotDueDate = new DateOnly(2026, 11, 1);
         vehicle.TaxDueDate = new DateOnly(2027, 3, 1);
         (vehicle.PurchasePrice, vehicle.DisposalMethod, vehicle.DisposedDate, vehicle.DisposalPrice) = (12000m, DisposalMethod.PartExchanged, new DateOnly(2027, 2, 1), 5000.50m);
@@ -69,7 +70,7 @@ public class BackupServiceTests : DatabaseTest
     private static async Task<List<string>> ContentsAsync(AppDbContext db) =>
     [
         .. await db.Owners.Select(o => $"owner {o.Name} user={o.UserId} {o.AddedBy} {o.AddedDate:O} licence={o.DriverNumber} {o.LicenceIssueDate}").ToListAsync(),
-        .. await db.Vehicles.Select(v => $"vehicle {v.RegistrationNumber} {v.Owner!.Name} {v.Make} {v.Model} {v.FuelType} user={v.UserId} {v.AddedDate:O} " +
+        .. await db.Vehicles.Select(v => $"vehicle {v.RegistrationNumber} {v.Owner!.Name} {v.Make} {v.Model} {v.FuelType} user={v.UserId} {v.AddedDate:O} transferred={v.RegistrationTransferredDate} " +
                                             $"mot={v.MotDueDate} tax={v.TaxDueDate} service={v.ServiceDueDate}/{v.ServiceDueMileage} every {v.ServiceIntervalMonths}/{v.ServiceIntervalMiles} " +
                                             $"paid={v.PurchasePrice} went={v.DisposalMethod} {v.DisposedDate} got={v.DisposalPrice}").ToListAsync(),
         .. await db.FuelBrands.Select(b => $"brand {b.Name} user={b.UserId} {b.AddedDate:O} {b.ModifiedDate:O}").ToListAsync(),

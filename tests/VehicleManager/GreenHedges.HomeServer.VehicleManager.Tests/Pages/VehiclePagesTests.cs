@@ -50,6 +50,22 @@ public class VehiclePagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
+    public async Task Registration_transferred_date_is_saved_from_the_form_and_shown_on_the_vehicle_page()
+    {
+        int id;
+        await using (var db = Db()) id = (await TestData.AddVehicleAsync(db)).Id;
+        var client = app.ClientFor(UserId);
+        var url = $"/Vehicles/Edit/{id}";
+
+        var saved = await client.PostFormAsync(url, await client.GetAsync(url), new() { ["Vehicle.RegistrationTransferredDate"] = "2024-05-20" });
+        Assert.True(saved.Status == HttpStatusCode.Redirect, saved.Errors);
+
+        await using (var db = Db()) Assert.Equal(new DateOnly(2024, 5, 20), (await db.Vehicles.SingleAsync()).RegistrationTransferredDate);
+        Assert.Contains("Registration transferred 20 May 2024", (await client.GetAsync($"/Vehicles/Details/{id}")).Text);
+        Assert.Contains("value=\"2024-05-20\"", (await client.GetAsync(url)).Html);
+    }
+
+    [DatabaseFact]
     public async Task Saving_a_vehicle_over_someone_elses_change_shows_a_warning()
     {
         int id;

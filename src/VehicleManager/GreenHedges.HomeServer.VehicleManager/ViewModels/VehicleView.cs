@@ -13,6 +13,7 @@ public class VehicleView
     public string Model { get; init; } = string.Empty;
     public string RegistrationNumber { get; init; } = string.Empty;
     public DateOnly? RegistrationDate { get; init; }
+    public DateOnly? RegistrationTransferredDate { get; init; }
     public DateOnly? PurchasedDate { get; init; }
     public decimal? PurchasePrice { get; init; }
     public DisposalMethod? DisposalMethod { get; init; }
@@ -74,6 +75,7 @@ public class VehicleView
         Model = v.Model,
         RegistrationNumber = v.RegistrationNumber,
         RegistrationDate = v.RegistrationDate,
+        RegistrationTransferredDate = v.RegistrationTransferredDate,
         PurchasedDate = v.PurchasedDate,
         PurchasePrice = v.PurchasePrice,
         DisposalMethod = v.DisposalMethod,

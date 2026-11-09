@@ -12,6 +12,7 @@ public sealed record VehicleBackup : BackupRow
     public required string Model { get; init; }
     public required string RegistrationNumber { get; set; }
     public DateOnly? RegistrationDate { get; init; }
+    public DateOnly? RegistrationTransferredDate { get; init; }
     public DateOnly? PurchasedDate { get; init; }
     public decimal? PurchasePrice { get; init; }
     public DisposalMethod? DisposalMethod { get; init; }

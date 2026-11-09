@@ -906,6 +906,9 @@ namespace GreenHedges.HomeServer.VehicleManager.Data.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
 
+                    b.Property<DateOnly?>("RegistrationTransferredDate")
+                        .HasColumnType("date");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()

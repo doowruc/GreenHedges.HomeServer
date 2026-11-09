@@ -130,6 +130,8 @@ reasoning and the decisions: [HOMESERVER-MIGRATION.md](HOMESERVER-MIGRATION.md).
 - [x] **Vehicle lifecycle.** How and when a vehicle went (sold, part exchanged, written off, scrapped) and what it
       fetched, with its purchase price: from then it's out of reminders, lookups, the dashboard and new fill-ups and
       policies, under Previous vehicles, with its history kept.
+- [ ] **PDF uploads.** Upload documents as PDFs and keep them on the server's disk with the backups.
+  - [ ] Each vehicle's V5C, from its page.
 - [ ] **Partial fill-ups.** A "full tank" flag on `FuelEntry`, so real MPG is worked out from one full fill to the
       next and a partial fill doesn't skew it. Still total miles ÷ total gallons.
 - [ ] **Export.** A ClosedXML `.xlsx` export of the fuel log (filtered by vehicle or year), mirroring the import

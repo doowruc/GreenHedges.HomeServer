@@ -27,6 +27,8 @@ public class Vehicle : AuditedEntity, IUserOwned
     public string RegistrationNumber { get; set; } = string.Empty;
 
     public DateOnly? RegistrationDate { get; set; }
+    /// <summary>The date the registration transferred, as shown on the V5C.</summary>
+    public DateOnly? RegistrationTransferredDate { get; set; }
     public DateOnly? PurchasedDate { get; set; }
     public decimal? PurchasePrice { get; set; }
 

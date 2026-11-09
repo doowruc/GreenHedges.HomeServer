@@ -209,7 +209,7 @@ grade: poor, average or good; and source), and a table of the latest values by t
 their average, and the previous round's average with the change. A round is the values within 30 days of its newest
 one, so this year's lookups are compared with last year's.
 
-**Vehicles** – owner, type, fuel type, make, model, registration number, registration date, purchased date and price,
+**Vehicles** – owner, type, fuel type, make, model, registration number, registration date, the date the registration transferred (from the V5C), purchased date and price,
 when the MOT, tax and service are next due (see [Reminders](#reminders-mot-tax-insurance-and-service); insurance comes
 from its policies), and how often it's serviced (every so many months and/or miles).
 
