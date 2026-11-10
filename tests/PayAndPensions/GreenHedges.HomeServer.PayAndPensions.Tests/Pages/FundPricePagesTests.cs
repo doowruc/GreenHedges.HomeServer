@@ -106,6 +106,47 @@ public class FundPricePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
     }
 
     [DatabaseFact]
+    public async Task Searching_by_name_lists_the_matches_and_using_one_saves_its_isin()
+    {
+        var ids = await PensionWithFundAsync();
+        var isin = NewIsin();
+        var name = $"Findable {isin} Fund";
+        app.FundPriceSource.AddFund(new FundMatch(name, isin, "EUFUND", "GBX", 389.33m, "2026-01-15"));
+        app.FundPriceSource.Set(isin, new SourcePrice(Today.AddDays(-2), 389.333m));
+        var client = app.ClientFor(UserId);
+
+        var form = await client.GetAsync(IsinUrl(ids));
+        Assert.Contains($"name=\"query\" value=\"{Fund}\"", form.Html);       // starts as the fund's name
+
+        var found = await client.GetAsync($"{IsinUrl(ids)}&handler=Search&query={Uri.EscapeDataString($"findable {isin}")}");
+        Assert.Contains(name, found.Text);
+        Assert.Contains("389.33", found.Text);
+        var use = System.Text.RegularExpressions.Regex.Match(found.Html, "<form method=\"post\"[^>]*>(?:(?!</form>).)*name=\"Input.Isin\" value=\"" + isin + "\".*?</form>",
+            System.Text.RegularExpressions.RegexOptions.Singleline).Value;
+        Assert.NotEmpty(use);
+
+        var saved = await client.PostFormAsync(IsinUrl(ids), found with { Html = use });
+
+        Assert.Equal(Holdings(ids), saved.Location);
+        await using var check = Db();
+        Assert.Equal(isin, (await check.PensionFunds.SingleAsync()).Isin);
+        Assert.Equal(389.333m, (await check.FundPrices.SingleAsync(p => p.Isin == isin)).Price);
+    }
+
+    [DatabaseFact]
+    public async Task A_search_with_no_matches_or_that_fails_or_is_too_short_says_so()
+    {
+        var ids = await PensionWithFundAsync();
+        var client = app.ClientFor(UserId);
+        string Search(string query) => $"{IsinUrl(ids)}&handler=Search&query={Uri.EscapeDataString(query)}";
+
+        Assert.Contains("No funds with an ISIN match that.", (await client.GetAsync(Search("Nothing Like This " + Guid.NewGuid()))).Text);
+        Assert.Contains("The search couldn't be run just now.", (await client.GetAsync(Search("this fails"))).Text);
+        Assert.Contains("between 3 and 100 characters", (await client.GetAsync(Search("ab"))).Text);
+        Assert.Equal(HttpStatusCode.NotFound, (await app.ClientFor(NewUser()).GetAsync(Search("Example"))).Status);
+    }
+
+    [DatabaseFact]
     public async Task Only_the_pensions_own_funds_can_have_one()
     {
         var ids = await PensionWithFundAsync();

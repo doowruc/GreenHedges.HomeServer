@@ -39,6 +39,21 @@ public class EodhdPriceSourceTests
             Source(new Handler(HttpStatusCode.NotFound, "")).GetAsync("GB0000000001", new DateOnly(2020, 6, 1), CancellationToken.None));
     }
 
+    [Fact]
+    public async Task It_searches_funds_by_name_and_gives_those_with_an_isin_once_each()
+    {
+        var handler = new Handler(HttpStatusCode.OK, """
+            [{"Code":"GB0000000001","Exchange":"EUFUND","Name":" Example Growth Fund ","Type":"FUND","Country":"UK","Currency":"GBX","ISIN":"gb0000000001","previousClose":123.45,"previousCloseDate":"2026-01-15","isPrimary":false},
+             {"Code":"X","Exchange":"EUFUND","Name":"Example Growth Fund again","Type":"FUND","Currency":"GBX","ISIN":"GB0000000001","previousClose":1,"previousCloseDate":"2026-01-15"},
+             {"Code":"Y","Exchange":"US","Name":"No ISIN Fund","Type":"FUND","Currency":"USD","ISIN":null,"previousClose":null,"previousCloseDate":null}]
+            """);
+
+        var matches = await Source(handler).SearchAsync("Example Growth / Fund", CancellationToken.None);
+
+        Assert.Equal([new FundMatch("Example Growth Fund", "GB0000000001", "EUFUND", "GBX", 123.45m, "2026-01-15")], matches);
+        Assert.Equal("https://eodhd.com/api/search/Example%20Growth%20%2F%20Fund?api_token=made%20up&fmt=json&type=fund&limit=20", handler.Requested!.AbsoluteUri);
+    }
+
     [Theory]
     [InlineData("made up", true)]
     [InlineData("  ", false)]
@@ -51,6 +66,8 @@ public class EodhdPriceSourceTests
     {
         Assert.Equal("https://eodhd.com/api/eod/X.EUFUND", EodhdPriceSource.Redact(new Uri("https://eodhd.com/api/eod/X.EUFUND?api_token=secret&fmt=json")));
         Assert.Equal("https://example.com/a?b=c", EodhdPriceSource.Redact(new Uri("https://example.com/a?b=c")));
+        // Nor does a search say what was searched for.
+        Assert.Equal("https://eodhd.com/api/search/", EodhdPriceSource.Redact(new Uri("https://eodhd.com/api/search/Some%20Fund?api_token=secret")));
     }
 
     [Theory]

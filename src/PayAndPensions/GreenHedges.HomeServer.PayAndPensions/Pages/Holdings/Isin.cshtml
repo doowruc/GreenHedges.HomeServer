@@ -5,7 +5,7 @@
 <h1 class="h3 mb-1">Fund ISIN</h1>
 <p class="text-body-secondary">@Model.Fund</p>
 <div class="card shadow-sm"><div class="card-body">
-    <p>With the fund's ISIN, its value uses a daily price instead of the last purchase or sale. A UK fund's ISIN is on its factsheet.</p>
+    <p>With the fund's ISIN, its value uses a daily price instead of the last purchase or sale. A UK fund's ISIN is on its factsheet, or find it by the fund's name below.</p>
     @if (!Model.FeedConfigured)
     {
         <div class="alert alert-info">The price feed has no key yet, so prices won't be fetched until it does.</div>
@@ -25,3 +25,55 @@
         </div>
     </form>
 </div></div>
+
+@if (Model.FeedConfigured)
+{
+    <div class="card shadow-sm mt-3"><div class="card-body">
+        <h2 class="h6">Find the ISIN by name</h2>
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="fund" value="@Model.Fund" />
+            <input type="hidden" name="handler" value="Search" />
+            <div class="col-md-8">
+                <label for="query" class="form-label">Fund name</label>
+                <input id="query" name="query" value="@Model.Query" class="form-control" maxlength="100" required />
+                <div class="form-text">Fewer words find more: try the fund's main name without its share class. A provider's own version of a fund may not be listed.</div>
+            </div>
+            <div class="col-md-auto"><button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button></div>
+        </form>
+        @if (Model.SearchError is not null)
+        {
+            <div class="alert alert-warning mt-3 mb-0">@Model.SearchError</div>
+        }
+        else if (Model.Matches is { Count: 0 })
+        {
+            <div class="alert alert-info mt-3 mb-0">No funds with an ISIN match that. Try fewer words, or type the ISIN in above.</div>
+        }
+        else if (Model.Matches is not null)
+        {
+            <div class="table-responsive mt-3">
+                <table class="table table-sm align-middle mb-0" data-matches>
+                    <thead><tr><th>Fund</th><th>ISIN</th><th>Currency</th><th class="text-end">Last price</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var m in Model.Matches)
+                    {
+                        <tr>
+                            <td>@m.Name</td>
+                            <td>@m.Isin</td>
+                            <td>@m.Currency</td>
+                            <td class="text-end">@m.LastPrice?.ToString("#,##0.####")<span class="d-block small text-body-secondary">@m.LastPriceDate</span></td>
+                            <td class="text-end">
+                                <form method="post" asp-route-fund="@Model.Fund">
+                                    <input type="hidden" name="Input.Isin" value="@m.Isin" />
+                                    <input type="hidden" name="Input.RowVersion" value="@Convert.ToBase64String(Model.Input.RowVersion)" />
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Use</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <p class="form-text mb-0">Use saves the ISIN and fetches its prices. Check the last price against your provider's before relying on it.</p>
+        }
+    </div></div>
+}
