@@ -45,6 +45,7 @@
         <form method="post" asp-page-handler="Match" asp-route-year="@year">
             <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" title="Set payslips' pension received date from the contributions they add up to"><i class="bi bi-link-45deg me-1"></i>Match payslips</button>
         </form>
+        <a asp-page="Manual" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary text-nowrap" title="Add a transaction by hand, for a provider with no export"><i class="bi bi-plus-lg me-1"></i>Add</a>
         <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-primary text-nowrap"><i class="bi bi-file-earmark-arrow-up me-1"></i>Import</a>
     </div>
 </div>
@@ -52,7 +53,7 @@
 @if (Model.Rows.Count == 0)
 {
     <div class="alert alert-info">No transactions for @TaxYears.Label(year). <a asp-page="Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Import</a>
-        the provider's transaction history (CSV).</div>
+        the provider's transaction history (CSV), or <a asp-page="Manual" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">add one by hand</a>.</div>
 }
 else
 {
@@ -88,7 +89,7 @@ else
             </table>
         </div>
     </div>
-    <p class="form-text mt-1 mb-0">Right-click a transaction to change its kind or fund, or delete it, or use its buttons at the end of the row.</p>
+    <p class="form-text mt-1 mb-0">Right-click a transaction to change its kind or fund (all of one added by hand), or delete it, or use its buttons at the end of the row.</p>
     <ul class="dropdown-menu shadow" id="row-menu" role="menu">
         <li><a class="dropdown-item" data-action="edit" role="menuitem"><i class="bi bi-pencil me-2"></i>Edit</a></li>
         <li><a class="dropdown-item text-danger" data-action="delete" role="menuitem"><i class="bi bi-trash me-2"></i>Delete</a></li>

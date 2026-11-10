@@ -1,0 +1,94 @@
+@page "/People/{personId:int}/Pensions/{pensionId:int}/Transactions/Manual/{id:int?}"
+@model GreenHedges.HomeServer.PayAndPensions.Pages.Transactions.ManualModel
+@using GreenHedges.HomeServer.PayAndPensions.Models
+@{
+    var adding = Model.Id is null;
+    ViewData["Title"] = adding ? "Add transaction" : "Edit transaction";
+    var deal = Model.Transaction.IsDeal;
+}
+
+<h1 class="h3 mb-1">@(adding ? "Add a transaction" : "Edit a transaction")</h1>
+<p class="text-body-secondary">@Model.PensionName, @Model.PersonName's pension with @Model.ProviderName</p>
+<div class="card shadow-sm"><div class="card-body">
+    @if (adding)
+    {
+        <p>For a pension whose provider has no export to import. A purchase or sale needs its fund and units, and either
+            its price or its value: each is worked out from the other. If you only know what's held today, add one
+            purchase for each fund, with the units held and what was paid in for them.</p>
+    }
+    <form method="post" asp-route-id="@Model.Id" asp-route-fromHoldings="@(Model.FromHoldings ? true : null)" data-transaction-form>
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Transaction.RowVersion" />
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label asp-for="Transaction.Date" class="form-label"></label>
+                <input asp-for="Transaction.Date" type="date" class="form-control" />
+                <span asp-validation-for="Transaction.Date" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Transaction.Kind" class="form-label"></label>
+                <select asp-for="Transaction.Kind" class="form-select" data-kind>
+                    @foreach (var kind in ManualModel.Kinds)
+                    {
+                        <option value="@kind" selected="@(kind == Model.Transaction.Kind)" data-deal="@(kind is TransactionKind.Purchase or TransactionKind.Sale ? "true" : null)">@ManualModel.Label(kind)</option>
+                    }
+                </select>
+                <span asp-validation-for="Transaction.Kind" class="text-danger small"></span>
+            </div>
+            <div class="col-md-6" data-deal-only hidden="@(!deal)">
+                <label asp-for="Transaction.Fund" class="form-label"></label>
+                <input asp-for="Transaction.Fund" class="form-control" list="funds" autocomplete="off" />
+                <datalist id="funds">
+                    @foreach (var fund in Model.Funds)
+                    {
+                        <option value="@fund"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="Transaction.Fund" class="text-danger small"></span>
+                <div class="form-text">Spell it the same each time: a fund's deals are added up by its name.</div>
+            </div>
+            <div class="w-100 m-0"></div>
+            <div class="col-md-3" data-deal-only hidden="@(!deal)">
+                <label asp-for="Transaction.Units" class="form-label"></label>
+                <input asp-for="Transaction.Units" type="number" step="any" min="0" class="form-control amount text-end" data-units />
+                <span asp-validation-for="Transaction.Units" class="text-danger small"></span>
+            </div>
+            <div class="col-md-3" data-deal-only hidden="@(!deal)">
+                <label asp-for="Transaction.UnitPrice" class="form-label"></label>
+                <input asp-for="Transaction.UnitPrice" type="number" step="any" min="0" class="form-control amount text-end" data-price />
+                <span asp-validation-for="Transaction.UnitPrice" class="text-danger small"></span>
+                <div class="form-text">In pence a unit.</div>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Transaction.Amount" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text">£</span>
+                    <input asp-for="Transaction.Amount" type="number" step="0.01" class="form-control amount text-end" data-value />
+                </div>
+                <span asp-validation-for="Transaction.Amount" class="text-danger small"></span>
+                <div class="form-text">No minus sign: the kind says which way the money went. Only on an Other line, money out is negative.</div>
+            </div>
+            <div class="col-12">
+                <label asp-for="Transaction.Description" class="form-label"></label>
+                <input asp-for="Transaction.Description" class="form-control" />
+                <span asp-validation-for="Transaction.Description" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            @if (Model.FromHoldings)
+            {
+                <a asp-page="/Holdings/Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+            }
+            else
+            {
+                <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
+            }
+        </div>
+    </form>
+</div></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/transaction-form.js" asp-append-version="true"></script>
+}

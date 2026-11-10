@@ -8,7 +8,8 @@ using GreenHedges.HomeServer.PayAndPensions.ViewModels;
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Transactions;
 
 /// <summary>
-/// Changes a transaction's kind or fund; the rest is as the provider's export had it. A conversion (recorded on the
+/// Changes an imported transaction's kind or fund; the rest is as the provider's export had it (one added by hand goes
+/// to <see cref="ManualModel"/>, where all of it can be changed). A conversion (recorded on the
 /// Holdings page or imported, as two lines) or a cost adjustment can't be changed, nor can another line become one.
 /// </summary>
 public class EditModel(AppDbContext db) : PensionPageModel(db)
@@ -28,8 +29,9 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
     public async Task<IActionResult> OnGetAsync(int id)
     {
         if (!await LoadPensionAsync()) return NotFound();
-        var transaction = await Find(id).Select(tx => new { tx.Kind, tx.Fund, tx.RowVersion }).FirstOrDefaultAsync();
+        var transaction = await Find(id).Select(tx => new { tx.Kind, tx.Fund, tx.RowVersion, tx.Reference }).FirstOrDefaultAsync();
         if (transaction is null) return NotFound();
+        if (IsManual(transaction.Reference, transaction.Kind)) return ToManual(id);
         Transaction = new TransactionInput { Kind = transaction.Kind, Fund = transaction.Fund, RowVersion = transaction.RowVersion };
         await LoadDetailsAsync(id);
         return Page();
@@ -40,6 +42,7 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
         if (!await LoadPensionAsync()) return NotFound();
         var existing = await Find(id).FirstOrDefaultAsync();
         if (existing is null) return NotFound();
+        if (IsManual(existing.Reference, existing.Kind)) return ToManual(id);
 
         if (existing.Kind == TransactionKind.Conversion)
             ModelState.AddModelError(string.Empty, "A conversion can't be changed: delete it and record it again on the Holdings page.");
@@ -69,6 +72,11 @@ public class EditModel(AppDbContext db) : PensionPageModel(db)
         TempData["Message"] = $"Updated the transaction on {existing.TradeDate:d}.";
         return RedirectToTransactions(existing.TradeDate);
     }
+
+    private static bool IsManual(string reference, TransactionKind kind) =>
+        reference == ManualModel.Reference && kind is not (TransactionKind.Conversion or TransactionKind.CostAdjustment);
+
+    private RedirectToPageResult ToManual(int id) => RedirectToPage("Manual", new { personId = PersonId, pensionId = PensionId, id });
 
     private IQueryable<PensionTransaction> Find(int id) =>
         Db.PensionTransactions.Where(tx => tx.Id == id && tx.PensionId == PensionId);

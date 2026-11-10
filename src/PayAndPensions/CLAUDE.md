@@ -79,7 +79,8 @@ GreenHedges.HomeServer.PayAndPensions/
                PersonSwitcherViewComponent, the navbar's people switcher: the same page for another person;
                PensionsMenuViewComponent, the Pensions menu: providers, then each person's pensions), Names (name tidying)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/payslip-totals.js (live totals
-               on the payslip form), js/statement-income.js (the statement form's projected monthly income: fills in the
+               on the payslip form), js/transaction-form.js (the hand-entered transaction form: fund fields only for a deal, value from units × price),
+               js/statement-income.js (the statement form's projected monthly income: fills in the
                annual, and the annual it; not posted or stored), js/pay-charts.js (Chart.js 4.4.4 from jsDelivr, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), js/row-menu.js (the payslips and transactions tables'
                right-click menu, beside each row's buttons: rows with data-row-menu, data-edit and data-delete), favicon.svg/.ico + icons/ + site.webmanifest
