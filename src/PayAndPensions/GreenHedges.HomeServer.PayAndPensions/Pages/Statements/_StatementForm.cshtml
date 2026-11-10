@@ -40,9 +40,18 @@
             <label asp-for="Statement.ProjectedAnnualIncome" class="form-label"></label>
             <div class="input-group">
                 <span class="input-group-text">£</span>
-                <input asp-for="Statement.ProjectedAnnualIncome" type="number" step="0.01" class="form-control amount text-end" />
+                <input asp-for="Statement.ProjectedAnnualIncome" type="number" step="0.01" class="form-control amount text-end" data-annual-income />
             </div>
             <span asp-validation-for="Statement.ProjectedAnnualIncome" class="text-danger small"></span>
+        </div>
+        @* No name, so it isn't posted: statement-income.js keeps it and the annual income in step, and only the annual is stored. *@
+        <div class="col-md-3">
+            <label for="projected-monthly-income" class="form-label">Projected monthly income</label>
+            <div class="input-group">
+                <span class="input-group-text">£</span>
+                <input id="projected-monthly-income" type="number" step="0.01" min="0" class="form-control amount text-end" data-monthly-income />
+            </div>
+            <div class="form-text">Either fills in the other; the annual is what's kept.</div>
         </div>
         <div class="col-12 form-text mt-1">The projections are for types with projections (@string.Join(", ", Model.Types.Where(t => t.HasProjections).Select(t => t.Name))) only.</div>
     }
