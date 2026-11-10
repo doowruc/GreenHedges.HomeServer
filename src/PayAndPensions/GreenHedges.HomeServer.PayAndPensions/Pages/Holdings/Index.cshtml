@@ -23,6 +23,8 @@
             <a asp-route-asAt="" class="btn btn-outline-secondary" title="Every transaction">All</a>
         }
     </form>
+    <a asp-page="/Transactions/Manual" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-fromHoldings="true" class="btn btn-sm btn-outline-secondary text-nowrap"
+       title="Add a purchase or sale by hand, for a provider with no export"><i class="bi bi-plus-lg me-1"></i>Add transaction</a>
     @if (Model.HasTransactions)
     {
         <a asp-page="Convert" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-sm btn-outline-secondary text-nowrap"
@@ -37,7 +39,8 @@
         No purchases or sales of funds@(Model.AsAt is { } d ? $" up to {d:dd/MM/yyyy}" : "").
         @if (!Model.HasTransactions)
         {
-            <a asp-page="/Transactions/Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Import</a> <text>the provider's transaction history (CSV).</text>
+            <a asp-page="/Transactions/Import" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId">Import</a> <text>the provider's transaction history (CSV), or</text>
+            <a asp-page="/Transactions/Manual" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" asp-route-fromHoldings="true">add them by hand</a><text>.</text>
         }
     </div>
 }

@@ -46,6 +46,11 @@ row paid in together), paid in the four months before it, oldest first. The prev
 contribution would mark. Payslips with a received date already are left alone. For payslips assigned to the pension
 after its transactions were imported, the Transactions page's **Match payslips** does the same.
 
+If a provider has no export, **Add** on the Transactions page (or **Add transaction** on Holdings) enters a
+transaction by hand: a purchase or sale with its fund, units and price or value (each worked out from the other), or a
+contribution, fee or other cash line with its value. One added by hand can be changed in full; an imported one only its
+kind and fund. If you only know what's held today, add one purchase per fund with the units held and what was paid in.
+
 A pension's **Holdings** (from its Transactions or Statements page, or the pensions list) shows each fund's units,
 worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: their cost
 (the average cost of the units held, so a sale takes off its share of it), and their value, gain and % gain at the fund's latest price. That's the fund's last purchase or sale,
