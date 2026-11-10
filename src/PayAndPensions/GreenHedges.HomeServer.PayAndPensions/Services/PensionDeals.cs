@@ -18,7 +18,21 @@ public static class PensionDeals
             .Select(tx => new FundDeal(tx.Fund!, tx.TradeDate, tx.Kind, tx.Quantity ?? 0, tx.UnitPrice, tx.Value))
             .ToListAsync();
 
-    /// <summary>Each ISIN's latest price, on or before <paramref name="asAt"/> when given. A few hundred rows an ISIN: picked here.</summary>
+    /// <summary>
+    /// Each of the pensions' funds with an ISIN's latest price in pence, on or before <paramref name="asAt"/> when given,
+    /// by pension and then fund: a fund the feed prices in pounds is converted (<see cref="PensionFund.PricesInPounds"/>).
+    /// </summary>
+    public static async Task<Dictionary<int, Dictionary<string, SourcePrice>>> DailyPricesAsync(this AppDbContext db, IReadOnlyCollection<int> pensionIds,
+        DateOnly? asAt = null)
+    {
+        var funds = await db.PensionFunds.Where(f => pensionIds.Contains(f.PensionId))
+            .Select(f => new { f.PensionId, f.Fund, f.Isin, f.PricesInPounds }).ToListAsync();
+        var latest = await db.LatestPricesAsync(funds.Select(f => f.Isin).Distinct().ToList(), asAt);
+        return funds.Where(f => latest.ContainsKey(f.Isin)).GroupBy(f => f.PensionId).ToDictionary(g => g.Key, g => g.ToDictionary(
+            f => f.Fund, f => f.PricesInPounds ? latest[f.Isin] with { Price = latest[f.Isin].Price * 100 } : latest[f.Isin], StringComparer.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Each ISIN's latest price as the feed gave it, on or before <paramref name="asAt"/> when given. A few hundred rows an ISIN: picked here.</summary>
     public static async Task<Dictionary<string, SourcePrice>> LatestPricesAsync(this AppDbContext db, IReadOnlyCollection<string> isins, DateOnly? asAt = null)
     {
         var prices = await db.FundPrices.Where(p => isins.Contains(p.Isin) && (asAt == null || p.Date <= asAt))

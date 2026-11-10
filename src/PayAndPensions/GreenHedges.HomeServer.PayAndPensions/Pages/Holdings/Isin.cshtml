@@ -19,6 +19,11 @@
             <span asp-validation-for="Input.Isin" class="text-danger small"></span>
             <div class="form-text">Leave blank to stop fetching prices.</div>
         </div>
+        <div class="form-check mt-3">
+            <input asp-for="Input.PricesInPounds" class="form-check-input" />
+            <label asp-for="Input.PricesInPounds" class="form-check-label"></label>
+            <div class="form-text">The feed prices some funds in pounds and some in pence. Tick this if the fund's price on the Holdings page is a hundredth of what it should be.</div>
+        </div>
         <div class="mt-4">
             <button type="submit" class="btn btn-primary">Save</button>
             <a asp-page="Index" asp-route-personId="@Model.PersonId" asp-route-pensionId="@Model.PensionId" class="btn btn-outline-secondary">Cancel</a>
@@ -30,15 +35,16 @@
 {
     <div class="card shadow-sm mt-3"><div class="card-body">
         <h2 class="h6">Find the ISIN by name</h2>
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get">
             <input type="hidden" name="fund" value="@Model.Fund" />
             <input type="hidden" name="handler" value="Search" />
-            <div class="col-md-8">
-                <label for="query" class="form-label">Fund name</label>
+            <label for="query" class="form-label">Fund name</label>
+            @* An input group, so the button lines up with the box whatever is under it. *@
+            <div class="input-group">
                 <input id="query" name="query" value="@Model.Query" class="form-control" maxlength="100" required />
-                <div class="form-text">Fewer words find more: try the fund's main name without its share class. A provider's own version of a fund may not be listed.</div>
+                <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button>
             </div>
-            <div class="col-md-auto"><button type="submit" class="btn btn-outline-secondary"><i class="bi bi-search me-1"></i>Search</button></div>
+            <div class="form-text">Fewer words find more: try the fund's main name without its share class. A provider's own version of a fund may not be listed.</div>
         </form>
         @if (Model.SearchError is not null)
         {
@@ -59,11 +65,12 @@
                         <tr>
                             <td>@m.Name</td>
                             <td>@m.Isin</td>
-                            <td>@m.Currency</td>
+                            <td>@m.Currency@(IsinModel.InPounds(m) ? " (pounds)" : m.Currency == "GBX" ? " (pence)" : "")</td>
                             <td class="text-end">@m.LastPrice?.ToString("#,##0.####")<span class="d-block small text-body-secondary">@m.LastPriceDate</span></td>
                             <td class="text-end">
                                 <form method="post" asp-route-fund="@Model.Fund">
                                     <input type="hidden" name="Input.Isin" value="@m.Isin" />
+                                    <input type="hidden" name="Input.PricesInPounds" value="@(IsinModel.InPounds(m) ? "true" : "false")" />
                                     <input type="hidden" name="Input.RowVersion" value="@Convert.ToBase64String(Model.Input.RowVersion)" />
                                     <button type="submit" class="btn btn-sm btn-outline-primary">Use</button>
                                 </form>
@@ -73,7 +80,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="form-text mb-0">Use saves the ISIN and fetches its prices. Check the last price against your provider's before relying on it.</p>
+            <p class="form-text mb-0">Use saves the ISIN, with whether its prices are in pounds or pence from its currency, and fetches them. Check the last price against your provider's before relying on it.</p>
         }
     </div></div>
 }

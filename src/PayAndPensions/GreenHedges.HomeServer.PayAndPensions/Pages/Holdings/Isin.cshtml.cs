@@ -36,8 +36,8 @@ public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPage
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadPensionAsync() || !await IsPensionsFundAsync()) return NotFound();
-        var existing = await Find().Select(f => new { f.Isin, f.RowVersion }).FirstOrDefaultAsync();
-        if (existing is not null) Input = new FundIsinInput { Isin = existing.Isin, RowVersion = existing.RowVersion };
+        var existing = await Find().Select(f => new { f.Isin, f.PricesInPounds, f.RowVersion }).FirstOrDefaultAsync();
+        if (existing is not null) Input = new FundIsinInput { Isin = existing.Isin, PricesInPounds = existing.PricesInPounds, RowVersion = existing.RowVersion };
         Query ??= Fund;
         return Page();
     }
@@ -87,12 +87,13 @@ public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPage
 
         if (existing is null)
         {
-            Db.PensionFunds.Add(new PensionFund { PensionId = PensionId, Fund = Fund, Isin = isin });
+            Db.PensionFunds.Add(new PensionFund { PensionId = PensionId, Fund = Fund, Isin = isin, PricesInPounds = Input.PricesInPounds });
             await Db.SaveChangesAsync(cancellationToken);
         }
         else
         {
             existing.Isin = isin;
+            existing.PricesInPounds = Input.PricesInPounds;
             if (!await Db.TrySaveEditAsync(existing, Input.RowVersion))
             {
                 ModelState.AddModelError(string.Empty, "Someone changed this ISIN after you opened it, so yours hasn't been saved. Reload the page to see the latest.");
@@ -117,6 +118,12 @@ public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPage
             return "Saved the ISIN, but its prices couldn't be fetched. Check the ISIN: the feed tries again each morning.";
         }
     }
+
+    /// <summary>
+    /// Whether a match's prices are in pounds, from its currency: the feed has "GBP" for pounds and "GBX" for pence.
+    /// Anything else is left as pence, to be changed with the tick box.
+    /// </summary>
+    public static bool InPounds(FundMatch match) => match.Currency == "GBP";
 
     private IQueryable<PensionFund> Find() => Db.PensionFunds.Where(f => f.PensionId == PensionId && f.Fund == Fund);
 

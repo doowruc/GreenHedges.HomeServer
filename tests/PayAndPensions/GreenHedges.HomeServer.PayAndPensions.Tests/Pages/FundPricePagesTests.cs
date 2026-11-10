@@ -121,7 +121,7 @@ public class FundPricePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         var found = await client.GetAsync($"{IsinUrl(ids)}&handler=Search&query={Uri.EscapeDataString($"findable {isin}")}");
         Assert.Contains(name, found.Text);
         Assert.Contains("389.33", found.Text);
-        var use = System.Text.RegularExpressions.Regex.Match(found.Html, "<form method=\"post\"[^>]*>(?:(?!</form>).)*name=\"Input.Isin\" value=\"" + isin + "\".*?</form>",
+        var use = System.Text.RegularExpressions.Regex.Match(found.Html, "<form method=\"post\"[^>]*>(?:(?!</form>).)*type=\"hidden\" name=\"Input.Isin\" value=\"" + isin + "\".*?</form>",
             System.Text.RegularExpressions.RegexOptions.Singleline).Value;
         Assert.NotEmpty(use);
 
@@ -131,6 +131,39 @@ public class FundPricePagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         await using var check = Db();
         Assert.Equal(isin, (await check.PensionFunds.SingleAsync()).Isin);
         Assert.Equal(389.333m, (await check.FundPrices.SingleAsync(p => p.Isin == isin)).Price);
+    }
+
+    [DatabaseFact]
+    public async Task A_fund_the_feed_prices_in_pounds_is_valued_in_pence_on_the_holdings_and_the_dashboard()
+    {
+        var ids = await PensionWithFundAsync();                    // 100 units bought at 200p
+        var isin = NewIsin();
+        app.FundPriceSource.AddFund(new FundMatch($"Pounds {isin} Fund", isin, "EUFUND", "GBP", 3.8933m, "2026-01-15"));
+        app.FundPriceSource.Set(isin, new SourcePrice(Today.AddDays(-2), 3.8933m));
+        var client = app.ClientFor(UserId);
+
+        // By hand, unticked: the pounds are read as pence.
+        await SaveAsync(client, IsinUrl(ids), isin);
+        Assert.Contains("<td class=\"text-end\">£3.89</td>", (await client.GetAsync(Holdings(ids))).Html);
+
+        // Using the search's match sets it from the currency.
+        var found = await client.GetAsync($"{IsinUrl(ids)}&handler=Search&query={Uri.EscapeDataString($"pounds {isin}")}");
+        Assert.Contains("GBP (pounds)", found.Text);
+        var use = System.Text.RegularExpressions.Regex.Match(found.Html, "<form method=\"post\"[^>]*>(?:(?!</form>).)*type=\"hidden\" name=\"Input.Isin\" value=\"" + isin + "\".*?</form>",
+            System.Text.RegularExpressions.RegexOptions.Singleline).Value;
+        await client.PostFormAsync(IsinUrl(ids), found with { Html = use });
+
+        var holdings = await client.GetAsync(Holdings(ids));
+        Assert.Contains("<td class=\"text-end\">£389.33</td>", holdings.Html);     // 100 units at 389.33p
+        Assert.Contains("389.33", holdings.Text);
+        Assert.Contains("£389.33", (await client.GetAsync($"/?person={ids.PersonId}")).Text);
+        Assert.Contains("checked", System.Text.RegularExpressions.Regex.Match((await client.GetAsync(IsinUrl(ids))).Html, "<input[^>]*type=\"checkbox\"[^>]*>").Value);
+        await using var check = Db();
+        Assert.Equal(3.8933m, (await check.FundPrices.SingleAsync(p => p.Isin == isin)).Price);   // stored as fetched
+
+        // Unticking it by hand goes back.
+        await client.PostFormAsync(IsinUrl(ids), await client.GetAsync(IsinUrl(ids)), new() { ["Input.PricesInPounds"] = "false" });
+        Assert.Contains("<td class=\"text-end\">£3.89</td>", (await client.GetAsync(Holdings(ids))).Html);
     }
 
     [DatabaseFact]

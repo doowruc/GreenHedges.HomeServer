@@ -56,7 +56,7 @@ worked out from the purchases and sales (units sold to pay a fee included), as a
 (the average cost of the units held, so a sale takes off its share of it), and their value, gain and % gain at the fund's latest price. That's the fund's last purchase or sale,
 as an export has no other prices, unless you give it an **ISIN** (the Set link in its row; type it in, or search the feed for the fund by name and pick it): the app then fetches its
 daily price from [EODHD](https://eodhd.com), a year's history at once and then each morning at 08:00, and the value
-uses the latest one on or before the date shown, unless a deal is more recent. The price and its date are in the row. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
+uses the latest one on or before the date shown, unless a deal is more recent. The feed prices some funds in pounds and some in pence: picking a fund from the search sets which from its currency, and a tick box on the ISIN page changes it if the price shows a hundredth of what it should be. The price and its date are in the row. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
 exports: **Record a conversion** with its date, the two funds and the units received (from the provider's statement
 or current holdings). All the old fund's units held on that date become the new fund's, which takes over their cost.
 A conversion shows as two lines on the Transactions page; it can't be edited, and deleting it deletes both.
