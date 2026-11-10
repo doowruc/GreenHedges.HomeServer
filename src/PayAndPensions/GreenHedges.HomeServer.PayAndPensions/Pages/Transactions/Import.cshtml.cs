@@ -24,7 +24,7 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
 
     public const int MaxFiles = 20;
 
-    public sealed record FileSummary(string Name, string? Error, int Lines, List<string> Skipped);
+    public sealed record FileSummary(string Name, string? Error, int Lines, List<string> Skipped, int? MovementDeals);
 
     /// <summary>The uploaded files, base64, carried from the preview to the import.</summary>
     [BindProperty]
@@ -40,6 +40,12 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
 
     /// <summary>Lines in the files that the pension already has.</summary>
     public int AlreadyThere { get; private set; }
+
+    /// <summary>
+    /// Bought and sold lines left out of security movements files, when no transaction history came with them: any new
+    /// ones need that export, or they'd look like there's nothing to import.
+    /// </summary>
+    public int MovementDealsWithoutHistory => Summaries.Any(f => f.Error is null && f.MovementDeals is null) ? 0 : Summaries.Sum(f => f.MovementDeals ?? 0);
 
     /// <summary>The contributions, new and old, that payslips would be marked received by; null before a preview.</summary>
     public ContributionMatches? Matches { get; private set; }
@@ -140,7 +146,7 @@ public class ImportModel(AppDbContext db, PensionPayslips pensionPayslips, ILogg
             try { bytes = Convert.FromBase64String(Files[i]); }
             catch (FormatException) { bytes = []; }
             var result = TransactionCsv.Read(bytes);
-            Summaries.Add(new FileSummary(FileNames[i], result.Error, result.Rows.Count, result.Skipped));
+            Summaries.Add(new FileSummary(FileNames[i], result.Error, result.Rows.Count, result.Skipped, result.MovementDeals));
             read.Add(result.Rows);
         }
 

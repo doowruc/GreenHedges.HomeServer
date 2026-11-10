@@ -69,6 +69,13 @@ else
                     }
                 }
                 <li><strong>@rows.Count</strong> new @(rows.Count == 1 ? "transaction" : "transactions") to import.</li>
+                @if (Model.MovementDealsWithoutHistory is > 0 and var deals)
+                {
+                    <li class="text-warning-emphasis">
+                        @deals @(deals == 1 ? "bought or sold line isn't" : "bought and sold lines aren't") imported from a security movements file.
+                        For any new purchases or sales, import @Model.ProviderName's transaction history export.
+                    </li>
+                }
                 @if (Model.AlreadyThere > 0)
                 {
                     <li>@Model.AlreadyThere the pension already has, which are left out.</li>

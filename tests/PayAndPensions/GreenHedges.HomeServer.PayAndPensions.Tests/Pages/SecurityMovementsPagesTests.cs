@@ -68,6 +68,26 @@ public class SecurityMovementsPagesTests(AppFactory app) : DatabaseTest, IClassF
     }
 
     [DatabaseFact]
+    public async Task A_movements_file_alone_says_its_purchases_and_sales_need_the_transaction_history()
+    {
+        var ids = await PensionAsync();
+        var client = app.ClientFor(UserId);
+        var url = Url(ids, "Transactions/Import");
+        await ImportAllAsync(client, ids);
+        var withANewPurchase = TestCsv.Movements("Example Fund", "Class I",
+            TestCsv.Movement("09/11/2023", "Bought", "B3", "310.00", "10.0000", "31.00"),
+            TestCsv.Movement("30/10/2023", "Corp.A", "E 2", "0.00", "0.0000", "-5.00"));
+
+        var alone = await PreviewAsync(client, url, ("i.csv", withANewPurchase));
+        var withHistory = await PreviewAsync(client, url, ("i.csv", withANewPurchase), ("history.csv", History));
+
+        Assert.Contains("<strong>0</strong> new transactions to import.", alone.Html);
+        Assert.Contains("1 bought or sold line isn't imported from a security movements file.", alone.Text);
+        Assert.Contains("transaction history export", alone.Text);
+        Assert.DoesNotContain("imported from a security movements file", withHistory.Text);
+    }
+
+    [DatabaseFact]
     public async Task A_files_conversion_replaces_one_recorded_by_hand_on_its_date()
     {
         var ids = await PensionAsync();

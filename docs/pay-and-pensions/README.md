@@ -60,6 +60,7 @@ If your provider exports a fund's **security movements**, import those (one per 
 what the transaction history leaves out is used: the fund's **cost adjustments** (corporate actions, which change its
 cost but not its units or the cash) and its conversions, with the provider's own cost, so there's nothing to record by
 hand; a file's conversion replaces one recorded by hand on the same date. Import the file for each side of a conversion.
+Its bought and sold lines aren't imported, so new purchases and sales need the transaction history export.
 
 And, as Vehicle Manager,
 nightly **backups** with encrypted off-site copies and a daily pull to the Mac, email **alerts** and a **heartbeat**
