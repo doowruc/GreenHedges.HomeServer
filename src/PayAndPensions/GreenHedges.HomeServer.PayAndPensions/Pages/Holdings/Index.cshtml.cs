@@ -46,14 +46,8 @@ public class IndexModel(AppDbContext db) : PensionPageModel(db)
         WithoutFund = await deals.CountAsync(tx => tx.Fund == null);
         Isins = (await Db.PensionFunds.Where(f => f.PensionId == PensionId).Select(f => new { f.Fund, f.Isin }).ToListAsync())
             .ToDictionary(f => f.Fund, f => f.Isin, StringComparer.OrdinalIgnoreCase);
-        Funds = Services.Holdings.Of(await deals.ToFundDealsAsync(), await DailyPricesAsync());
+        // Each fund with an ISIN's latest price on or before the date shown.
+        Funds = Services.Holdings.Of(await deals.ToFundDealsAsync(), (await Db.DailyPricesAsync([PensionId], AsAt)).GetValueOrDefault(PensionId));
         return Page();
-    }
-
-    /// <summary>Each fund with an ISIN's latest price on or before the date shown.</summary>
-    private async Task<Dictionary<string, SourcePrice>> DailyPricesAsync()
-    {
-        var latest = await Db.LatestPricesAsync(Isins.Values.Distinct().ToList(), AsAt);
-        return Isins.Where(f => latest.ContainsKey(f.Value)).ToDictionary(f => f.Key, f => latest[f.Value], StringComparer.OrdinalIgnoreCase);
     }
 }

@@ -16,4 +16,10 @@ public class PensionFund : AuditedEntity
 
     [Required, StringLength(12)]
     public string Isin { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The feed gives this fund's prices in pounds, not pence (it gives each fund in its own currency unit, and doesn't
+    /// say which with the prices): they're multiplied by 100 when the fund is valued. The stored prices stay as fetched.
+    /// </summary>
+    public bool PricesInPounds { get; set; }
 }

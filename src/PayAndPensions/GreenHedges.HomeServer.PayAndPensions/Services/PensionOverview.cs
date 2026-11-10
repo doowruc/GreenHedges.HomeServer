@@ -102,15 +102,13 @@ public sealed class PensionHistory(AppDbContext db)
         var statements = await db.PensionStatements.Where(s => ids.Contains(s.StatementType!.PensionId))
             .Select(s => new { s.StatementType!.PensionId, s.Date, s.Id, s.Value, s.ProjectedFund, s.ProjectedAnnualIncome })
             .ToListAsync();
-        var funds = await db.PensionFunds.Where(f => ids.Contains(f.PensionId)).Select(f => new { f.PensionId, f.Fund, f.Isin }).ToListAsync();
-        var prices = await db.LatestPricesAsync(funds.Select(f => f.Isin).Distinct().ToList());
+        var prices = await db.DailyPricesAsync(ids);
 
         var summaries = new List<PensionSummary>();
         foreach (var pension in pensions)
         {
             var deals = await db.PensionTransactions.Where(tx => tx.PensionId == pension.Id).Deals().ToFundDealsAsync();
-            var daily = funds.Where(f => f.PensionId == pension.Id && prices.ContainsKey(f.Isin))
-                .ToDictionary(f => f.Fund, f => prices[f.Isin], StringComparer.OrdinalIgnoreCase);
+            var daily = prices.GetValueOrDefault(pension.Id);
             var own = statements.Where(s => s.PensionId == pension.Id).OrderBy(s => s.Date).ThenBy(s => s.Id)
                 .Select(s => new StatementSummary(s.Date, s.Value, s.ProjectedFund, s.ProjectedAnnualIncome)).ToList();
             summaries.Add(PensionOverview.Of(pension.Id, pension.Name, pension.Provider, Holdings.Of(deals, daily), own));

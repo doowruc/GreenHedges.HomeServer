@@ -371,6 +371,9 @@ namespace GreenHedges.HomeServer.PayAndPensions.Data.Migrations
                     b.Property<int>("PensionId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("PricesInPounds")
+                        .HasColumnType("bit");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
