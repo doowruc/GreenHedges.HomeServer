@@ -105,6 +105,31 @@ public class StatementPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
     }
 
     [DatabaseFact]
+    public async Task The_form_has_a_monthly_income_that_is_not_posted_and_only_the_annual_is_stored()
+    {
+        var (person, pension, _, illustration) = await PensionAsync();
+        var client = app.ClientFor(UserId);
+        var url = Url(person, pension, "Statements/Create");
+
+        var form = await client.GetAsync($"{url}?typeId={illustration.Id}");
+        var monthly = System.Text.RegularExpressions.Regex.Match(form.Html, "<input[^>]*data-monthly-income[^>]*>").Value;
+        Assert.NotEmpty(monthly);
+        Assert.DoesNotContain("name=", monthly);
+        Assert.Contains("data-annual-income", form.Html);
+        Assert.Contains("/js/statement-income", form.Html);
+
+        await client.PostFormAsync(url, form,
+            new() { ["Statement.Date"] = "2026-07-01", ["Statement.Value"] = "1000", ["Statement.ProjectedAnnualIncome"] = "6000.12" });
+
+        await using var db = Db();
+        var saved = await db.PensionStatements.SingleAsync(st => st.StatementTypeId == illustration.Id);
+        Assert.Equal(6000.12m, saved.ProjectedAnnualIncome);
+        var edit = await client.GetAsync(Url(person, pension, $"Statements/Edit/{saved.Id}"));
+        Assert.Contains("data-monthly-income", edit.Html);
+        Assert.Contains("/js/statement-income", edit.Html);
+    }
+
+    [DatabaseFact]
     public async Task A_statement_needs_one_of_the_pensions_own_types()
     {
         var (person, pension, _, _) = await PensionAsync();
