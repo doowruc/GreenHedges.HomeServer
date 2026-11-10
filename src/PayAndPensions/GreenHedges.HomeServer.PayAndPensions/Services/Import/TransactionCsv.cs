@@ -18,7 +18,8 @@ public readonly record struct TransactionKey(DateOnly TradeDate, string Referenc
 
 /// <summary>What a file holds: its transactions, and the lines skipped (and why).</summary>
 /// <param name="Error">Why nothing could be read, e.g. no heading row; null when it could.</param>
-public sealed record TransactionCsvResult(string? Error, List<CsvTransaction> Rows, List<string> Skipped);
+/// <param name="MovementDeals">A security movements export's Bought and Sold lines, which aren't read; null for any other file.</param>
+public sealed record TransactionCsvResult(string? Error, List<CsvTransaction> Rows, List<string> Skipped, int? MovementDeals = null);
 
 /// <summary>
 /// Reads a pension provider's transaction history exported as CSV: a few lines about the account (ignored, and never
@@ -169,11 +170,16 @@ public static class TransactionCsv
 
         var rows = new List<CsvTransaction>();
         var skipped = new List<string>();
+        var deals = 0;
         foreach (var (row, cells) in lines.Skip(headingAt + 1))
         {
             string Cell(int i) => i >= 0 && i < cells.Length ? cells[i] : string.Empty;
             var kind = Cell(type).ToLowerInvariant();
-            if (kind is "bought" or "sold") continue;
+            if (kind is "bought" or "sold")
+            {
+                deals++;
+                continue;
+            }
 
             DateOnly on = default;
             decimal total = 0;
@@ -202,7 +208,7 @@ public static class TransactionCsv
             rows.Add(new CsvTransaction(row, on, on, Cell(reference), received ? $"Converted into {fund}" : $"Converted out of {fund}",
                 TransactionKind.Conversion, fund, null, received ? Math.Abs(units!.Value) : -Math.Abs(units!.Value), -total));
         }
-        return new TransactionCsvResult(null, rows, skipped);
+        return new TransactionCsvResult(null, rows, skipped, deals);
     }
 
     /// <summary>UTF-8 if it is (with or without a byte order mark), else Windows-1252 as Excel saves it (£ is one byte).</summary>

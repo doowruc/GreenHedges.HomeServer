@@ -66,6 +66,7 @@ public class TransactionCsvTests
 
         const string fund = "Example Fund Class I - Accumulation (GBP)";
         Assert.Null(result.Error);
+        Assert.Equal(2, result.MovementDeals);
         Assert.Equal(
         [
             (TransactionKind.CostAdjustment, fund, (decimal?)null, 22.28m, "E 1"),
