@@ -7,6 +7,9 @@ namespace GreenHedges.HomeServer.PayAndPensions.Services;
 /// <summary>A fund's price on a date, in pence.</summary>
 public sealed record SourcePrice(DateOnly Date, decimal Price);
 
+/// <summary>A fund the feed's search found: its last price is as the feed gives it, in <paramref name="Currency"/>'s units or its pence.</summary>
+public sealed record FundMatch(string Name, string Isin, string? Exchange, string? Currency, decimal? LastPrice, string? LastPriceDate);
+
 /// <summary>Where fund prices come from.</summary>
 public interface IFundPriceSource
 {
@@ -15,6 +18,9 @@ public interface IFundPriceSource
 
     /// <summary>The fund's prices from <paramref name="from"/> on, as many as it has.</summary>
     Task<IReadOnlyList<SourcePrice>> GetAsync(string isin, DateOnly from, CancellationToken cancellationToken);
+
+    /// <summary>The funds with an ISIN whose name (or ISIN) matches <paramref name="query"/>, best first, one per ISIN.</summary>
+    Task<IReadOnlyList<FundMatch>> SearchAsync(string query, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -27,6 +33,9 @@ public sealed class FundPrices(AppDbContext db, IFundPriceSource source, TimePro
     public const int HistoryDays = 365;
 
     public bool IsConfigured => source.IsConfigured;
+
+    /// <summary>Looks funds up by name, to find one's ISIN; failures are the caller's to handle.</summary>
+    public Task<IReadOnlyList<FundMatch>> SearchAsync(string query, CancellationToken cancellationToken) => source.SearchAsync(query, cancellationToken);
 
     /// <summary>Updates every ISIN any user has set; one failing doesn't stop the others. Returns the prices added.</summary>
     public async Task<int> UpdateAllAsync(CancellationToken cancellationToken)

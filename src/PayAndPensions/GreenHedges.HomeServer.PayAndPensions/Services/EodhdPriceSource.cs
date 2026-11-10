@@ -14,7 +14,7 @@ public sealed class EodhdOptions
 }
 
 /// <summary>
-/// End-of-day fund prices from EODHD, by ISIN. Its API takes the key in the URL, so a request's URL must never be logged
+/// End-of-day fund prices from EODHD, by ISIN, and its search for finding a fund's ISIN by name. Its API takes the key in the URL, so a request's URL must never be logged
 /// or traced: <see cref="Redact"/> is for the traces, and Program turns off this client's request logging.
 /// </summary>
 public sealed class EodhdPriceSource(HttpClient http, IOptions<EodhdOptions> options) : IFundPriceSource
@@ -33,8 +33,37 @@ public sealed class EodhdPriceSource(HttpClient http, IOptions<EodhdOptions> opt
         return rows.Select(r => new SourcePrice(r.Date, r.Close)).ToList();
     }
 
-    /// <summary>A request's URL as it may be recorded: this feed's without its query, which holds the key.</summary>
-    public static string Redact(Uri url) => url.Host.Equals(Host, StringComparison.OrdinalIgnoreCase) ? url.GetLeftPart(UriPartial.Path) : url.AbsoluteUri;
+    /// <summary>The search's limit: a page of matches to pick from.</summary>
+    public const int MaxMatches = 20;
+
+    public async Task<IReadOnlyList<FundMatch>> SearchAsync(string query, CancellationToken cancellationToken)
+    {
+        var url = $"https://{Host}{SearchPath}{Uri.EscapeDataString(query)}?api_token={Uri.EscapeDataString(options.Value.ApiToken!)}" +
+            $"&fmt=json&type=fund&limit={MaxMatches}";
+        using var response = await http.GetAsync(url, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var rows = await response.Content.ReadFromJsonAsync<List<Match>>(cancellationToken) ?? [];
+        return rows.Where(r => !string.IsNullOrWhiteSpace(r.Isin) && !string.IsNullOrWhiteSpace(r.Name))
+            .Select(r => new FundMatch(r.Name!.Trim(), r.Isin!.Trim().ToUpperInvariant(), r.Exchange, r.Currency, r.PreviousClose, r.PreviousCloseDate))
+            .DistinctBy(m => m.Isin)
+            .ToList();
+    }
+
+    private const string SearchPath = "/api/search/";
+
+    /// <summary>
+    /// A request's URL as it may be recorded: this feed's without its query, which holds the key, and a search's
+    /// without what was searched for (a fund someone holds).
+    /// </summary>
+    public static string Redact(Uri url) =>
+        !url.Host.Equals(Host, StringComparison.OrdinalIgnoreCase) ? url.AbsoluteUri
+        : url.AbsolutePath.StartsWith(SearchPath, StringComparison.OrdinalIgnoreCase) ? $"https://{Host}{SearchPath}"
+        : url.GetLeftPart(UriPartial.Path);
+
+    private sealed record Match(
+        [property: JsonPropertyName("Name")] string? Name, [property: JsonPropertyName("ISIN")] string? Isin,
+        [property: JsonPropertyName("Exchange")] string? Exchange, [property: JsonPropertyName("Currency")] string? Currency,
+        [property: JsonPropertyName("previousClose")] decimal? PreviousClose, [property: JsonPropertyName("previousCloseDate")] string? PreviousCloseDate);
 
     private sealed record Row([property: JsonPropertyName("date")] DateOnly Date, [property: JsonPropertyName("close")] decimal Close);
 }

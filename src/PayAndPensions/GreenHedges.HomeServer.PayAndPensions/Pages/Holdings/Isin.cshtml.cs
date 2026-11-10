@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.PayAndPensions.Data;
@@ -9,7 +10,10 @@ using GreenHedges.HomeServer.PayAndPensions.ViewModels;
 
 namespace GreenHedges.HomeServer.PayAndPensions.Pages.Holdings;
 
-/// <summary>Sets the ISIN a fund's daily prices are fetched by (blank to stop), and fetches them at once.</summary>
+/// <summary>
+/// Sets the ISIN a fund's daily prices are fetched by (blank to stop), and fetches them at once. ?handler=Search looks
+/// the fund up by name in the feed, to pick its ISIN from the matches.
+/// </summary>
 public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPageModel(db)
 {
     [BindProperty(SupportsGet = true)]
@@ -20,12 +24,44 @@ public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPage
 
     public bool FeedConfigured => prices.IsConfigured;
 
+    /// <summary>What to search the feed for: the fund's name to start with.</summary>
+    [BindProperty(SupportsGet = true)]
+    public string? Query { get; set; }
+
+    /// <summary>The search's matches; null before a search.</summary>
+    public IReadOnlyList<FundMatch>? Matches { get; private set; }
+
+    public string? SearchError { get; private set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!await LoadPensionAsync() || !await IsPensionsFundAsync()) return NotFound();
         var existing = await Find().Select(f => new { f.Isin, f.RowVersion }).FirstOrDefaultAsync();
         if (existing is not null) Input = new FundIsinInput { Isin = existing.Isin, RowVersion = existing.RowVersion };
+        Query ??= Fund;
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetSearchAsync(CancellationToken cancellationToken)
+    {
+        var page = await OnGetAsync();
+        if (page is not PageResult) return page;
+
+        var query = Query?.Trim() ?? string.Empty;
+        if (query.Length is < 3 or > 100) SearchError = "Search for between 3 and 100 characters of the fund's name.";
+        else if (!prices.IsConfigured) SearchError = "The price feed has no key yet, so it can't be searched.";
+        else
+        {
+            try
+            {
+                Matches = await prices.SearchAsync(query, cancellationToken);
+            }
+            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            {
+                SearchError = "The search couldn't be run just now. Try again, or type the ISIN in.";
+            }
+        }
+        return page;
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -35,7 +71,11 @@ public partial class IsinModel(AppDbContext db, FundPrices prices) : PensionPage
         var isin = Input.Isin?.Trim().ToUpperInvariant() ?? string.Empty;
         if (isin.Length > 0 && !IsinFormat().IsMatch(isin))
             ModelState.AddModelError("Input.Isin", "An ISIN is 12 characters: two letters, nine letters or digits, then a digit.");
-        if (!ModelState.IsValid) return Page();
+        if (!ModelState.IsValid)
+        {
+            Query ??= Fund;
+            return Page();
+        }
 
         var existing = await Find().FirstOrDefaultAsync(cancellationToken);
         if (isin.Length == 0)

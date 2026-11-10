@@ -54,7 +54,7 @@ kind and fund. If you only know what's held today, add one purchase per fund wit
 A pension's **Holdings** (from its Transactions or Statements page, or the pensions list) shows each fund's units,
 worked out from the purchases and sales (units sold to pay a fee included), as at today or any date: their cost
 (the average cost of the units held, so a sale takes off its share of it), and their value, gain and % gain at the fund's latest price. That's the fund's last purchase or sale,
-as an export has no other prices, unless you give it an **ISIN** (the Set link in its row): the app then fetches its
+as an export has no other prices, unless you give it an **ISIN** (the Set link in its row; type it in, or search the feed for the fund by name and pick it): the app then fetches its
 daily price from [EODHD](https://eodhd.com), a year's history at once and then each morning at 08:00, and the value
 uses the latest one on or before the date shown, unless a deal is more recent. The price and its date are in the row. Cash isn't included. A fund converted to another (such as one share class to another) doesn't appear in the
 exports: **Record a conversion** with its date, the two funds and the units received (from the provider's statement
