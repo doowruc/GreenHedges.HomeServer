@@ -1,0 +1,15 @@
+@model (GreenHedges.HomeServer.Utilities.ViewModels.ReadingInput Reading, string Unit)
+@{ var Reading = Model.Reading; }
+<div class="col-sm-auto">
+    <label asp-for="@Reading.Date" class="form-label"></label>
+    <input asp-for="@Reading.Date" type="date" class="form-control" />
+    <span asp-validation-for="@Reading.Date" class="text-danger small"></span>
+</div>
+<div class="col-sm-auto">
+    <label asp-for="@Reading.Value" class="form-label"></label>
+    <div class="input-group">
+        <input asp-for="@Reading.Value" type="number" step="0.001" min="0" class="form-control amount text-end" autofocus />
+        <span class="input-group-text">@Model.Unit</span>
+    </div>
+    <span asp-validation-for="@Reading.Value" class="text-danger small"></span>
+</div>

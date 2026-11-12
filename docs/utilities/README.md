@@ -3,9 +3,21 @@
 A web app for my home's electricity, gas and water meter readings, and later the bills. Part of
 [GreenHedges.HomeServer](../../README.md); the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 1): the app's skeleton. It signs in, has its database (meters and their readings), and a
-dashboard showing each utility's latest reading; there are no pages to add readings yet. Backups, alerts, the
-heartbeat and telemetry are built in, as the other web apps', and off until configured. It isn't on the server yet.
+**So far** (build step 2): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
+date and what the meter shows) and the table of readings, latest first, with what the spreadsheet worked out: units
+used since the reading before, the days between them, and units a day (litres a day for water). Readings can be
+edited and deleted. The **dashboard** shows each utility's latest reading and daily figure. Backups, alerts, the
+heartbeat and telemetry are built in, as the other web apps', and off until configured. Still to come: the charts and
+the spreadsheet import. It isn't on the server yet.
+
+## Meters
+
+A utility's first reading adds its first meter, and its units start with the second reading. A meter only counts up,
+so a reading lower than the one before is refused. When a meter is **replaced**, add it first with **New meter** on
+the utility's page: the date it was installed, what it showed then (usually 0) and, if you like, its serial number.
+Readings from that date on are the new meter's; its first one counts its units from the start reading, over the days
+since the old meter's last reading, and is marked *New meter* in the table. A meter's details can be edited, and a
+meter without readings deleted, from the Meters list.
 
 ## Running it locally
 

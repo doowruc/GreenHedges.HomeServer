@@ -1,0 +1,25 @@
+@model (GreenHedges.HomeServer.Utilities.ViewModels.MeterInput Meter, string Unit, bool Replacement)
+@{ var Meter = Model.Meter; }
+@if (Model.Replacement)
+{
+    <div class="col-sm-auto">
+        <label asp-for="@Meter.InstalledOn" class="form-label"></label>
+        <input asp-for="@Meter.InstalledOn" type="date" class="form-control" />
+        <span asp-validation-for="@Meter.InstalledOn" class="text-danger small"></span>
+    </div>
+    <div class="col-sm-auto">
+        <label asp-for="@Meter.StartReading" class="form-label"></label>
+        <div class="input-group">
+            <input asp-for="@Meter.StartReading" type="number" step="0.001" min="0" class="form-control amount text-end" />
+            <span class="input-group-text">@Model.Unit</span>
+        </div>
+        <span asp-validation-for="@Meter.StartReading" class="text-danger small"></span>
+        <div class="form-text">What it showed when installed: usually 0.</div>
+    </div>
+}
+<div class="col-sm-4">
+    <label asp-for="@Meter.SerialNumber" class="form-label"></label>
+    <input asp-for="@Meter.SerialNumber" class="form-control" />
+    <span asp-validation-for="@Meter.SerialNumber" class="text-danger small"></span>
+    <div class="form-text">As on the meter and the bills.</div>
+</div>

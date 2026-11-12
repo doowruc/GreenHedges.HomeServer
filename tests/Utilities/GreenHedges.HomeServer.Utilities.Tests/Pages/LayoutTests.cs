@@ -13,7 +13,10 @@ public class LayoutTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactor
     [DatabaseFact]
     public async Task Signed_in_pages_have_the_menu_and_signed_out_pages_dont()
     {
-        Assert.Contains(">Dashboard</a>", (await app.ClientFor(UserId).GetAsync("/")).Html);
+        var page = await app.ClientFor(UserId).GetAsync("/");
+        Assert.Contains(">Dashboard</a>", page.Html);
+        foreach (var utility in new[] { "Electricity", "Gas", "Water" })
+            Assert.Contains($"<a class=\"nav-link\" href=\"/{utility}\">{utility}</a>", page.Html);
 
         var signedOut = await app.ClientFor(null).GetAsync("/Account/SignedOut");
         Assert.Equal(HttpStatusCode.OK, signedOut.Status);

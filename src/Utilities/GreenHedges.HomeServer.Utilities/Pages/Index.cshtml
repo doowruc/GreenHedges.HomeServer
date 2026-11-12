@@ -7,18 +7,26 @@
 <div class="row g-3">
     @foreach (var utility in Model.Utilities)
     {
+        var latest = utility.Latest;
         <div class="col-sm-4">
             <div class="card shadow-sm stat-card h-100" data-utility="@utility.Utility"><div class="card-body">
                 <div class="label"><i class="bi @utility.Utility.Icon() me-1"></i>@utility.Utility</div>
-                @if (utility.LatestDate is { } date)
+                @if (latest is not null)
                 {
-                    <div class="value">@utility.LatestValue!.Value.ToString("#,0.###") @utility.Unit!.Value.Symbol()</div>
-                    <div class="small text-body-secondary">@date.ToString("d MMM yyyy") · @utility.Readings @(utility.Readings == 1 ? "reading" : "readings")</div>
+                    <div class="value">@UtilityUnits.FormatUnits(latest.Value) @utility.Unit.Symbol()</div>
+                    <div class="small text-body-secondary">
+                        @latest.Date.ToString("d MMM yyyy") · @utility.Rows.Count @(utility.Rows.Count == 1 ? "reading" : "readings")
+                        @if (latest.UnitsPerDay is not null)
+                        {
+                            <text>· @utility.Utility.FormatPerDay(utility.Unit, latest.UnitsPerDay) @utility.Utility.PerDayUnit(utility.Unit) a day</text>
+                        }
+                    </div>
                 }
                 else
                 {
                     <div class="text-body-secondary mt-1">No readings yet</div>
                 }
+                <a asp-page="/Readings/Index" asp-route-utility="@utility.Utility" class="stretched-link" aria-label="@utility.Utility readings"></a>
             </div></div>
         </div>
     }

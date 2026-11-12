@@ -16,3 +16,6 @@
 
 .stat-card .value { font-size: 1.4rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
 .stat-card .label { font-size: .8rem; color: var(--bs-secondary-color); text-transform: uppercase; letter-spacing: .03em; }
+
+/* The add-reading form's button (Readings/Index): level with the inputs beside it, below their labels. */
+@media (min-width: 576px) { .reading-submit { padding-top: 2rem; } }

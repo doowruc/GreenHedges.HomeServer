@@ -12,6 +12,7 @@ using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.Utilities.Data;
 using GreenHedges.HomeServer.Utilities.Monitoring;
+using GreenHedges.HomeServer.Utilities.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +36,10 @@ builder.AddLastingDataProtection("Utilities");
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck<AppDbContext>>("database", timeout: TimeSpan.FromSeconds(10));
 
+// A utility's pages are at /{utility}/…: /Electricity, /Gas, /Water.
+builder.Services.Configure<RouteOptions>(options => options.ConstraintMap[UtilityRouteConstraint.Name] = typeof(UtilityRouteConstraint));
 builder.Services.AddRazorPages();
+builder.Services.AddScoped<UtilityReadings>();
 // SQL Server: the server's shared instance, or the local container in development (see the README).
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.RequiredSetting("ConnectionStrings:Utilities"),
