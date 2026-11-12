@@ -116,7 +116,7 @@ worked-out figures before anything is saved, and checks units a day against the 
 
 One branch and PR each:
 
-**Progress:** steps 1 (PR #104), 2 (PR #106), 3 (PR #107), 4 (PR #108) and 5's deploy files done. Next: deploying it.
+**Progress:** steps 1 (PR #104), 2 (PR #106), 3 (PR #107), 4 (PR #108) and 5 (PR #109) done, and it's deployed. Next: bills, when wanted.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, a dashboard with each utility's latest reading, the test

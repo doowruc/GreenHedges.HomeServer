@@ -7,6 +7,9 @@ your login on the server; the deploy scripts default to `COLLECTORS_SSH` from `d
 **First:** everything Vehicle Manager needed ([its HOST-SETUP](../vehicle-manager/HOST-SETUP.md)): the .NET runtime,
 SQL Server with its shared backups folder, Caddy, and the telemetry stack ([deploy/telemetry/](../telemetry/HOST-SETUP.md)).
 
+**Do the steps in order.** Deploying (§6) before §1 to §5 installs a unit with no account or settings file, and systemd
+retries it every 30 seconds: `sudo systemctl stop utilities`, finish the earlier steps, then `sudo systemctl start utilities`.
+
 ## 1. Service account and folders (on the server)
 
 ```bash
@@ -24,7 +27,7 @@ sudo install -d -m 0755 /opt/utilities && sudo install -d -m 0750 /etc/utilities
 ## 2. Off-site upload user (on the Mac)
 
 The off-site template now has a `<stack>-utilities` user. Re-run its deploy, with the bucket name the stack already
-uses ([deploy/aws/README.md](../aws/README.md#deploy)); CloudFormation adds only the new user:
+uses (the existing bucket's, not this service's name: a different name makes CloudFormation try to replace the bucket) ([deploy/aws/README.md](../aws/README.md#deploy)); CloudFormation adds only the new user:
 
 ```bash
 aws cloudformation deploy --region eu-west-2 --stack-name greenhedges-offsite --template-file deploy/aws/offsite.yaml --parameter-overrides BucketName=<bucket> --capabilities CAPABILITY_NAMED_IAM
