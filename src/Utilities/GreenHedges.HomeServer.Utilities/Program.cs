@@ -13,6 +13,7 @@ using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.Utilities.Data;
 using GreenHedges.HomeServer.Utilities.Monitoring;
 using GreenHedges.HomeServer.Utilities.Services;
+using GreenHedges.HomeServer.Utilities.Services.Import;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ builder.Services.AddHealthChecks()
 builder.Services.Configure<RouteOptions>(options => options.ConstraintMap[UtilityRouteConstraint.Name] = typeof(UtilityRouteConstraint));
 builder.Services.AddRazorPages();
 builder.Services.AddScoped<UtilityReadings>();
+builder.Services.AddScoped<ReadingsImporter>();
 // SQL Server: the server's shared instance, or the local container in development (see the README).
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.RequiredSetting("ConnectionStrings:Utilities"),

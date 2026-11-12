@@ -3,13 +3,13 @@
 A web app for my home's electricity, gas and water meter readings, and later the bills. Part of
 [GreenHedges.HomeServer](../../README.md); the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 3): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
+**So far** (build step 4): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
 date and what the meter shows) and the table of readings, latest first, with what the spreadsheet worked out: units
 used since the reading before, the days between them, and units a day (litres a day for water). Readings can be
 edited and deleted. Above the form, a **chart** of units a day at each reading's date, with a trendline (a polynomial
 of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. The **dashboard** shows each utility's latest reading and daily figure. Backups, alerts, the
-heartbeat and telemetry are built in, as the other web apps', and off until configured. Still to come: the spreadsheet
-import. It isn't on the server yet.
+heartbeat and telemetry are built in, as the other web apps', and off until configured. **Importing** the spreadsheet
+the readings were kept in (below). It isn't on the server yet.
 
 ## Meters
 
@@ -19,6 +19,24 @@ the utility's page: the date it was installed, what it showed then (usually 0) a
 Readings from that date on are the new meter's; its first one counts its units from the start reading, over the days
 since the old meter's last reading, and is marked *New meter* in the table. A meter's details can be edited, and a
 meter without readings deleted, from the Meters list.
+
+## Importing the spreadsheet
+
+**Import** in the menu. Upload the workbook (.xlsx): its first sheet needs, for each utility, a title
+(**Electricity**, **Gas** or **Water**, e.g. "Water In") in the row above the headings **Date** and **Reading**,
+with a row per reading below. Only those two columns are read; units, days and units a day are worked out again. If a
+utility has two blocks, the first is used.
+
+The preview shows, for each utility, before anything is saved:
+
+- how many readings it would import, and how many are on dates that already have one (those are left as they are, so
+  an updated workbook can be imported again);
+- the meters it would add: the first, and a replacement on each date the reading falls, starting at 0. That's only
+  for a utility with no meters yet; once it has some, a reading that doesn't fit its meter is skipped instead, so add
+  a replacement with **New meter** before importing readings from it;
+- whether units a day match the spreadsheet's own **Units/Day** on every row, and which rows don't;
+- rows it can't import and why, e.g. a reading with no date;
+- the readings, with their figures worked out.
 
 ## Running it locally
 

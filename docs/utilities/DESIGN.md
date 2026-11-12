@@ -88,10 +88,13 @@ credits and payments; gas calorific values. None of it changes the readings mode
 
 ## Import
 
-Upload the `.xlsx` (ClosedXML). Only the Date and Reading columns of the three blocks are read (A-B, G-H, M-N);
-rows without a date and a number are skipped. A reading lower than the one before starts a new meter, installed that
-day at 0. A preview shows each utility's readings, meters and worked-out figures before anything is saved; dates a
-utility already has are left alone, so a re-run adds only new rows.
+Upload the `.xlsx` (ClosedXML). Each utility's block is found by its title (Electricity, Gas, Water…) above the
+headings Date and Reading, and only those two columns are read; a utility's second block (the old waste water one)
+and everything else are ignored. Rows with only one of the two, or with text, are skipped with the reason. For a
+utility with no meters yet, a reading lower than the one before starts a new meter, installed that day at 0. A
+utility that already has meters only gains readings on dates it doesn't have, each on the meter its date belongs to;
+one that doesn't fit there is skipped, never made a new meter. A preview shows each utility's readings, meters and
+worked-out figures before anything is saved, and checks units a day against the sheet's own Units/Day column.
 
 ## Hosting
 
@@ -113,7 +116,7 @@ utility already has are left alone, so a re-run adds only new rows.
 
 One branch and PR each:
 
-**Progress:** steps 1 (PR #104), 2 (PR #106) and 3 done. Next: step 4.
+**Progress:** steps 1 (PR #104), 2 (PR #106), 3 (PR #107) and 4 done. Next: step 5.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, a dashboard with each utility's latest reading, the test

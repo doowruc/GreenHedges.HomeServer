@@ -1,0 +1,124 @@
+@page "/Import"
+@model GreenHedges.HomeServer.Utilities.Pages.Import.IndexModel
+@{
+    ViewData["Title"] = "Import readings";
+    var plans = Model.Plans;
+}
+
+<h1 class="h3 mb-3">Import readings</h1>
+@* "All" renders the box even with nothing in it (for client-side validation, which this page doesn't use), so only
+   when there's an error. *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+}
+
+@if (plans is null || Model.Workbook is null)
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <p>
+            Upload the spreadsheet the meter readings have been kept in (.xlsx). Its first sheet needs, for each utility, a
+            title (<strong>Electricity</strong>, <strong>Gas</strong> or <strong>Water</strong>) above the headings
+            <strong>Date</strong> and <strong>Reading</strong>, with a row per reading below. Only those two columns are
+            read: units, days and units a day are worked out again here. Where a reading falls, a new meter starts that
+            day at 0.
+        </p>
+        <p class="text-body-secondary">Nothing is saved until you've seen what it would import. Dates a utility already
+            has readings for are left as they are, so an updated spreadsheet can be imported again.</p>
+        <form method="post" asp-page-handler="Preview" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label for="upload" class="form-label">Spreadsheet</label>
+                    <input id="upload" name="upload" type="file" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Preview</button>
+                    <a asp-page="/Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div></div>
+}
+else
+{
+    var anything = plans.Any(p => p.ToImport.Count > 0);
+    <form method="post" asp-page-handler="Import">
+        <input type="hidden" asp-for="Workbook" />
+        <input type="hidden" asp-for="FileName" />
+        <p class="text-body-secondary">From <strong>@Model.FileName</strong>. Nothing has been saved yet.</p>
+
+        @foreach (var plan in plans)
+        {
+            var unit = plan.Utility.DefaultUnit();
+            var perDayUnit = plan.Utility.PerDayUnit(unit);
+            var rows = plan.NewRows.Reverse().ToList();
+            <div class="card shadow-sm mb-3" data-import="@plan.Utility"><div class="card-body">
+                <h2 class="h5"><i class="bi @plan.Utility.Icon() me-2"></i>@plan.Utility</h2>
+                <ul class="mb-0">
+                    <li>
+                        <strong>@plan.ToImport.Count</strong> @(plan.ToImport.Count == 1 ? "reading" : "readings") to import@(rows.Count > 0 ? $": {rows[^1].Date:d MMM yyyy} to {rows[0].Date:d MMM yyyy}" : "").
+                    </li>
+                    @if (plan.NewMeters.Count > 0)
+                    {
+                        var replacements = plan.NewMeters.Where(m => m.InstalledOn is not null).Select(m => m.InstalledOn!.Value.ToString("d MMM yyyy")).ToList();
+                        <li>
+                            <strong>@plan.NewMeters.Count</strong> @(plan.NewMeters.Count == 1 ? "meter" : "meters")@(replacements.Count > 0 ? $": the first, and a replacement where the reading falls, on {string.Join(" and ", replacements)}" : "").
+                        </li>
+                    }
+                    @if (plan.AlreadyThere > 0)
+                    {
+                        <li>@plan.AlreadyThere on dates that already have a reading, which are left as they are.</li>
+                    }
+                    @if (plan.ToImport.Count > 0)
+                    {
+                        @if (plan.Mismatches.Count == 0)
+                        {
+                            <li class="text-success-emphasis"><i class="bi bi-check-circle me-1"></i>Units a day match the spreadsheet's own on every row.</li>
+                        }
+                        else
+                        {
+                            <li class="text-warning-emphasis">Units a day differ from the spreadsheet's own on @(plan.Mismatches.Count == 1 ? "row" : "rows") @string.Join(", ", plan.Mismatches). Check those rows below before importing.</li>
+                        }
+                    }
+                    @foreach (var (row, reason) in plan.Skipped)
+                    {
+                        <li class="text-warning-emphasis">Row @row is skipped: @reason.</li>
+                    }
+                </ul>
+                @if (rows.Count > 0)
+                {
+                    <div class="table-responsive import-preview mt-3">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-head">
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Reading</th>
+                                    <th class="text-end">Units</th>
+                                    <th class="text-end">Days</th>
+                                    <th class="text-end">@(perDayUnit == "litres" ? "Litres" : perDayUnit) a day</th>
+                                    <th class="text-end">Row</th>
+                                </tr>
+                            </thead>
+                            <tbody class="amount">
+                            @foreach (var r in rows)
+                            {
+                                <tr class="@(plan.Mismatches.Contains(-r.Id) ? "table-warning" : null)">
+                                    <td class="text-nowrap">@r.Date.ToString("d MMM yyyy")@if (r.NewMeter) {<span class="badge text-bg-secondary ms-2">New meter</span>}</td>
+                                    <td class="text-end fw-semibold">@UtilityUnits.FormatUnits(r.Value)</td>
+                                    <td class="text-end">@UtilityUnits.FormatUnits(r.Units)</td>
+                                    <td class="text-end">@r.Days</td>
+                                    <td class="text-end">@plan.Utility.FormatPerDay(unit, r.UnitsPerDay)</td>
+                                    <td class="text-end text-body-secondary">@(-r.Id)</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div></div>
+        }
+
+        <button type="submit" class="btn btn-primary" disabled="@(!anything)">Import</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Choose another file</a>
+    </form>
+}

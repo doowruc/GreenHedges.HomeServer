@@ -55,6 +55,8 @@ GreenHedges.HomeServer.Utilities/
                pure, unit tested), UtilityReadings (loads a utility's meters and readings, worked out: for its page
                and the dashboard), UtilityUnits (unit symbols, icons, and how readings and daily figures are shown:
                water in litres a day), UtilityRouteConstraint ({utility:utility} in a page's route),
+               Import/ (ReadingsWorkbook reads the spreadsheet; ReadingsImporter plans and imports it; the
+               reading and planning are pure, unit tested),
                PolynomialTrend (a least-squares polynomial fit; pure, unit tested), UtilityChart (a utility's chart
                data as JSON: units a day by date and the order 4 trendline)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
@@ -63,7 +65,7 @@ GreenHedges.HomeServer.Utilities/
   Pages/       Index (dashboard: each utility's latest reading and daily figure), UtilityPageModel (base for a
                utility's pages, at /{utility}/…: /Electricity, /Gas, /Water), Readings/* (Index is the utility's
                page: the add form, the readings table and the meters; Edit, Delete; ReadingRules), Meters/* (Create
-               at /{utility}/Meters/New, Edit with its Delete handler; MeterRules), Account/* (sign in/out),
+               at /{utility}/Meters/New, Edit with its Delete handler; MeterRules), Import/ (at /Import), Account/* (sign in/out),
                Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), js/utility-chart.js (Chart.js
@@ -99,4 +101,13 @@ GreenHedges.HomeServer.Utilities/
   `ConnectionStrings:Utilities`, its file `utilities-latest.bak`, the off-site prefix `utilities`. All off until
   configured; backups at 04:00. No scheduled jobs of its own, so the monitor only checks the database and backups.
   The tests turn the monitor on (`AppFactory`), with nothing to send to.
-- **Never commit the real spreadsheet or a bill,** or put their figures in tests.
+- **Import** (`Services/Import/`, `Pages/Import/`): upload, preview, import; nothing is kept between the steps but
+  the workbook itself, base64 in the preview's form (limit 2 MB), so the import reads exactly what was previewed. A
+  utility's block is a title starting with its name above the headings Date and Reading (found in the first ten
+  rows); the first block per utility counts. Cells are read as Excel saved them (`CachedValue`), or worked out if
+  never saved (the tests' workbooks); readings are rounded to three places. A utility with no meters gets them from
+  the sheet (a new one, at 0, where the reading falls); one with meters only gains readings on new dates that fit the
+  meter their date belongs to. The preview compares units a day with the sheet's own Units/Day. It's all one
+  `SaveChanges`. Log counts only.
+- **Never commit the real spreadsheet or a bill,** or put their figures in tests: `TestWorkbook` builds made-up
+  sheets in code.
