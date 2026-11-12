@@ -66,7 +66,8 @@ deleted (FK `Restrict`).
 - **Days:** since the utility's reading before, even when that was on the meter before, as the sheet has it.
 - **Units a day:** units ÷ days.
 - **Trendline:** an order 4 polynomial least-squares fit of units a day against the date (the sheet's fits against
-  the row, so its curve differs a little where readings are unevenly spaced).
+  the row, so its curve differs a little where readings are unevenly spaced). With fewer than five daily figures the
+  order is the highest they can pin down; with fewer than three there's no trendline.
 
 A reading's meter is the latest one installed on or before its date, so the add form only asks for the date and
 reading. A meter only counts up: a reading can't be lower than the one before it on its meter, or higher than the one
@@ -112,7 +113,7 @@ utility already has are left alone, so a re-run adds only new rows.
 
 One branch and PR each:
 
-**Progress:** steps 1 (PR #104) and 2 done. Next: step 3.
+**Progress:** steps 1 (PR #104), 2 (PR #106) and 3 done. Next: step 4.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, a dashboard with each utility's latest reading, the test

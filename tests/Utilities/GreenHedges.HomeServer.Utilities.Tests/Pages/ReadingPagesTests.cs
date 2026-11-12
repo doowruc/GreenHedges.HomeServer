@@ -41,6 +41,28 @@ public class ReadingPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
+    public async Task The_page_has_a_chart_once_there_are_two_daily_figures()
+    {
+        int meterId;
+        await using (var db = Db())
+            meterId = (await TestData.AddMeterAsync(db, readings: [(new(2021, 1, 1), 1000m), (new(2021, 1, 31), 1300m)])).Id;
+        var client = app.ClientFor(UserId);
+
+        var before = await client.GetAsync("/Electricity");
+        Assert.DoesNotContain("data-utility-chart", before.Html);
+        Assert.DoesNotContain("chart.js", before.Html);
+
+        await client.PostFormAsync("/Electricity", before, new() { ["Reading.Date"] = "2021-02-10", ["Reading.Value"] = "1350.5" });
+        var page = await client.GetAsync("/Electricity");
+
+        var json = WebUtility.HtmlDecode(Regex.Match(page.Html, "data-utility-chart=\"([^\"]*)\"").Groups[1].Value);
+        using var chart = System.Text.Json.JsonDocument.Parse(json);
+        Assert.Equal(["2021-01-31", "2021-02-10"], chart.RootElement.GetProperty("points").EnumerateArray().Select(p => p.GetProperty("date").GetString()));
+        Assert.Matches("<script src=\"https://cdn.jsdelivr.net/npm/chart.js@", page.Html);
+        Assert.Matches("<script src=\"/js/utility-chart[^\"]*\\.js", page.Html);
+    }
+
+    [DatabaseFact]
     public async Task Water_is_shown_in_litres_a_day()
     {
         await using (var db = Db())

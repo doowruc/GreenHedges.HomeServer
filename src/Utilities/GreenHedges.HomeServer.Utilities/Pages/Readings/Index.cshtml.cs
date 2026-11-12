@@ -14,6 +14,9 @@ public class IndexModel(AppDbContext db, UtilityReadings readings) : UtilityPage
 
     public UtilityHistory History { get; private set; } = null!;
 
+    /// <summary>The chart's data (<see cref="UtilityChart"/>); null with too few readings to draw one.</summary>
+    public string? ChartJson => UtilityChart.For(History);
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!LoadUtility()) return NotFound();

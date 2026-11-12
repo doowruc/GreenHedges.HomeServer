@@ -36,6 +36,14 @@
     </div>
 }
 
+@{ var chartJson = Model.ChartJson; }
+@if (chartJson is not null)
+{
+    <div class="card shadow-sm mb-3"><div class="card-body">
+        <div class="chart-box"><canvas data-utility-chart="@chartJson" role="img" aria-label="@Model.Type used a day at each reading, with its trend"></canvas></div>
+    </div></div>
+}
+
 <div class="card shadow-sm mb-4"><div class="card-body">
     <h2 class="h6">Add a reading</h2>
     <form method="post" class="row g-3 align-items-start">
@@ -130,4 +138,9 @@ else
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    @if (chartJson is not null)
+    {
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+        <script src="~/js/utility-chart.js" asp-append-version="true"></script>
+    }
 }
