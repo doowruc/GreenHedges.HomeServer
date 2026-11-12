@@ -3,13 +3,14 @@
 A web app for my home's electricity, gas and water meter readings, and later the bills. Part of
 [GreenHedges.HomeServer](../../README.md); the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 4): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
+**So far** (build step 5): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
 date and what the meter shows) and the table of readings, latest first, with what the spreadsheet worked out: units
 used since the reading before, the days between them, and units a day (litres a day for water). Readings can be
 edited and deleted. Above the form, a **chart** of units a day at each reading's date, with a trendline (a polynomial
-of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. The **dashboard** shows each utility's latest reading and daily figure. Backups, alerts, the
-heartbeat and telemetry are built in, as the other web apps', and off until configured. **Importing** the spreadsheet
-the readings were kept in (below). It isn't on the server yet.
+of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. The **dashboard** shows each utility's latest reading and daily figure. **Importing** the spreadsheet
+the readings were kept in (below). And, as the other web apps, nightly **backups** with encrypted off-site copies and
+a daily pull to the Mac, email **alerts** and a **heartbeat** (below). It runs on the home server at
+`https://utilities.<home domain>`: [host setup](../../deploy/utilities/HOST-SETUP.md).
 
 ## Meters
 
@@ -65,6 +66,19 @@ It needs SQL Server and an Auth0 application, like Vehicle Manager.
 
 `ConnectionStrings:UtilitiesTests` is for the tests: each run creates (and a later run drops) its own throwaway
 database on that server. Without it, the database and page tests are skipped.
+
+## Backups, alerts and the heartbeat
+
+All off until configured, so a local copy does none of it. On the server, [deploy/utilities/HOST-SETUP.md](../../deploy/utilities/HOST-SETUP.md)
+sets them up:
+
+| What | How | Settings |
+|---|---|---|
+| Nightly backup | At 04:00 (after the other web apps'), SQL Server backs up `ConnectionStrings:Utilities` into its shared folder; Common's `BackupService` gzips it to `backups/utilities-<UTC>.bak.gz` and keeps 7 | `Backup:Enabled`, `Backup:SqlServerFolder` (required when on), `Backup:SqlServerFolderOnHost` |
+| Off-site | Each backup `age`-encrypted to the shared bucket under `utilities/`, by the write-only IAM user `<stack>-utilities` ([deploy/aws/](../../deploy/aws/README.md)) | `Offsite:Bucket`, `Region`, `AccessKeyId`, `SecretAccessKey`, `AgeRecipient` |
+| Mac pull | Daily at 09:40 into `~/Backups/Utilities`: `deploy/mac/install-backup-pull.sh utilities` | `deploy/local.env` |
+| Alerts | Resend emails when the database doesn't answer for 5 minutes, or backups or off-site copies fail; resolved emails when they recover. `--test-alert` sends one and exits | `Alerts:ResendApiKey`, `From`, `To` |
+| Heartbeat | A healthchecks.io ping every 5 minutes while the database answers | `Heartbeat:PingUrl` |
 
 ## Privacy
 

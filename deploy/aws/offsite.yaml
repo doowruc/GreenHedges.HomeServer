@@ -46,6 +46,11 @@ Parameters:
     Default: payandpensions
     Description: Key prefix for Pay and Pensions' copies (its Offsite:Prefix setting).
     AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  UtilitiesPrefix:
+    Type: String
+    Default: utilities
+    Description: Key prefix for Utilities' copies (its Offsite:Prefix setting).
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
 
 Resources:
   OffsiteBucket:
@@ -187,6 +192,25 @@ Resources:
                 Action: s3:PutObject
                 Resource: !Sub "${OffsiteBucket.Arn}/${PayAndPensionsPrefix}/*"
 
+  UtilitiesUploader:
+    Type: AWS::IAM::User
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Utilities' off-site key; same shape as LibreUploader
+        must:
+          - s3:PutObject on its own prefix only
+    Properties:
+      UserName: !Sub "${AWS::StackName}-utilities"
+      Policies:
+        - PolicyName: UploadOffsiteBackupsOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: UploadOffsiteBackupsOnly
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${OffsiteBucket.Arn}/${UtilitiesPrefix}/*"
+
 Outputs:
   BucketName:
     Description: Offsite:Bucket for every service.
@@ -203,3 +227,6 @@ Outputs:
   PayAndPensionsUser:
     Description: IAM user to create Pay and Pensions' access key for.
     Value: !Ref PayAndPensionsUploader
+  UtilitiesUser:
+    Description: IAM user to create Utilities' access key for.
+    Value: !Ref UtilitiesUploader

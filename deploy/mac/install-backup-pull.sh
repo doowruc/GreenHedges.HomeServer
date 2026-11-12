@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # One-off setup on the Mac for one service: backup SSH key, the pull script, and a daily launchd job.
-#   deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions>
+#   deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities>
 # Safe to re-run (updates the script and job, keeps the existing key).
 # Reads, from the environment or deploy/local.env, for the service's prefix P (LIBRECOLLECTOR,
-# WEATHERCOLLECTOR, VEHICLEMANAGER or PAYANDPENSIONS): P_USER and P_HOST (else COLLECTORS_USER / COLLECTORS_HOST, else LIBRECOLLECTOR_USER /
+# WEATHERCOLLECTOR, VEHICLEMANAGER, PAYANDPENSIONS or UTILITIES): P_USER and P_HOST (else COLLECTORS_USER / COLLECTORS_HOST, else LIBRECOLLECTOR_USER /
 # LIBRECOLLECTOR_HOST), and optionally P_BACKUP_DIR and P_LAUNCHD_LABEL. It saves them in
 # ~/.config/<collector>/backup-pull.env, which the pull script reads.
 set -euo pipefail
@@ -20,7 +20,8 @@ case "${1:-}" in
   weather) NAME=weathercollector; TITLE=WeatherCollector; MINUTE=10 ;;
   vehicle-manager) NAME=vehiclemanager; TITLE=VehicleManager; MINUTE=20 ;;
   pay-and-pensions) NAME=payandpensions; TITLE=PayAndPensions; MINUTE=30 ;;
-  *) echo "Usage: deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions>" >&2; exit 2 ;;
+  utilities) NAME=utilities; TITLE=Utilities; MINUTE=40 ;;
+  *) echo "Usage: deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities>" >&2; exit 2 ;;
 esac
 P="$(echo "$NAME" | tr '[:lower:]' '[:upper:]')"
 setting() { local v="${P}_$1" c="COLLECTORS_$1" l="LIBRECOLLECTOR_$1"; echo "${!v:-${!c:-${!l:-}}}"; }
