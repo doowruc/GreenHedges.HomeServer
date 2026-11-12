@@ -3,12 +3,13 @@
 A web app for my home's electricity, gas and water meter readings, and later the bills. Part of
 [GreenHedges.HomeServer](../../README.md); the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 2): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
+**So far** (build step 3): a page each for **Electricity**, **Gas** and **Water**, with a form to add a reading (the
 date and what the meter shows) and the table of readings, latest first, with what the spreadsheet worked out: units
 used since the reading before, the days between them, and units a day (litres a day for water). Readings can be
-edited and deleted. The **dashboard** shows each utility's latest reading and daily figure. Backups, alerts, the
-heartbeat and telemetry are built in, as the other web apps', and off until configured. Still to come: the charts and
-the spreadsheet import. It isn't on the server yet.
+edited and deleted. Above the form, a **chart** of units a day at each reading's date, with a trendline (a polynomial
+of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. The **dashboard** shows each utility's latest reading and daily figure. Backups, alerts, the
+heartbeat and telemetry are built in, as the other web apps', and off until configured. Still to come: the spreadsheet
+import. It isn't on the server yet.
 
 ## Meters
 

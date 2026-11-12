@@ -54,7 +54,9 @@ GreenHedges.HomeServer.Utilities/
   Services/    ReadingCalculations (each reading's units, days and units a day, and which meter a date belongs to;
                pure, unit tested), UtilityReadings (loads a utility's meters and readings, worked out: for its page
                and the dashboard), UtilityUnits (unit symbols, icons, and how readings and daily figures are shown:
-               water in litres a day), UtilityRouteConstraint ({utility:utility} in a page's route)
+               water in litres a day), UtilityRouteConstraint ({utility:utility} in a page's route),
+               PolynomialTrend (a least-squares polynomial fit; pure, unit tested), UtilityChart (a utility's chart
+               data as JSON: units a day by date and the order 4 trendline)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), UtilitiesAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), UtilitiesAlertOptions
@@ -64,7 +66,8 @@ GreenHedges.HomeServer.Utilities/
                at /{utility}/Meters/New, Edit with its Delete handler; MeterRules), Account/* (sign in/out),
                Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
-               title="…" becomes a Bootstrap tooltip: pages just write title), favicon.svg/.ico + icons/ +
+               title="…" becomes a Bootstrap tooltip: pages just write title), js/utility-chart.js (Chart.js
+               4.4.4 from jsDelivr, as the other web apps: the utility page's chart, a tick a year), favicon.svg/.ico + icons/ +
                site.webmanifest (made by ../make-icons.py from Bootstrap Icons' speedometer2 on the navbar's dark
                grey; re-run it to change them: needs rsvg-convert, brew install librsvg)
 ```
@@ -87,6 +90,9 @@ GreenHedges.HomeServer.Utilities/
   later than its own first. A utility's first meter has only a serial number to edit.
 - Utility and unit are enums stored as text, so order and group them in memory, not in SQL.
 - **Figures are worked out, never stored** (units, days, units a day, the trendline): see the design notes.
+- **The chart** plots units a day at each reading's date (water in litres), and the trendline is fitted against the
+  date (`DateOnly.DayNumber`, scaled to -1..1 before fitting: day numbers to the 8th power would swamp a double). No
+  chart, and no Chart.js on the page, with fewer than two daily figures.
 - Format text outside a request with en-GB explicitly: CI runs in US English.
 - **Backups, alerts, heartbeat** as the other web apps', through Common (`AddBackups<SqlServerBackupSource>`,
   `AddAlerting`, `AddHeartbeat`) with `CollectorIdentity("Utilities")`: the backup's database is
