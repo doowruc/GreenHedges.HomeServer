@@ -3,7 +3,7 @@
 The services that run on my always-on home server, in one public repository and one .NET 10 solution
 (`GreenHedges.HomeServer.slnx`): the Libre and Weather collectors (`src/Collectors/`), their shared code
 (`src/Common/`), and the web apps Vehicle Manager (`src/VehicleManager/`), Pay & Pensions (`src/PayAndPensions/`) and Utilities
-(`src/Utilities/`, being built), each with its own `CLAUDE.md` for working on it. What each does and how it's set up: `README.md`,
+(`src/Utilities/`), each with its own `CLAUDE.md` for working on it. What each does and how it's set up: `README.md`,
 `docs/<service>/`, `deploy/<service>/`.
 
 ## Build and test

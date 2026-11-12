@@ -32,8 +32,9 @@ docker compose up -d --wait  # local SQL Server (compose.yaml), shared with the 
 
 ## Server
 
-Not deployed yet (build step 5). It will be `https://utilities.<home domain>`: systemd `utilities` on
-`127.0.0.1:5082`, database `Utilities` on the shared SQL Server, files in `deploy/utilities/`.
+`https://utilities.<home domain>` on the home server: systemd `utilities` on `127.0.0.1:5082`, database `Utilities`
+on the shared SQL Server, files in `deploy/utilities/` (`HOST-SETUP.md` has every step).
+`deploy/utilities/deploy.sh` really deploys: never run it to test it; check it with `bash -n` and by reading.
 
 ## Tests
 

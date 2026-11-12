@@ -11,13 +11,13 @@ set -euo pipefail
 # The service comes from this script's installed name (<service>-pull-backups), and the settings from
 # the file the installer writes. Jobs installed before the scripts were shared set LIBRECOLLECTOR_* instead.
 NAME="$(basename "$0")"; NAME="${NAME%-pull-backups}"
-case "$NAME" in librecollector|weathercollector|vehiclemanager|payandpensions) ;; *) NAME=librecollector ;; esac
+case "$NAME" in librecollector|weathercollector|vehiclemanager|payandpensions|utilities) ;; *) NAME=librecollector ;; esac
 CONFIG="$HOME/.config/$NAME/backup-pull.env"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
 HOST="${BACKUP_HOST:-${LIBRECOLLECTOR_HOST:-}}"
 REMOTE_USER="${BACKUP_USER:-${LIBRECOLLECTOR_USER:-}}"
 [ -n "$HOST" ] && [ -n "$REMOTE_USER" ] || {
-  case "$NAME" in vehiclemanager) ARG=vehicle-manager ;; payandpensions) ARG=pay-and-pensions ;; *) ARG="${NAME%collector}" ;; esac
+  case "$NAME" in vehiclemanager) ARG=vehicle-manager ;; payandpensions) ARG=pay-and-pensions ;; utilities) ARG=utilities ;; *) ARG="${NAME%collector}" ;; esac
   echo "No settings for $NAME in $CONFIG: run deploy/mac/install-backup-pull.sh $ARG" >&2; exit 2; }
 DEST="${BACKUP_DIR:-${LIBRECOLLECTOR_BACKUP_DIR:-$HOME/Backups/LibreCollector}}"
 KEY="$HOME/.ssh/${NAME}_backup"

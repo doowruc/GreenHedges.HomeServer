@@ -57,6 +57,12 @@
 		reverse_proxy 127.0.0.1:5081
 	}
 
+	# Utilities (deploy/utilities), the same way.
+	@utilities host utilities.{$HOME_DOMAIN}
+	handle @utilities {
+		reverse_proxy 127.0.0.1:5082
+	}
+
 	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
 	@nightscout host nightscout.{$HOME_DOMAIN}
 	handle @nightscout {
