@@ -23,6 +23,9 @@
   <Folder Name="/src/PayAndPensions/">
     <Project Path="src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions/GreenHedges.HomeServer.PayAndPensions.csproj" />
   </Folder>
+  <Folder Name="/src/Utilities/">
+    <Project Path="src/Utilities/GreenHedges.HomeServer.Utilities/GreenHedges.HomeServer.Utilities.csproj" />
+  </Folder>
   <Folder Name="/src/VehicleManager/">
     <Project Path="src/VehicleManager/GreenHedges.HomeServer.VehicleManager/GreenHedges.HomeServer.VehicleManager.csproj" />
   </Folder>
@@ -48,6 +51,9 @@
   </Folder>
   <Folder Name="/tests/PayAndPensions/">
     <Project Path="tests/PayAndPensions/GreenHedges.HomeServer.PayAndPensions.Tests/GreenHedges.HomeServer.PayAndPensions.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Utilities/">
+    <Project Path="tests/Utilities/GreenHedges.HomeServer.Utilities.Tests/GreenHedges.HomeServer.Utilities.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/VehicleManager/">
     <Project Path="tests/VehicleManager/GreenHedges.HomeServer.VehicleManager.Tests/GreenHedges.HomeServer.VehicleManager.Tests.csproj" />

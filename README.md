@@ -8,8 +8,9 @@ The services that run on a small always-on home server, in one repository and on
 | **Weather collector** ([docs](docs/weather/README.md)) | Archives every radio message from a home weather station's outdoor sensor, received with an RTL-SDR dongle and [rtl_433](https://github.com/merbanan/rtl_433), with Grafana dashboards | Archiving, with alerts, heartbeat and backups (Phase 1); dashboards next |
 | **Vehicle Manager** ([docs](docs/vehicle-manager/README.md)) | A web app for the vehicles I own: fuel log and MPG, services, MOT history from the DVSA, due-date reminders | Running on the home server (moved from Azure SQL: [plan](docs/vehicle-manager/HOMESERVER-MIGRATION.md)) |
 | **Pay & Pensions** ([docs](docs/pay-and-pensions/README.md), [design](docs/pay-and-pensions/DESIGN.md)) | A web app for my household's payslip history, imported from Excel, and later our pension pots | Built: payslips, the import, the dashboard and tax years, backups and alerts; being deployed ([host setup](deploy/pay-and-pensions/HOST-SETUP.md)) |
+| **Utilities** ([docs](docs/utilities/README.md), [design](docs/utilities/DESIGN.md)) | A web app for my home's electricity, gas and water meter readings, with charts, and later the bills | Being built: the skeleton so far |
 
-The **collectors** keep my own copy of data that otherwise only lives in someone else's cloud. They share a .NET 10 Worker Service under systemd, SQLite archives that keep the data as received, nightly backups pulled off the host, encrypted off-site copies, email alerts and an external heartbeat. **Vehicle Manager** and **Pay & Pensions** are ASP.NET Core Razor Pages apps on SQL Server, with their logs, traces and metrics in Grafana. Everything is reached over Tailscale only.
+The **collectors** keep my own copy of data that otherwise only lives in someone else's cloud. They share a .NET 10 Worker Service under systemd, SQLite archives that keep the data as received, nightly backups pulled off the host, encrypted off-site copies, email alerts and an external heartbeat. **Vehicle Manager**, **Pay & Pensions** and **Utilities** are ASP.NET Core Razor Pages apps on SQL Server, with their logs, traces and metrics in Grafana. Everything is reached over Tailscale only.
 
 ## Layout
 
@@ -24,6 +25,8 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `src/PayAndPensions/`, `tests/PayAndPensions/` | Pay & Pensions (`GreenHedges.HomeServer.PayAndPensions`, `.Tests`) |
 | `docs/pay-and-pensions/` | Its README (setup) and design notes |
 | `deploy/pay-and-pensions/` | Pay & Pensions' systemd unit, deploy script, database setup and host setup |
+| `src/Utilities/`, `tests/Utilities/` | Utilities (`GreenHedges.HomeServer.Utilities`, `.Tests`) |
+| `docs/utilities/` | Its README (setup) and design notes |
 | `compose.yaml`, `.env.example` | SQL Server in Docker for local development and Vehicle Manager's tests |
 | `deploy/sqlserver/` | SQL Server in Docker on the home server, for its web apps: compose file, deploy script, host setup |
 | `deploy/vehicle-manager/` | Vehicle Manager's systemd unit, deploy script, database setup and host setup |
