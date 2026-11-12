@@ -38,10 +38,13 @@ public class DashboardPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         Assert.Contains("1,234.5 kWh", electricity);
         Assert.Contains("1 Mar 2020", electricity);
         Assert.Contains("3 readings", electricity);
+        Assert.Contains("42.57 kWh a day", electricity);   // 1,234.5 since the replacement started at 0, over the 29 days since 1 February
+        Assert.Contains("href=\"/Electricity\"", page.Html);
         var gas = Card(page, UtilityType.Gas);
         Assert.Contains("87.125 m³", gas);
         Assert.Contains("1 reading", gas);
         Assert.DoesNotContain("1 readings", gas);
+        Assert.DoesNotContain("a day", gas);   // nothing to count from yet
         Assert.Contains("No readings yet", Card(page, UtilityType.Water));
     }
 

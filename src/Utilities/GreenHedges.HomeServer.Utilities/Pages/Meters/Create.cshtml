@@ -1,0 +1,22 @@
+@page "/{utility:utility}/Meters/New"
+@model GreenHedges.HomeServer.Utilities.Pages.Meters.CreateModel
+@{ ViewData["Title"] = $"New {Model.Lower} meter"; }
+
+<h1 class="h3 mb-1">New @Model.Lower meter</h1>
+<p class="text-body-secondary">For when the meter is replaced. Readings from its installed date on are the new meter's, and its first one counts the units used from its start reading.</p>
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <div class="row g-3">
+            <partial name="_MeterFields" model="(Model.Meter, Model.UnitSymbol, true)" />
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Add meter</button>
+            <a asp-page="/Readings/Index" asp-route-utility="@Model.Utility" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

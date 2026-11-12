@@ -68,7 +68,9 @@ deleted (FK `Restrict`).
 - **Trendline:** an order 4 polynomial least-squares fit of units a day against the date (the sheet's fits against
   the row, so its curve differs a little where readings are unevenly spaced).
 
-A reading's meter is the one installed on or before its date, so the add form only asks for the date and reading.
+A reading's meter is the latest one installed on or before its date, so the add form only asks for the date and
+reading. A meter only counts up: a reading can't be lower than the one before it on its meter, or higher than the one
+after; a lower reading means a new meter, added first.
 
 **Room for bills later:** a supplier and an account (one energy account covers gas and electricity); tariffs with a
 name, end date, exit fee, unit rate and daily standing charge, which change mid-period; bills with their lines, VAT,
@@ -79,7 +81,8 @@ credits and payments; gas calorific values. None of it changes the readings mode
 - **Dashboard:** each utility's latest reading and units a day.
 - **Electricity, Gas, Water:** the chart (Chart.js, a true date axis) with its trendline; the add-reading form (date
   defaults to today); the table of readings with units, days and units a day; edit and delete.
-- **New meter:** for a replacement: the date, start reading and serial number.
+- **New meter:** for a replacement: the date, start reading and serial number. A meter can be edited while every
+  reading stays on the meter it was taken from, and deleted while it has no readings.
 - **Import.**
 
 ## Import
@@ -109,7 +112,7 @@ utility already has are left alone, so a re-run adds only new rows.
 
 One branch and PR each:
 
-**Progress:** step 1 done. Next: step 2.
+**Progress:** steps 1 (PR #104) and 2 done. Next: step 3.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, a dashboard with each utility's latest reading, the test

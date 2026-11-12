@@ -1,0 +1,12 @@
+@page "/{utility:utility}/Delete/{id:int}"
+@model GreenHedges.HomeServer.Utilities.Pages.Readings.DeleteModel
+@{ ViewData["Title"] = $"Delete {Model.Lower} reading"; }
+
+<h1 class="h3 mb-3">Delete @Model.Lower reading</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>Are you sure you want to delete @Model.Description? The reading after it will count its units and days from the one before.</p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="Index" asp-route-utility="@Model.Utility" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

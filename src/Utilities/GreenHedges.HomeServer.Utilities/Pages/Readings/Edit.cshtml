@@ -1,0 +1,22 @@
+@page "/{utility:utility}/Edit/{id:int}"
+@model GreenHedges.HomeServer.Utilities.Pages.Readings.EditModel
+@{ ViewData["Title"] = $"Edit {Model.Lower} reading"; }
+
+<h1 class="h3 mb-3">Edit @Model.Lower reading</h1>
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Reading.RowVersion" />
+        <div class="row g-3">
+            <partial name="_ReadingFields" model="(Model.Reading, Model.UnitSymbol)" />
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="Index" asp-route-utility="@Model.Utility" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

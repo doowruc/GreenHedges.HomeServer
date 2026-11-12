@@ -1,0 +1,30 @@
+@page "/{utility:utility}/Meters/Edit/{id:int}"
+@model GreenHedges.HomeServer.Utilities.Pages.Meters.EditModel
+@{ ViewData["Title"] = $"Edit {Model.Lower} meter"; }
+
+<h1 class="h3 mb-1">Edit @Model.Lower meter</h1>
+@if (!Model.Replacement)
+{
+    <p class="text-body-secondary">The first @Model.Lower meter here: when it was installed isn't known, so its first reading is only where counting starts.</p>
+}
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Meter.RowVersion" />
+        <div class="row g-3">
+            <partial name="_MeterFields" model="(Model.Meter, Model.UnitSymbol, Model.Replacement)" />
+        </div>
+        <div class="mt-4 d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="/Readings/Index" asp-route-utility="@Model.Utility" class="btn btn-outline-secondary">Cancel</a>
+            @if (Model.Readings == 0)
+            {
+                <button type="submit" asp-page-handler="Delete" formnovalidate class="btn btn-outline-danger ms-auto" title="It has no readings">Delete meter</button>
+            }
+        </div>
+    </form>
+</div></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

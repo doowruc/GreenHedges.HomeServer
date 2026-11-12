@@ -50,11 +50,19 @@ bills, and never the real spreadsheet.
 ```
 GreenHedges.HomeServer.Utilities/
   Models/      EF Core entities: Meter (the user-owned root; + UtilityType, MeterUnit), Reading
+  ViewModels/  *Input classes for the forms: ReadingInput, MeterInput
+  Services/    ReadingCalculations (each reading's units, days and units a day, and which meter a date belongs to;
+               pure, unit tested), UtilityReadings (loads a utility's meters and readings, worked out: for its page
+               and the dashboard), UtilityUnits (unit symbols, icons, and how readings and daily figures are shown:
+               water in litres a day), UtilityRouteConstraint ({utility:utility} in a page's route)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), UtilitiesAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), UtilitiesAlertOptions
-  Pages/       Index (dashboard: each utility's latest reading), Units (unit symbols and utility icons),
-               Account/* (sign in/out), Shared/ (layout)
+  Pages/       Index (dashboard: each utility's latest reading and daily figure), UtilityPageModel (base for a
+               utility's pages, at /{utility}/…: /Electricity, /Gas, /Water), Readings/* (Index is the utility's
+               page: the add form, the readings table and the meters; Edit, Delete; ReadingRules), Meters/* (Create
+               at /{utility}/Meters/New, Edit with its Delete handler; MeterRules), Account/* (sign in/out),
+               Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), favicon.svg/.ico + icons/ +
                site.webmanifest (made by ../make-icons.py from Bootstrap Icons' speedometer2 on the navbar's dark
@@ -67,7 +75,16 @@ GreenHedges.HomeServer.Utilities/
 - A utility has one meter at a time. A replacement has an **installed on** date and a **start reading** (usually
   0); a utility's first meter has neither, and its first reading is only where counting starts.
 - **Readings:** one per meter and date (unique index), `decimal(12,3)`. A meter with readings can't be deleted (FK
-  `Restrict`).
+  `Restrict`). A reading belongs to the latest meter installed on or before its date
+  (`ReadingCalculations.MeterFor`); the forms never ask for the meter, and an edit that changes the date can move it.
+  A utility's first reading adds its first meter. A meter only counts up: a reading can't be lower than the one before
+  it on its meter (or the meter's start reading) or higher than the one after (`ReadingRules`).
+- **Units** are the reading less the one before on the same meter (a replacement's first: less its start reading;
+  none for a utility's very first reading). **Days** are since the utility's reading before, even on the meter before,
+  as the spreadsheet had it.
+- **A replacement meter** needs its installed date and start reading; adding or editing one must leave every reading
+  on the meter it was taken from (`MeterRules`), so it's installed after the last reading of the meter before and no
+  later than its own first. A utility's first meter has only a serial number to edit.
 - Utility and unit are enums stored as text, so order and group them in memory, not in SQL.
 - **Figures are worked out, never stored** (units, days, units a day, the trendline): see the design notes.
 - Format text outside a request with en-GB explicitly: CI runs in US English.
