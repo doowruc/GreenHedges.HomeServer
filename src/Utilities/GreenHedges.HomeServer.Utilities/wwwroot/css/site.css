@@ -1,0 +1,18 @@
+/* Page background a touch off-white in light mode; Bootstrap's own dark background otherwise. */
+[data-bs-theme="light"] body { background: #f6f7f9; }
+
+/* Tinted table header that works in both themes (Bootstrap's .table-light stays light in dark mode). */
+.table > thead.table-head > tr > th { --bs-table-bg: var(--bs-tertiary-bg); }
+
+/* Equal-width digits, so amounts line up in columns. */
+.amount { font-variant-numeric: tabular-nums; }
+
+/* A value with more in its tooltip (title): underlined with dots, as is usual. */
+.has-tip { text-decoration: underline dotted; text-underline-offset: .2em; cursor: help; }
+.has-tip-icon { cursor: help; }
+
+/* Chart container: Chart.js fills it (maintainAspectRatio: false), so charts stay readable on phones. */
+.chart-box { position: relative; height: clamp(16rem, 35vw, 22rem); }
+
+.stat-card .value { font-size: 1.4rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.stat-card .label { font-size: .8rem; color: var(--bs-secondary-color); text-transform: uppercase; letter-spacing: .03em; }

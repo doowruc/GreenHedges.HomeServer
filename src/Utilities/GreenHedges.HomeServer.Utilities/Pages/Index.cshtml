@@ -1,0 +1,25 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = "Dashboard"; }
+
+<h1 class="h3 mb-4">Utilities</h1>
+
+<div class="row g-3">
+    @foreach (var utility in Model.Utilities)
+    {
+        <div class="col-sm-4">
+            <div class="card shadow-sm stat-card h-100" data-utility="@utility.Utility"><div class="card-body">
+                <div class="label"><i class="bi @utility.Utility.Icon() me-1"></i>@utility.Utility</div>
+                @if (utility.LatestDate is { } date)
+                {
+                    <div class="value">@utility.LatestValue!.Value.ToString("#,0.###") @utility.Unit!.Value.Symbol()</div>
+                    <div class="small text-body-secondary">@date.ToString("d MMM yyyy") · @utility.Readings @(utility.Readings == 1 ? "reading" : "readings")</div>
+                }
+                else
+                {
+                    <div class="text-body-secondary mt-1">No readings yet</div>
+                }
+            </div></div>
+        </div>
+    }
+</div>
