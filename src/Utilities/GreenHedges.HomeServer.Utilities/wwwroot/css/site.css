@@ -19,3 +19,6 @@
 
 /* The add-reading form's button (Readings/Index): level with the inputs beside it, below their labels. */
 @media (min-width: 576px) { .reading-submit { padding-top: 2rem; } }
+
+/* The import's preview tables (Import/Index): a hundred rows each, so they scroll within the card. */
+.import-preview { max-height: 22rem; overflow-y: auto; }
