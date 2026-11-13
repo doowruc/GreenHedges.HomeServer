@@ -3,12 +3,12 @@
 A web app for what we spend on the children's Christmas presents. Part of [GreenHedges.HomeServer](../../README.md);
 the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 3): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
+**So far** (build step 4): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
 between them), with a card per child showing what they've had, the **cash** that evens them up, and the total; a
 form to add a present; and the year's presents, latest first. **History** has every year side by side. The **Children**
 page adds, renames, reorders (move up and down) and deletes them (not while they have presents). And, as the other
 web apps, sign-in, nightly **backups** with encrypted off-site copies, email **alerts** and a **heartbeat**, all off
-until configured. Importing the workbook comes next.
+until configured. **Import** brings in the old spreadsheet. Deploying it to the server comes next.
 
 ## Presents
 
@@ -40,6 +40,24 @@ or the budget and the cash follows.
 
 **History** shows each year's spent and cash for each child, what each came to, and the year's total, with the budget
 where there was one.
+
+## Importing the spreadsheet
+
+**Import** reads the workbook the presents were kept in (.xlsx, up to 2 MB): a sheet per year, named by the year,
+with the headings **Date**, **Shop**, **Item**, **Who** and **Amount** side by side in its first ten rows and a row
+per present below. Only those five columns are read, so the pivot beside them, any other list and sheets not named by
+a year are ignored. Amounts are read as Excel last saved them, so a formula such as `=640/4` comes in as its result.
+
+Uploading shows a preview and saves nothing. For each year it shows:
+
+- the presents it would import, each at its amount, one of, with no splits (a split one's sum is already its share);
+- the rows it skips, and why (no item, no name, or no amount above £0);
+- the children it would add: a name that isn't one here yet (ignoring case), after the others;
+- a **cash check**: the cash worked out here beside the sheet's **Cash** rows, which aren't imported. Where every
+  child had a cash row and their totals are equal, that total was the budget, so it becomes the year's budget. A
+  year whose cash didn't balance shows what would have.
+
+**Import** then adds it all in one go. A year already here is left as it is, so the spreadsheet can be imported again.
 
 ## Running it locally
 
