@@ -51,6 +51,11 @@ Parameters:
     Default: utilities
     Description: Key prefix for Utilities' copies (its Offsite:Prefix setting).
     AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  PresentsPrefix:
+    Type: String
+    Default: presents
+    Description: Key prefix for Presents' copies (its Offsite:Prefix setting).
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
 
 Resources:
   OffsiteBucket:
@@ -211,6 +216,25 @@ Resources:
                 Action: s3:PutObject
                 Resource: !Sub "${OffsiteBucket.Arn}/${UtilitiesPrefix}/*"
 
+  PresentsUploader:
+    Type: AWS::IAM::User
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Presents' off-site key; same shape as LibreUploader
+        must:
+          - s3:PutObject on its own prefix only
+    Properties:
+      UserName: !Sub "${AWS::StackName}-presents"
+      Policies:
+        - PolicyName: UploadOffsiteBackupsOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: UploadOffsiteBackupsOnly
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${OffsiteBucket.Arn}/${PresentsPrefix}/*"
+
 Outputs:
   BucketName:
     Description: Offsite:Bucket for every service.
@@ -230,3 +254,6 @@ Outputs:
   UtilitiesUser:
     Description: IAM user to create Utilities' access key for.
     Value: !Ref UtilitiesUploader
+  PresentsUser:
+    Description: IAM user to create Presents' access key for.
+    Value: !Ref PresentsUploader

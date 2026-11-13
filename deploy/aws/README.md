@@ -10,6 +10,7 @@
 | `<stack>-vehicles` | May only `s3:PutObject` under `vehiclemanager/` (Vehicle Manager) |
 | `<stack>-payandpensions` | May only `s3:PutObject` under `payandpensions/` (Pay & Pensions) |
 | `<stack>-utilities` | May only `s3:PutObject` under `utilities/` (Utilities) |
+| `<stack>-presents` | May only `s3:PutObject` under `presents/` (Presents) |
 
 The services encrypt with `age` before uploading (the host holds only the public key), so the bucket only ever sees ciphertext. A leaked key can add files under one prefix, nothing more.
 
@@ -21,7 +22,7 @@ Needs the AWS CLI signed in as an administrator, in the region you want the buck
 aws cloudformation deploy --region eu-west-2 --stack-name greenhedges-offsite --template-file deploy/aws/offsite.yaml --parameter-overrides BucketName=<bucket> --capabilities CAPABILITY_NAMED_IAM
 ```
 
-The stack name prefixes the IAM user names (`greenhedges-offsite-libre`, `greenhedges-offsite-weather`, `greenhedges-offsite-vehicles`, `greenhedges-offsite-payandpensions`, `greenhedges-offsite-utilities`). Re-run the same command after changing the template; CloudFormation applies only the difference.
+The stack name prefixes the IAM user names (`greenhedges-offsite-libre`, `greenhedges-offsite-weather`, `greenhedges-offsite-vehicles`, `greenhedges-offsite-payandpensions`, `greenhedges-offsite-utilities`, `greenhedges-offsite-presents`). Re-run the same command after changing the template; CloudFormation applies only the difference.
 
 ## Access keys
 
@@ -43,7 +44,7 @@ Offsite__SecretAccessKey=…
 Offsite__AgeRecipient=age1…
 ```
 
-The prefix defaults to the service's name in lower case (`librecollector`, `weathercollector`, `vehiclemanager`, `payandpensions`, `utilities`), which matches the template. Services may share one `age` key pair or have one each; restoring needs the matching private key.
+The prefix defaults to the service's name in lower case (`librecollector`, `weathercollector`, `vehiclemanager`, `payandpensions`, `utilities`, `presents`), which matches the template. Services may share one `age` key pair or have one each; restoring needs the matching private key.
 
 The service remembers the last backup it copied (`backups/.offsite-last`). When switching an existing service to a new bucket, delete that file before restarting so the newest backup is copied straight away rather than after the next nightly backup:
 

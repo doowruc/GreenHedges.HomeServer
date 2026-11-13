@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Publish services for Linux and install or update them on the host, then restart them.
 # Run on the dev machine from anywhere in the repo:
-#   deploy/deploy.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|all>... [--self-contained] [user@host]
+#   deploy/deploy.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|presents|all>... [--self-contained] [user@host]
 # e.g. deploy/deploy.sh all, or deploy/deploy.sh libre weather. (deploy/<service>/deploy.sh does one service.)
 # Every service is published before anything is copied, so a failed build leaves the host untouched; then they're all
 # installed and restarted in one SSH session (one sudo password).
@@ -19,8 +19,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ -f "$ROOT/deploy/local.env" ]; then . "$ROOT/deploy/local.env"; fi
 
-ALL="libre weather vehicle-manager pay-and-pensions utilities"   # in deploy order
-USAGE="Usage: deploy/deploy.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|all>... [--self-contained] [user@host]"
+ALL="libre weather vehicle-manager pay-and-pensions utilities presents"   # in deploy order
+USAGE="Usage: deploy/deploy.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|presents|all>... [--self-contained] [user@host]"
 
 # Sets PROJECT, SERVICE (systemd unit, user and folders) and FRAMEWORK (the shared runtime it needs) for one name.
 service_info() {
@@ -30,6 +30,7 @@ service_info() {
     vehicle-manager) PROJECT="src/VehicleManager/GreenHedges.HomeServer.VehicleManager";     SERVICE=vehiclemanager;   FRAMEWORK=Microsoft.AspNetCore.App ;;
     pay-and-pensions) PROJECT="src/PayAndPensions/GreenHedges.HomeServer.PayAndPensions";    SERVICE=payandpensions;   FRAMEWORK=Microsoft.AspNetCore.App ;;
     utilities) PROJECT="src/Utilities/GreenHedges.HomeServer.Utilities";                     SERVICE=utilities;        FRAMEWORK=Microsoft.AspNetCore.App ;;
+    presents) PROJECT="src/Presents/GreenHedges.HomeServer.Presents";                        SERVICE=presents;         FRAMEWORK=Microsoft.AspNetCore.App ;;
     *) return 1 ;;
   esac
 }

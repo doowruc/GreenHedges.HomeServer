@@ -63,6 +63,12 @@
 		reverse_proxy 127.0.0.1:5082
 	}
 
+	# Presents (deploy/presents), the same way.
+	@presents host presents.{$HOME_DOMAIN}
+	handle @presents {
+		reverse_proxy 127.0.0.1:5083
+	}
+
 	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
 	@nightscout host nightscout.{$HOME_DOMAIN}
 	handle @nightscout {

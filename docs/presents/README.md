@@ -3,12 +3,13 @@
 A web app for what we spend on the children's Christmas presents. Part of [GreenHedges.HomeServer](../../README.md);
 the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 4): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
+**Built** (all five build steps): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
 between them), with a card per child showing what they've had, the **cash** that evens them up, and the total; a
 form to add a present; and the year's presents, latest first. **History** has every year side by side. The **Children**
 page adds, renames, reorders (move up and down) and deletes them (not while they have presents). And, as the other
 web apps, sign-in, nightly **backups** with encrypted off-site copies, email **alerts** and a **heartbeat**, all off
-until configured. **Import** brings in the old spreadsheet. Deploying it to the server comes next.
+until configured. **Import** brings in the old spreadsheet. It runs on the home server at
+`https://presents.<home domain>`: [host setup](../../deploy/presents/HOST-SETUP.md).
 
 ## Presents
 
@@ -89,14 +90,16 @@ database on that server. Without it, the database and page tests are skipped.
 
 ## Backups, alerts and the heartbeat
 
-All off until configured, so a local copy does none of it. Set up on the server with the deploy step:
+All off until configured, so a local copy does none of it. On the server, [deploy/presents/HOST-SETUP.md](../../deploy/presents/HOST-SETUP.md)
+sets them up:
 
 | What | How | Settings |
 |---|---|---|
 | Nightly backup | At 04:15 (after the other web apps'), SQL Server backs up `ConnectionStrings:Presents` into its shared folder; Common's `BackupService` gzips it to `backups/presents-<UTC>.bak.gz` and keeps 7 | `Backup:Enabled`, `Backup:SqlServerFolder` (required when on), `Backup:SqlServerFolderOnHost` |
-| Off-site | Each backup `age`-encrypted to the shared bucket under `presents/` | `Offsite:Bucket`, `Region`, `AccessKeyId`, `SecretAccessKey`, `AgeRecipient` |
+| Off-site | Each backup `age`-encrypted to the shared bucket under `presents/`, by the write-only IAM user `<stack>-presents` ([deploy/aws/](../../deploy/aws/README.md)) | `Offsite:Bucket`, `Region`, `AccessKeyId`, `SecretAccessKey`, `AgeRecipient` |
 | Alerts | Resend emails when the database doesn't answer for 5 minutes, or backups or off-site copies fail; resolved emails when they recover. `--test-alert` sends one and exits | `Alerts:ResendApiKey`, `From`, `To` |
 | Heartbeat | A healthchecks.io ping every 5 minutes while the database answers | `Heartbeat:PingUrl` |
+| Mac pull | Daily at 09:50 into `~/Backups/Presents`: `deploy/mac/install-backup-pull.sh presents` | `deploy/local.env` |
 
 ## Privacy
 
