@@ -42,7 +42,7 @@ between the children.
 
 **Quirks:**
 - **Splits are typed as formulas:** `=price/4` for something shared both with my mum and with the child's birthday,
-  `/2` for one of them. Quantities (`=9.99*2`) and discounts (`=21.5-2.15`) are formulas too.
+  `/2` for one of them. Quantities (`=4.99*2`) and discounts (`=20-2.50`) are formulas too.
 - **Cash is a row** (Item `Cash`, typed in after Christmas) that makes the totals equal. Some years only the child
   with less had cash, to match the other; in others there was a budget per child and both had cash to reach it. The
   earliest years have no cash rows, or not enough to balance.
@@ -119,7 +119,7 @@ only those columns are read. Who names the child, made on the first import if th
 
 One branch and PR each:
 
-**Progress:** steps 1 (PR #112) and 2 done. Next: step 3, the summary.
+**Progress:** steps 1 (PR #112), 2 (PR #113) and 3 done. Next: step 4, the import.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, the test project, the Children page.

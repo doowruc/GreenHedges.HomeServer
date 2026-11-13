@@ -52,14 +52,17 @@ GreenHedges.HomeServer.Presents/
   Models/      EF Core entities: Child and Christmas (the user-owned roots), Purchase (a Christmas's, for a child)
   ViewModels/  *Input classes for the forms: ChildInput, PurchaseInput, ChristmasInput (the budget)
   Services/    Shares (what a purchase counts as: price × quantity, halved for each split, to the penny; pure,
-               unit tested)
+               unit tested), Summary (a Christmas's figures: each child's spent, the target, cash and total; pure,
+               unit tested), ChristmasSummaries (loads them for a year, or every year, for the pages)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PresentsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PresentsAlertOptions
-  Pages/       Index (a Christmas: this year's at /, another's at /{year}; a card per child, the add-a-present form,
+  Pages/       Index (a Christmas: this year's at /, another's at /{year}; a card per child with spent, cash and
+               total, an over-budget warning, the add-a-present form,
                the year's presents, previous/next and a year picker), Purchases/* (Edit, which can move it to another
                year; Delete; _PurchaseFields, the form shared with Index; PurchaseRules), Christmases/* (Edit at
-               /{year}/Edit: the budget; Delete at /{year}/Delete, with its presents), Children/* (Index with move
+               /{year}/Edit: the budget; Delete at /{year}/Delete, with its presents), History/Index (every year:
+               each child's spent and cash, each child's total, the year's), Children/* (Index with move
                up/down, Create, Edit, Delete; ChildRules), Account/* (sign in/out), Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), js/purchase-share.js (the
@@ -83,7 +86,10 @@ GreenHedges.HomeServer.Presents/
   whole pence; text is tidied (spaces trimmed, an empty shop is none) and the child must be the user's
   (`PurchaseRules`). After adding one, the form comes back on the same child, shop and date.
 - **A share** (what a purchase counts as) is price × quantity ÷ 1, 2 or 4, rounded to the penny with half a penny up
-  (`Shares.Of`); a year's spend will be the sum of the rounded shares.
+  (`Shares.Of`); a child's spend is the sum of their rounded shares.
+- **Cash** (`Summary.For`): the target is the most any child spent, or the budget if there is one and it's more;
+  each child's cash is the target less their spend, so every child's total is the target. Every child counts in
+  every year, with or without presents. Over the budget, the target is the highest spend and the page says who.
 - **Figures are worked out, never stored** (a purchase's share, spent, cash, totals): see the design notes.
 - Format text outside a request with en-GB explicitly: CI runs in US English.
 - **Backups, alerts, heartbeat** as the other web apps', through Common (`AddBackups<SqlServerBackupSource>`,

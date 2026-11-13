@@ -33,23 +33,48 @@
     </div>
 </div>
 
-@if (Model.Children.Count == 0)
+@if (Model.Summary.Children.Count == 0)
 {
     <div class="alert alert-info">No children yet. <a asp-page="/Children/Create">Add the first child</a> whose presents you'll keep here.</div>
 }
 else
 {
-    <div class="row g-3 mb-3">
-        @foreach (var child in Model.Children)
+    @if (Model.Summary.OverBudget)
+    {
+        <div class="alert alert-warning" data-over-budget>
+            @string.Join(" and ", Model.Summary.Children.Where(c => c.OverBudget).Select(c => c.Name)) @(Model.Summary.Children.Count(c => c.OverBudget) == 1 ? "has" : "have")
+            had more than the budget of @Model.Budget!.Value.ToString("C", gb), so everyone's cash tops them up to @Model.Summary.Target.ToString("C", gb) instead.
+        </div>
+    }
+    <div class="row g-3 mb-2">
+        @foreach (var child in Model.Summary.Children)
         {
             <div class="col-sm-6 col-lg-4">
-                <div class="card shadow-sm stat-card h-100"><div class="card-body">
+                <div class="card shadow-sm stat-card h-100" data-child-summary><div class="card-body">
                     <div class="label">@child.Name</div>
-                    <div class="value">@child.Presents @(child.Presents == 1 ? "present" : "presents")</div>
+                    <div class="value" title="Spent and cash together">@child.Total.ToString("C", gb)</div>
+                    <div class="small text-body-secondary" data-spent>@child.Spent.ToString("C", gb) on @child.Presents @(child.Presents == 1 ? "present" : "presents")</div>
+                    <div class="small" data-cash>
+                        @if (child.Cash > 0)
+                        {
+                            <span class="fw-semibold text-success">+ @child.Cash.ToString("C", gb) cash</span>
+                        }
+                        else
+                        {
+                            <span class="text-body-secondary">No cash</span>
+                        }
+                    </div>
                 </div></div>
             </div>
         }
     </div>
+    @if (Model.Summary.Total > 0)
+    {
+        <p class="small text-body-secondary mb-3" data-year-total>
+            @Model.Summary.Total.ToString("C", gb) in all@(Model.Summary.Cash > 0 ? $", {Model.Summary.Cash.ToString("C", gb)} of it cash" : null).
+            Cash tops everyone up to @(Model.Budget is { } b && b >= Model.Summary.Target ? "the budget" : "whoever had most").
+        </p>
+    }
 
     <div class="card shadow-sm mb-4"><div class="card-body">
         <h2 class="h6">Add a present</h2>

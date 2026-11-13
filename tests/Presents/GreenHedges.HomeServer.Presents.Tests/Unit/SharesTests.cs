@@ -13,12 +13,12 @@ public class SharesTests
         Assert.Equal(divisor, Shares.Divisor(mum, birthday));
 
     [Theory]
-    [InlineData("649", 1, true, true, "162.25")]
-    [InlineData("33.80", 1, true, true, "8.45")]
+    [InlineData("640", 1, true, true, "160")]
+    [InlineData("32.40", 1, true, true, "8.10")]
     [InlineData("100", 1, true, false, "50")]
     [InlineData("100", 1, false, true, "50")]
     [InlineData("9.99", 2, false, false, "19.98")]
-    [InlineData("3.15", 3, false, false, "9.45")]
+    [InlineData("2.85", 3, false, false, "8.55")]
     [InlineData("12.34", 3, true, true, "9.26")]     // 37.02 ÷ 4 = 9.255: half a penny up
     [InlineData("9.99", 1, true, false, "5.00")]     // 4.995: half a penny up
     [InlineData("0.01", 1, true, true, "0.00")]      // a quarter of a penny rounds down

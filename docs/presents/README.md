@@ -3,11 +3,12 @@
 A web app for what we spend on the children's Christmas presents. Part of [GreenHedges.HomeServer](../../README.md);
 the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 2): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
-between them), with a card per child, a form to add a present and the year's presents, latest first. The **Children**
+**So far** (build step 3): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
+between them), with a card per child showing what they've had, the **cash** that evens them up, and the total; a
+form to add a present; and the year's presents, latest first. **History** has every year side by side. The **Children**
 page adds, renames, reorders (move up and down) and deletes them (not while they have presents). And, as the other
 web apps, sign-in, nightly **backups** with encrypted off-site copies, email **alerts** and a **heartbeat**, all off
-until configured. The summary (spent, cash, totals) comes next.
+until configured. Importing the workbook comes next.
 
 ## Presents
 
@@ -24,6 +25,21 @@ After adding one, the form keeps the child, shop and date for the next.
 
 **Budget** on a Christmas's page sets an optional budget per child for that year, or deletes the year with its
 presents.
+
+## Cash
+
+Each child's card shows what their presents count as added up (**spent**), the **cash** that tops them up, and their
+**total**. Cash brings every child up to the same total:
+
+- **Without a budget,** to whoever had most: they get no cash, the others the difference.
+- **With a budget,** to the budget: everyone gets the rest of it in cash, unless someone has had more than the
+  budget. Then everyone is topped up to them instead, and the page says who went over.
+
+Every child counts every year, even with no presents (they'd get it all in cash). Nothing is stored: change a present
+or the budget and the cash follows.
+
+**History** shows each year's spent and cash for each child, what each came to, and the year's total, with the budget
+where there was one.
 
 ## Running it locally
 
