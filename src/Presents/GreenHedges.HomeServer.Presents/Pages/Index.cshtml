@@ -1,8 +1,37 @@
-@page
+@page "{year:int?}"
 @model IndexModel
-@{ ViewData["Title"] = $"Christmas {Model.Year}"; }
+@{
+    ViewData["Title"] = $"Christmas {Model.Year}";
+    var gb = new System.Globalization.CultureInfo("en-GB");
+}
 
-<h1 class="h3 mb-4">Christmas @Model.Year</h1>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    @if (Model.Year > IndexModel.FirstYear)
+    {
+        <a asp-page="/Index" asp-route-year="@(Model.Year - 1)" class="btn btn-sm btn-outline-secondary" title="Christmas @(Model.Year - 1)"><i class="bi bi-chevron-left"></i></a>
+    }
+    <h1 class="h3 mb-0">Christmas @Model.Year</h1>
+    @if (Model.Year < IndexModel.LastYear)
+    {
+        <a asp-page="/Index" asp-route-year="@(Model.Year + 1)" class="btn btn-sm btn-outline-secondary" title="Christmas @(Model.Year + 1)"><i class="bi bi-chevron-right"></i></a>
+    }
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Year</button>
+        <ul class="dropdown-menu" data-years>
+            @foreach (var y in Model.Years)
+            {
+                <li><a class="dropdown-item@(y == Model.Year ? " active" : null)" asp-page="/Index" asp-route-year="@y">@y@(y == Model.ThisYear ? " (this year)" : null)</a></li>
+            }
+        </ul>
+    </div>
+    <div class="ms-auto d-flex align-items-center gap-2">
+        @if (Model.Budget is { } budget)
+        {
+            <span class="text-body-secondary" data-budget>Budget @budget.ToString("C", gb) each</span>
+        }
+        <a asp-page="/Christmases/Edit" asp-route-year="@Model.Year" class="btn btn-sm btn-outline-secondary" title="Set the budget@(Model.Exists ? ", or delete this Christmas" : null)"><i class="bi bi-sliders me-1"></i>Budget</a>
+    </div>
+</div>
 
 @if (Model.Children.Count == 0)
 {
@@ -10,7 +39,7 @@
 }
 else
 {
-    <div class="row g-3">
+    <div class="row g-3 mb-3">
         @foreach (var child in Model.Children)
         {
             <div class="col-sm-6 col-lg-4">
@@ -21,4 +50,68 @@ else
             </div>
         }
     </div>
+
+    <div class="card shadow-sm mb-4"><div class="card-body">
+        <h2 class="h6">Add a present</h2>
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <partial name="/Pages/Purchases/_PurchaseFields.cshtml" model="(Model.Purchase, Model.ChildChoices, Model.Shops, false)" />
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add</button>
+            </div>
+        </form>
+    </div></div>
+}
+
+@if (Model.Purchases.Count == 0)
+{
+    <p class="text-body-secondary">No presents for Christmas @Model.Year yet.</p>
+}
+else
+{
+    <div class="card shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" data-purchases>
+                <thead class="table-head">
+                    <tr>
+                        <th>Bought</th>
+                        <th>For</th>
+                        <th>Item</th>
+                        <th>Shop</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end" title="Price × quantity, halved for each split">Counts as</th>
+                        <th><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var p in Model.Purchases)
+                {
+                    <tr>
+                        <td class="text-nowrap">@(p.Date?.ToString("d MMM", gb) ?? "–")</td>
+                        <td>@p.Child</td>
+                        <td>@p.Item</td>
+                        <td>@p.Shop</td>
+                        <td class="text-end amount text-nowrap">@(p.Quantity > 1 ? $"{p.Quantity} × " : null)@p.Price.ToString("C", gb)</td>
+                        <td class="text-end amount text-nowrap fw-semibold">
+                            @if (p.Splits is not null)
+                            {
+                                <i class="bi bi-scissors text-body-secondary me-1 has-tip-icon" title="@p.Splits"></i>
+                            }
+                            @p.Share.ToString("C", gb)
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a asp-page="/Purchases/Edit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary" title="Edit @p.Item"><i class="bi bi-pencil"></i></a>
+                            <a asp-page="/Purchases/Delete" asp-route-id="@p.Id" class="btn btn-sm btn-outline-danger" title="Delete @p.Item"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/purchase-share.js" asp-append-version="true"></script>
 }
