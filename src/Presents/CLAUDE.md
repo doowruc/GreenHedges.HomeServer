@@ -53,7 +53,9 @@ GreenHedges.HomeServer.Presents/
   ViewModels/  *Input classes for the forms: ChildInput, PurchaseInput, ChristmasInput (the budget)
   Services/    Shares (what a purchase counts as: price × quantity, halved for each split, to the penny; pure,
                unit tested), Summary (a Christmas's figures: each child's spent, the target, cash and total; pure,
-               unit tested), ChristmasSummaries (loads them for a year, or every year, for the pages)
+               unit tested), ChristmasSummaries (loads them for a year, or every year, for the pages),
+               Import/ (PresentsWorkbook reads the workbook; PresentsImporter plans and imports it; the
+               reading and the planning are pure and unit tested)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PresentsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PresentsAlertOptions
@@ -63,7 +65,7 @@ GreenHedges.HomeServer.Presents/
                year; Delete; _PurchaseFields, the form shared with Index; PurchaseRules), Christmases/* (Edit at
                /{year}/Edit: the budget; Delete at /{year}/Delete, with its presents), History/Index (every year:
                each child's spent and cash, each child's total, the year's), Children/* (Index with move
-               up/down, Create, Edit, Delete; ChildRules), Account/* (sign in/out), Shared/ (layout)
+               up/down, Create, Edit, Delete; ChildRules), Import/ (at /Import), Account/* (sign in/out), Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
                title="…" becomes a Bootstrap tooltip: pages just write title), js/purchase-share.js (the
                form's "Counts as" as you type, rounded as Shares), favicon.svg/.ico + icons/ +
@@ -91,6 +93,14 @@ GreenHedges.HomeServer.Presents/
   each child's cash is the target less their spend, so every child's total is the target. Every child counts in
   every year, with or without presents. Over the budget, the target is the highest spend and the page says who.
 - **Figures are worked out, never stored** (a purchase's share, spent, cash, totals): see the design notes.
+- **Import** (`Services/Import/`, `Pages/Import/`): upload, preview, import, as Utilities'; nothing is kept between
+  the steps but the workbook itself, base64 in the preview's form (limit 2 MB). A year is a sheet named by the year
+  with the headings Date, Shop, Item, Who and Amount side by side in its first ten rows; only those columns are read.
+  Cells are read as Excel saved them (`CachedValue`), or worked out if never saved (the tests' workbooks); amounts
+  are rounded to the penny and come in as the price, quantity 1, no splits. Rows whose item is Cash aren't imported
+  but checked against `Summary.For`; where every child had one and the totals are equal, that's the year's budget. A
+  year already here is left alone; names match children ignoring case, and new ones go last in the order first
+  named. A future date is dropped. One `SaveChanges`; the log has counts only.
 - Format text outside a request with en-GB explicitly: CI runs in US English.
 - **Backups, alerts, heartbeat** as the other web apps', through Common (`AddBackups<SqlServerBackupSource>`,
   `AddAlerting`, `AddHeartbeat`) with `CollectorIdentity("Presents")`: the backup's database is

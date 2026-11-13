@@ -17,6 +17,7 @@ public class LayoutTests(AppFactory app) : DatabaseTest, IClassFixture<AppFactor
         Assert.Contains("<a class=\"nav-link\" href=\"/\">Christmas</a>", page.Html);
         Assert.Contains("<a class=\"nav-link\" href=\"/History\">History</a>", page.Html);
         Assert.Contains("<a class=\"nav-link\" href=\"/Children\">Children</a>", page.Html);
+        Assert.Contains("<a class=\"nav-link\" href=\"/Import\">Import</a>", page.Html);
 
         var signedOut = await app.ClientFor(null).GetAsync("/Account/SignedOut");
         Assert.Equal(HttpStatusCode.OK, signedOut.Status);

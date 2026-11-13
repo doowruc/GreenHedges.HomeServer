@@ -1,0 +1,136 @@
+@page "/Import"
+@model GreenHedges.HomeServer.Presents.Pages.Import.IndexModel
+@{
+    ViewData["Title"] = "Import presents";
+    var plan = Model.Plan;
+    var gb = new System.Globalization.CultureInfo("en-GB");
+    string Money(decimal amount) => amount.ToString("C", gb);
+}
+
+<h1 class="h3 mb-3">Import presents</h1>
+@* "All" renders the box even with nothing in it (for client-side validation, which this page doesn't use), so only
+   when there's an error. *@
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+}
+
+@if (plan is null || Model.Workbook is null)
+{
+    <div class="card shadow-sm"><div class="card-body">
+        <p>
+            Upload the spreadsheet the presents have been kept in (.xlsx). It needs a sheet per year, named by the year
+            (e.g. <strong>2025</strong>), with the headings <strong>Date</strong>, <strong>Shop</strong>,
+            <strong>Item</strong>, <strong>Who</strong> and <strong>Amount</strong> side by side near the top and a row
+            per present below. Only those five columns are read. Each present comes in at its amount, with no splits;
+            a name not here yet becomes a new child. Rows whose item is <strong>Cash</strong> aren't imported, as cash
+            is worked out here, but are checked against: where everyone had cash and their totals are equal, that
+            total becomes the year's budget.
+        </p>
+        <p class="text-body-secondary">Nothing is saved until you've seen what it would import. Years already here are
+            left as they are, so the spreadsheet can be imported again after adding a year to it.</p>
+        <form method="post" asp-page-handler="Preview" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-6">
+                    <label for="upload" class="form-label">Spreadsheet</label>
+                    <input id="upload" name="upload" type="file" accept=".xlsx" class="form-control" required />
+                </div>
+                <div class="col-md-auto">
+                    <button type="submit" class="btn btn-primary">Preview</button>
+                    <a asp-page="/Index" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div></div>
+}
+else
+{
+    <form method="post" asp-page-handler="Import">
+        <input type="hidden" asp-for="Workbook" />
+        <input type="hidden" asp-for="FileName" />
+        <p class="text-body-secondary">From <strong>@Model.FileName</strong>. Nothing has been saved yet.</p>
+
+        @if (plan.NewChildren.Count > 0 || plan.Warnings.Count > 0)
+        {
+            <ul data-import="all">
+                @if (plan.NewChildren.Count > 0)
+                {
+                    <li>@(plan.NewChildren.Count == 1 ? "A child" : "Children") to add: <strong>@string.Join(", ", plan.NewChildren.Select(c => c.Name))</strong>.</li>
+                }
+                @foreach (var warning in plan.Warnings)
+                {
+                    <li class="text-warning-emphasis">@warning</li>
+                }
+            </ul>
+        }
+
+        @foreach (var year in plan.Years)
+        {
+            <div class="card shadow-sm mb-3" data-import="@year.Year"><div class="card-body">
+                <h2 class="h5"><i class="bi bi-gift me-2"></i>@year.Year</h2>
+                <ul class="mb-0">
+                    @if (year.AlreadyThere)
+                    {
+                        <li>Already here: left as it is.</li>
+                    }
+                    else
+                    {
+                        <li><strong>@year.ToImport.Count</strong> @(year.ToImport.Count == 1 ? "present" : "presents") to import@(year.Summary is { Spent: > 0 } s ? $", {Money(s.Spent)} in all" : "").</li>
+                        @if (year.Budget is { } budget)
+                        {
+                            <li>A budget of <strong>@Money(budget)</strong> each, from the cash rows.</li>
+                        }
+                        @if (year.CashRows > 0)
+                        {
+                            @if (year.Cash.All(c => c.Matches))
+                            {
+                                <li class="text-success-emphasis"><i class="bi bi-check-circle me-1"></i>The cash worked out here matches the spreadsheet's.</li>
+                            }
+                            else
+                            {
+                                <li class="text-warning-emphasis">The cash worked out here differs from the spreadsheet's, which didn't balance: see below.</li>
+                            }
+                        }
+                    }
+                    @foreach (var (row, reason) in year.Skipped)
+                    {
+                        <li class="text-warning-emphasis">Row @row is skipped: @reason.</li>
+                    }
+                </ul>
+                @if (year.Summary is { } summary && year.ToImport.Count > 0)
+                {
+                    <div class="table-responsive mt-3">
+                        <table class="table table-sm align-middle mb-0" data-cash>
+                            <thead class="table-head">
+                                <tr>
+                                    <th>Child</th>
+                                    <th class="text-end">Presents</th>
+                                    <th class="text-end">Spent</th>
+                                    <th class="text-end">Cash here</th>
+                                    <th class="text-end">Cash in the sheet</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="amount">
+                            @foreach (var (child, cash) in summary.Children.Zip(year.Cash))
+                            {
+                                <tr class="@(cash.Matches ? null : "table-warning")">
+                                    <td>@child.Name</td>
+                                    <td class="text-end">@child.Presents</td>
+                                    <td class="text-end">@Money(child.Spent)</td>
+                                    <td class="text-end fw-semibold">@Money(cash.App)</td>
+                                    <td class="text-end">@(cash.Sheet is { } sheet ? Money(sheet) : "–")</td>
+                                    <td class="text-end">@Money(child.Total)</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div></div>
+        }
+
+        <button type="submit" class="btn btn-primary" disabled="@(plan.Presents == 0)">Import</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Choose another file</a>
+    </form>
+}

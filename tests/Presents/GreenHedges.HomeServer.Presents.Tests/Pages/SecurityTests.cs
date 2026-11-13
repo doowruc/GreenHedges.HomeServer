@@ -17,6 +17,7 @@ public class SecurityTests(AppFactory app) : IClassFixture<AppFactory>
     [InlineData("/2025/Delete")]
     [InlineData("/Purchases/Edit/1")]
     [InlineData("/Purchases/Delete/1")]
+    [InlineData("/Import")]
     public async Task Pages_need_a_signed_in_user(string url) =>
         Assert.Equal(HttpStatusCode.Unauthorized, (await app.ClientFor(null).GetAsync(url)).Status);
 
