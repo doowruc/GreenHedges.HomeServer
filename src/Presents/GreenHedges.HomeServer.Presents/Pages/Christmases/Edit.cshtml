@@ -1,0 +1,32 @@
+@page "/{year:int}/Edit"
+@model GreenHedges.HomeServer.Presents.Pages.Christmases.EditModel
+@{ ViewData["Title"] = $"Christmas {Model.Year}: budget"; }
+
+<h1 class="h3 mb-1">Christmas @Model.Year: budget</h1>
+<p class="text-body-secondary">With a budget, cash tops every child up to it (or to the most any child has had, if that's more). Without one, cash only evens them up.</p>
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Christmas.RowVersion" />
+        <div class="row g-3">
+            <div class="col-sm-6 col-md-4">
+                <label asp-for="Christmas.Budget" class="form-label"></label>
+                <div class="input-group">
+                    <span class="input-group-text">£</span>
+                    <input asp-for="Christmas.Budget" type="number" step="0.01" min="0.01" class="form-control amount text-end" autofocus />
+                </div>
+                <span asp-validation-for="Christmas.Budget" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="mt-4 d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="/Index" asp-route-year="@Model.Year" class="btn btn-outline-secondary">Cancel</a>
+            @if (Model.Exists)
+            {
+                <a asp-page="Delete" asp-route-year="@Model.Year" class="btn btn-outline-danger ms-auto">Delete Christmas @Model.Year</a>
+            }
+        </div>
+    </form>
+</div></div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

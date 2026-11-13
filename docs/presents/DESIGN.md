@@ -119,7 +119,7 @@ only those columns are read. Who names the child, made on the first import if th
 
 One branch and PR each:
 
-**Progress:** step 1 done. Next: step 2, purchases.
+**Progress:** steps 1 (PR #112) and 2 done. Next: step 3, the summary.
 
 1. **Skeleton.** The project on `Common.Web` (sign-in, `/health`, backups, alerts, heartbeat and telemetry, all off
    until configured), the data model and first migration, the test project, the Children page.

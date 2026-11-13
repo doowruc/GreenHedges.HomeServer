@@ -1,0 +1,19 @@
+@page "/{year:int}/Delete"
+@model GreenHedges.HomeServer.Presents.Pages.Christmases.DeleteModel
+@{ ViewData["Title"] = $"Delete Christmas {Model.Year}"; }
+
+<h1 class="h3 mb-3">Delete Christmas @Model.Year</h1>
+<div class="card shadow-sm border-danger"><div class="card-body">
+    <p>
+        Are you sure you want to delete Christmas @Model.Year
+        @if (Model.Purchases > 0)
+        {
+            <text>and its <strong>@Model.Purchases @(Model.Purchases == 1 ? "present" : "presents")</strong></text>
+        }
+        ? This can't be undone.
+    </p>
+    <form method="post">
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-page="/Index" asp-route-year="@Model.Year" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div></div>

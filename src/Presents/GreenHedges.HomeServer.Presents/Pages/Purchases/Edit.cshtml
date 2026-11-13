@@ -1,0 +1,21 @@
+@page "{id:int}"
+@model GreenHedges.HomeServer.Presents.Pages.Purchases.EditModel
+@{ ViewData["Title"] = "Edit present"; }
+
+<h1 class="h3 mb-3">Edit present</h1>
+<div class="card shadow-sm"><div class="card-body">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <input type="hidden" asp-for="Purchase.RowVersion" />
+        <partial name="/Pages/Purchases/_PurchaseFields.cshtml" model="(Model.Purchase, Model.Children, Model.Shops, true)" />
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a asp-page="/Index" asp-route-year="@Model.FromYear" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div></div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/purchase-share.js" asp-append-version="true"></script>
+}

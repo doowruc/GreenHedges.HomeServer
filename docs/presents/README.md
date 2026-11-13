@@ -3,10 +3,27 @@
 A web app for what we spend on the children's Christmas presents. Part of [GreenHedges.HomeServer](../../README.md);
 the plan, data model and build order are in [DESIGN.md](DESIGN.md).
 
-**So far** (build step 1): the **Children** page, to add, rename, reorder (move up and down) and delete them (not
-while they have presents), and a home page for this Christmas with a card per child. And, as the other web apps,
-sign-in, nightly **backups** with encrypted off-site copies, email **alerts** and a **heartbeat**, all off until
-configured. The purchases, splits and cash come next.
+**So far** (build step 2): a page for each **Christmas** (this year's is the home page; the arrows and **Year** move
+between them), with a card per child, a form to add a present and the year's presents, latest first. The **Children**
+page adds, renames, reorders (move up and down) and deletes them (not while they have presents). And, as the other
+web apps, sign-in, nightly **backups** with encrypted off-site copies, email **alerts** and a **heartbeat**, all off
+until configured. The summary (spent, cash, totals) comes next.
+
+## Presents
+
+Each present has who it's for, the item, and optionally the shop and the date it was bought; the **price** of one and
+the **quantity**; and two boxes for the big ones:
+
+- **Split with Mum:** shared with my mum, so it counts half.
+- **Split with birthday:** shared with the child's birthday, so it counts half.
+
+Both ticked, it counts a quarter. The form shows what it **counts as** as you type, and the list shows it beside the
+price (with scissors on split ones). The year a present belongs to is the Christmas it's added to, whatever its date,
+so something bought in the summer still counts for that Christmas; editing a present can move it to another year.
+After adding one, the form keeps the child, shop and date for the next.
+
+**Budget** on a Christmas's page sets an optional budget per child for that year, or deletes the year with its
+presents.
 
 ## Running it locally
 

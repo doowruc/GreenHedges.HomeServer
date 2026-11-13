@@ -26,12 +26,13 @@ public static class TestData
 
     /// <summary>A present for a child one Christmas.</summary>
     public static async Task<Purchase> AddPurchaseAsync(AppDbContext db, Christmas christmas, Child child, string item = "Jigsaw",
-        decimal price = 10m, int quantity = 1, bool splitWithMum = false, bool splitWithBirthday = false)
+        decimal price = 10m, int quantity = 1, bool splitWithMum = false, bool splitWithBirthday = false,
+        DateOnly? date = null, string? shop = null)
     {
         var purchase = new Purchase
         {
             ChristmasId = christmas.Id, ChildId = child.Id, Item = item, Price = price, Quantity = quantity,
-            SplitWithMum = splitWithMum, SplitWithBirthday = splitWithBirthday
+            SplitWithMum = splitWithMum, SplitWithBirthday = splitWithBirthday, Date = date, Shop = shop
         };
         db.Purchases.Add(purchase);
         await db.SaveChangesAsync();

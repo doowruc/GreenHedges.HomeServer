@@ -50,14 +50,20 @@ or amounts, and never the real workbook.
 ```
 GreenHedges.HomeServer.Presents/
   Models/      EF Core entities: Child and Christmas (the user-owned roots), Purchase (a Christmas's, for a child)
-  ViewModels/  *Input classes for the forms: ChildInput
+  ViewModels/  *Input classes for the forms: ChildInput, PurchaseInput, ChristmasInput (the budget)
+  Services/    Shares (what a purchase counts as: price × quantity, halved for each split, to the penny; pure,
+               unit tested)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), PresentsAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), PresentsAlertOptions
-  Pages/       Index (this Christmas: a card per child), Children/* (Index with move up/down, Create, Edit, Delete;
-               ChildRules), Account/* (sign in/out), Shared/ (layout)
+  Pages/       Index (a Christmas: this year's at /, another's at /{year}; a card per child, the add-a-present form,
+               the year's presents, previous/next and a year picker), Purchases/* (Edit, which can move it to another
+               year; Delete; _PurchaseFields, the form shared with Index; PurchaseRules), Christmases/* (Edit at
+               /{year}/Edit: the budget; Delete at /{year}/Delete, with its presents), Children/* (Index with move
+               up/down, Create, Edit, Delete; ChildRules), Account/* (sign in/out), Shared/ (layout)
   wwwroot/     css/site.css, js/color-mode.js (light/dark/system, as Vehicle Manager), js/tooltips.js (every
-               title="…" becomes a Bootstrap tooltip: pages just write title), favicon.svg/.ico + icons/ +
+               title="…" becomes a Bootstrap tooltip: pages just write title), js/purchase-share.js (the
+               form's "Counts as" as you type, rounded as Shares), favicon.svg/.ico + icons/ +
                site.webmanifest (made by ../make-icons.py from Bootstrap Icons' gift on the navbar's dark grey;
                re-run it to change them: needs rsvg-convert, brew install librsvg)
 ```
@@ -69,10 +75,15 @@ GreenHedges.HomeServer.Presents/
 - **A child's name** is unique per user, ignoring case, with spaces tidied (`ChildRules`). **Display order** sets
   where they come everywhere: a new child goes last, and moving one renumbers them all 1, 2, 3…, so gaps never stop
   a move. A child with purchases can't be deleted (FK `Restrict`).
-- **A Christmas** is one per user and year, with an optional budget per child (`decimal(10,2)`). Deleting one deletes
-  its purchases (FK `Cascade`).
+- **A Christmas** is one per user and year (2000-2999), with an optional budget per child (`decimal(10,2)`). Any
+  year's page can be shown; its Christmas is made by its first present or by setting its budget, and a present moved
+  to another year makes that one's. Deleting one deletes its purchases (FK `Cascade`).
 - **A purchase** keeps the full price of one (`decimal(10,2)`), the quantity and the two splits (with Mum, with the
-  birthday). Its year is its Christmas, never its date, which is optional.
+  birthday). Its year is its Christmas, never its date, which is optional and can't be in the future. The price has
+  whole pence; text is tidied (spaces trimmed, an empty shop is none) and the child must be the user's
+  (`PurchaseRules`). After adding one, the form comes back on the same child, shop and date.
+- **A share** (what a purchase counts as) is price × quantity ÷ 1, 2 or 4, rounded to the penny with half a penny up
+  (`Shares.Of`); a year's spend will be the sum of the rounded shares.
 - **Figures are worked out, never stored** (a purchase's share, spent, cash, totals): see the design notes.
 - Format text outside a request with en-GB explicitly: CI runs in US English.
 - **Backups, alerts, heartbeat** as the other web apps', through Common (`AddBackups<SqlServerBackupSource>`,
