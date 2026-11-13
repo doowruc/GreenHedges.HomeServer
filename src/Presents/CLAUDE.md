@@ -32,8 +32,11 @@ docker compose up -d --wait  # local SQL Server (compose.yaml), shared with the 
 
 ## Server
 
-Not deployed yet (build step 5). It will be `https://presents.<home domain>`: systemd `presents` on
-`127.0.0.1:5083`, database `Presents` on the shared SQL Server, files in `deploy/presents/`.
+`https://presents.<home domain>` through Caddy: systemd `presents` (user `presents`, in `sqlbackups`) on
+`127.0.0.1:5083`, database `Presents` on the shared SQL Server (login `presents`, owner), `/opt/presents`,
+`/var/lib/presents` (keys, backups, alert state), settings in `/etc/presents/env`. Files and setup in
+`deploy/presents/` (`HOST-SETUP.md`); deploy with `deploy/presents/deploy.sh`, which really deploys (never run it to
+test it).
 
 ## Tests
 

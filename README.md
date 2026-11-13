@@ -9,7 +9,7 @@ The services that run on a small always-on home server, in one repository and on
 | **Vehicle Manager** ([docs](docs/vehicle-manager/README.md)) | A web app for the vehicles I own: fuel log and MPG, services, MOT history from the DVSA, due-date reminders | Running on the home server (moved from Azure SQL: [plan](docs/vehicle-manager/HOMESERVER-MIGRATION.md)) |
 | **Pay & Pensions** ([docs](docs/pay-and-pensions/README.md), [design](docs/pay-and-pensions/DESIGN.md)) | A web app for my household's payslip history, imported from Excel, and later our pension pots | Built: payslips, the import, the dashboard and tax years, backups and alerts; being deployed ([host setup](deploy/pay-and-pensions/HOST-SETUP.md)) |
 | **Utilities** ([docs](docs/utilities/README.md), [design](docs/utilities/DESIGN.md)) | A web app for my home's electricity, gas and water meter readings, with charts, and later the bills | Running on the home server ([host setup](deploy/utilities/HOST-SETUP.md)) |
-| **Presents** ([docs](docs/presents/README.md), [design](docs/presents/DESIGN.md)) | A web app for what we spend on our children's Christmas presents, with big presents split and the cash that balances them worked out | Being built: the presents, cash, history and import; deploying it next |
+| **Presents** ([docs](docs/presents/README.md), [design](docs/presents/DESIGN.md)) | A web app for what we spend on our children's Christmas presents, with big presents split and the cash that balances them worked out | Built; being deployed ([host setup](deploy/presents/HOST-SETUP.md)) |
 
 The **collectors** keep my own copy of data that otherwise only lives in someone else's cloud. They share a .NET 10 Worker Service under systemd, SQLite archives that keep the data as received, nightly backups pulled off the host, encrypted off-site copies, email alerts and an external heartbeat. **Vehicle Manager**, **Pay & Pensions**, **Utilities** and **Presents** are ASP.NET Core Razor Pages apps on SQL Server, with their logs, traces and metrics in Grafana. Everything is reached over Tailscale only.
 
@@ -31,6 +31,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/utilities/` | Utilities' systemd unit, deploy script, database setup and host setup |
 | `src/Presents/`, `tests/Presents/` | Presents (`GreenHedges.HomeServer.Presents`, `.Tests`) |
 | `docs/presents/` | Its README (setup) and design notes |
+| `deploy/presents/` | Presents' systemd unit, deploy script, database setup and host setup |
 | `compose.yaml`, `.env.example` | SQL Server in Docker for local development and the web apps' tests |
 | `deploy/sqlserver/` | SQL Server in Docker on the home server, for its web apps: compose file, deploy script, host setup |
 | `deploy/vehicle-manager/` | Vehicle Manager's systemd unit, deploy script, database setup and host setup |
@@ -43,7 +44,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `docs/libre/` | Its README (setup and use) and design notes |
 | `deploy/weather/` | The Weather collector's systemd unit, deploy script and host setup |
 | `docs/weather/` | Its README (day to day) and design notes |
-| `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities>`) |
+| `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities\|presents>`) |
 | `deploy/aws/` | CloudFormation for the shared off-site backup bucket and its write-only users |
 | `deploy/local.env.example` | Personal defaults for the deploy scripts (copy to the git-ignored `deploy/local.env`) |
 
