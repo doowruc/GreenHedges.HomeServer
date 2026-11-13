@@ -10,15 +10,13 @@ using GreenHedges.HomeServer.Presents.ViewModels;
 namespace GreenHedges.HomeServer.Presents.Pages;
 
 /// <summary>
-/// A Christmas: this year's at /, another's at /{year}. A card per child, the form to add a present, and the year's
-/// presents, latest first. The year's Christmas is made by its first present (or by setting its budget), so any year
+/// A Christmas: this year's at /, another's at /{year}. A card per child (spent, cash and total), the form to add a
+/// present, and the year's presents, latest first. The year's Christmas is made by its first present (or by setting its budget), so any year
 /// can be shown.
 /// </summary>
-public class IndexModel(AppDbContext db, TimeProvider time) : PageModel
+public class IndexModel(AppDbContext db, ChristmasSummaries summaries, TimeProvider time) : PageModel
 {
     public const int FirstYear = 2000, LastYear = 2999;
-
-    public record ChildRow(int Id, string Name, int Presents);
 
     public record PurchaseRow(int Id, DateOnly? Date, string Child, string Item, string? Shop, int Quantity, decimal Price, decimal Share, string? Splits);
 
@@ -32,17 +30,18 @@ public class IndexModel(AppDbContext db, TimeProvider time) : PageModel
     /// <summary>Whether the year has a Christmas yet (it has presents, or a budget was set).</summary>
     public bool Exists { get; private set; }
 
-    public decimal? Budget { get; private set; }
+    public decimal? Budget => Summary.Budget;
+
+    /// <summary>Each child's spent, cash and total.</summary>
+    public ChristmasSummary Summary { get; private set; } = null!;
 
     /// <summary>The years with a Christmas, with this year and the one shown, latest first: for the picker.</summary>
     public List<int> Years { get; private set; } = [];
 
-    public List<ChildRow> Children { get; private set; } = [];
-
     public List<PurchaseRow> Purchases { get; private set; } = [];
 
     /// <summary>The children for the form's "For".</summary>
-    public IReadOnlyList<(int Id, string Name)> ChildChoices => Children.Select(c => (c.Id, c.Name)).ToList();
+    public IReadOnlyList<(int Id, string Name)> ChildChoices => Summary.Children.Select(c => (c.ChildId, c.Name)).ToList();
 
     /// <summary>Every shop used before, for the shop field's suggestions.</summary>
     public IReadOnlyList<string> Shops { get; private set; } = [];
@@ -94,16 +93,11 @@ public class IndexModel(AppDbContext db, TimeProvider time) : PageModel
     private async Task LoadAsync()
     {
         var year = Year;
-        var christmas = await db.Christmases.Where(c => c.Year == year).Select(c => new { c.Budget }).FirstOrDefaultAsync();
-        (Exists, Budget) = (christmas is not null, christmas?.Budget);
+        Exists = await db.Christmases.AnyAsync(c => c.Year == year);
+        Summary = await summaries.ForYearAsync(year);
 
         Years = (await db.Christmases.Select(c => c.Year).ToListAsync())
             .Append(ThisYear).Append(Year).Distinct().OrderDescending().ToList();
-
-        Children = await db.Children
-            .OrderBy(c => c.DisplayOrder).ThenBy(c => c.Name)
-            .Select(c => new ChildRow(c.Id, c.Name, c.Purchases.Where(p => p.Christmas!.Year == year).Sum(p => (int?)p.Quantity) ?? 0))
-            .ToListAsync();
 
         var purchases = await db.Purchases.Where(p => p.Christmas!.Year == year)
             .Select(p => new { p.Id, p.Date, Child = p.Child!.Name, p.Item, p.Shop, p.Quantity, p.Price, p.SplitWithMum, p.SplitWithBirthday })

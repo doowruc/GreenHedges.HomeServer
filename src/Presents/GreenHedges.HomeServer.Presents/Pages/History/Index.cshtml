@@ -1,0 +1,62 @@
+@page
+@model GreenHedges.HomeServer.Presents.Pages.History.IndexModel
+@{
+    ViewData["Title"] = "History";
+    var gb = new System.Globalization.CultureInfo("en-GB");
+    string Money(decimal amount) => amount == 0 ? "–" : amount.ToString("C", gb);
+}
+
+<h1 class="h3 mb-3">History</h1>
+
+@if (Model.Years.Count == 0)
+{
+    <p class="text-body-secondary">No Christmases yet: a year's first present starts one.</p>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0" data-history>
+                <thead class="table-head">
+                    <tr>
+                        <th rowspan="2" class="align-bottom">Year</th>
+                        @foreach (var name in Model.Children)
+                        {
+                            <th colspan="2" class="text-center border-start">@name</th>
+                        }
+                        <th rowspan="2" class="text-end align-bottom border-start" title="Spent and cash together: the same for every child">Each</th>
+                        <th rowspan="2" class="text-end align-bottom">Year</th>
+                    </tr>
+                    <tr>
+                        @foreach (var _ in Model.Children)
+                        {
+                            <th class="text-end border-start">Spent</th>
+                            <th class="text-end">Cash</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody class="amount">
+                @foreach (var year in Model.Years)
+                {
+                    <tr>
+                        <td>
+                            <a asp-page="/Index" asp-route-year="@year.Year">@year.Year</a>
+                            @if (year.Budget is { } budget)
+                            {
+                                <span class="badge text-bg-secondary ms-1" title="Budget per child">@budget.ToString("C0", gb)</span>
+                            }
+                        </td>
+                        @foreach (var child in year.Children)
+                        {
+                            <td class="text-end border-start@(child.OverBudget ? " text-warning-emphasis" : null)" title="@(child.OverBudget ? "Over the budget" : null)">@Money(child.Spent)</td>
+                            <td class="text-end">@Money(child.Cash)</td>
+                        }
+                        <td class="text-end border-start fw-semibold">@Money(year.Target)</td>
+                        <td class="text-end">@Money(year.Total)</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

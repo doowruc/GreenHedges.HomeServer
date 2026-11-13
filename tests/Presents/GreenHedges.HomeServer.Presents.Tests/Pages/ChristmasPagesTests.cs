@@ -10,9 +10,12 @@ public class ChristmasPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
 {
     private static readonly int ThisYear = DateTime.Today.Year;
 
-    private static List<string> Cards(PageResponse page) =>
-        Regex.Matches(page.Html, "<div class=\"label\">([^<]*)</div>\\s*<div class=\"value\">([^<]*)</div>")
-            .Select(m => $"{m.Groups[1].Value}: {m.Groups[2].Value}").ToList();
+    /// <summary>Each child's card as "name | total | spent | cash", in page order.</summary>
+    internal static List<string> Cards(PageResponse page) =>
+        Regex.Matches(page.Html, "data-child-summary>(.*?)</div></div>", RegexOptions.Singleline)
+            .Select(card => string.Join(" | ", Regex.Matches(card.Groups[1].Value, "<div[^>]*>(.*?)</div>", RegexOptions.Singleline)
+                .Select(d => Regex.Replace(WebUtility.HtmlDecode(Regex.Replace(d.Groups[1].Value, "<[^>]+>", " ")), @"\s+", " ").Trim())))
+            .ToList();
 
     private static List<string> Years(PageResponse page) =>
         Regex.Matches(Regex.Match(page.Html, "data-years>(.*?)</ul>", RegexOptions.Singleline).Groups[1].Value, ">([^<]+)</a>")
@@ -29,7 +32,7 @@ public class ChristmasPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
     }
 
     [DatabaseFact]
-    public async Task Each_child_has_a_card_in_order_counting_that_years_presents()
+    public async Task Each_child_has_a_card_in_order_with_that_years_spend_cash_and_total()
     {
         await using (var db = Db())
         {
@@ -44,8 +47,10 @@ public class ChristmasPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
         }
         var client = app.ClientFor(UserId);
 
-        Assert.Equal(["Ash: 1 present", "Bea: 3 presents"], Cards(await client.GetAsync("/")));
-        Assert.Equal(["Ash: 1 present", "Bea: 0 presents"], Cards(await client.GetAsync($"/{ThisYear - 1}")));
+        Assert.Equal(["Ash | £30.00 | £10.00 on 1 present | + £20.00 cash", "Bea | £30.00 | £30.00 on 3 presents | No cash"],
+            Cards(await client.GetAsync("/")));
+        Assert.Equal(["Ash | £10.00 | £10.00 on 1 present | No cash", "Bea | £10.00 | £0.00 on 0 presents | + £10.00 cash"],
+            Cards(await client.GetAsync($"/{ThisYear - 1}")));
     }
 
     [DatabaseFact]
@@ -77,12 +82,12 @@ public class ChristmasPagesTests(AppFactory app) : DatabaseTest, IClassFixture<A
     {
         var client = app.ClientFor(UserId);
 
-        var saved = await client.PostFormAsync("/2024/Edit", await client.GetAsync("/2024/Edit"), new() { ["Christmas.Budget"] = "400" });
+        var saved = await client.PostFormAsync("/2024/Edit", await client.GetAsync("/2024/Edit"), new() { ["Christmas.Budget"] = "375" });
         Assert.Equal((HttpStatusCode.Redirect, "/2024"), (saved.Status, saved.Location));
-        Assert.Contains("Budget £400.00 each", (await client.GetAsync("/2024")).Text);
+        Assert.Contains("Budget £375.00 each", (await client.GetAsync("/2024")).Text);
 
-        await client.PostFormAsync("/2024/Edit", await client.GetAsync("/2024/Edit"), new() { ["Christmas.Budget"] = "450.50" });
-        await using (var db = Db()) Assert.Equal(450.50m, (await db.Christmases.SingleAsync()).Budget);
+        await client.PostFormAsync("/2024/Edit", await client.GetAsync("/2024/Edit"), new() { ["Christmas.Budget"] = "425.50" });
+        await using (var db = Db()) Assert.Equal(425.50m, (await db.Christmases.SingleAsync()).Budget);
 
         await client.PostFormAsync("/2024/Edit", await client.GetAsync("/2024/Edit"), new() { ["Christmas.Budget"] = "" });
         await using (var db = Db()) Assert.Null((await db.Christmases.SingleAsync()).Budget);

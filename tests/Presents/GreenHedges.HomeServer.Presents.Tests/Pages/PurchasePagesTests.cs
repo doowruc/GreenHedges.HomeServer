@@ -80,23 +80,23 @@ public class PurchasePagesTests(AppFactory app) : DatabaseTest, IClassFixture<Ap
         var (ash, bea) = await ChildrenAsync();
         var client = app.ClientFor(UserId);
 
-        await AddAsync(client, "/2023", Fields(bea, "Tablet", "789", "2023-08-19", mum: true, birthday: true));
-        await AddAsync(client, "/2023", Fields(ash, "Phone", "649", "2023-10-17", birthday: true));
+        await AddAsync(client, "/2023", Fields(bea, "Tablet", "780", "2023-08-19", mum: true, birthday: true));
+        await AddAsync(client, "/2023", Fields(ash, "Phone", "640", "2023-10-17", birthday: true));
         await AddAsync(client, "/2023", Fields(ash, "Socks", "9.99", "2023-12-01", quantity: "2"));
         await AddAsync(client, "/2023", Fields(bea, "Chocolate", "3", ""));
 
         var page = await client.GetAsync("/2023");
         Assert.Equal([
             ["1 Dec", "Ash", "Socks", "", "2 × £9.99", "£19.98"],
-            ["17 Oct", "Ash", "Phone", "", "£649.00", "£324.50"],
-            ["19 Aug", "Bea", "Tablet", "", "£789.00", "£197.25"],
+            ["17 Oct", "Ash", "Phone", "", "£640.00", "£320.00"],
+            ["19 Aug", "Bea", "Tablet", "", "£780.00", "£195.00"],
             ["–", "Bea", "Chocolate", "", "£3.00", "£3.00"]], Rows(page));
         Assert.Contains("title=\"Split with Mum and birthday\"", page.Html);
         Assert.Contains("title=\"Split with birthday\"", page.Html);
 
         await using var db = Db();
         var tablet = await db.Purchases.SingleAsync(p => p.Item == "Tablet");
-        Assert.Equal((789m, true, true), (tablet.Price, tablet.SplitWithMum, tablet.SplitWithBirthday));
+        Assert.Equal((780m, true, true), (tablet.Price, tablet.SplitWithMum, tablet.SplitWithBirthday));
     }
 
     [DatabaseTheory]

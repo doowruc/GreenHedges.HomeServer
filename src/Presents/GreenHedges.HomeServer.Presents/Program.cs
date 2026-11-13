@@ -12,6 +12,7 @@ using GreenHedges.HomeServer.Common.Web.Data;
 using GreenHedges.HomeServer.Common.Web.Hosting;
 using GreenHedges.HomeServer.Presents.Data;
 using GreenHedges.HomeServer.Presents.Monitoring;
+using GreenHedges.HomeServer.Presents.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,7 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck<AppDbContext>>("database", timeout: TimeSpan.FromSeconds(10));
 
 builder.Services.AddRazorPages();
+builder.Services.AddScoped<ChristmasSummaries>();
 // SQL Server: the server's shared instance, or the local container in development (see the README).
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.RequiredSetting("ConnectionStrings:Presents"),

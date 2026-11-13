@@ -8,6 +8,7 @@ public class SecurityTests(AppFactory app) : IClassFixture<AppFactory>
     [DatabaseTheory]
     [InlineData("/")]
     [InlineData("/Children")]
+    [InlineData("/History")]
     [InlineData("/Children/Create")]
     [InlineData("/Children/Edit/1")]
     [InlineData("/Children/Delete/1")]
