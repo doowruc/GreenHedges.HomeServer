@@ -1,0 +1,24 @@
+@page
+@model IndexModel
+@{ ViewData["Title"] = $"Christmas {Model.Year}"; }
+
+<h1 class="h3 mb-4">Christmas @Model.Year</h1>
+
+@if (Model.Children.Count == 0)
+{
+    <div class="alert alert-info">No children yet. <a asp-page="/Children/Create">Add the first child</a> whose presents you'll keep here.</div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var child in Model.Children)
+        {
+            <div class="col-sm-6 col-lg-4">
+                <div class="card shadow-sm stat-card h-100"><div class="card-body">
+                    <div class="label">@child.Name</div>
+                    <div class="value">@child.Presents @(child.Presents == 1 ? "present" : "presents")</div>
+                </div></div>
+            </div>
+        }
+    </div>
+}

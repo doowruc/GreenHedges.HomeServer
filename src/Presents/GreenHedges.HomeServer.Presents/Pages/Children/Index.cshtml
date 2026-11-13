@@ -1,0 +1,41 @@
+@page
+@model GreenHedges.HomeServer.Presents.Pages.Children.IndexModel
+@{ ViewData["Title"] = "Children"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Children</h1>
+    <a asp-page="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Add child</a>
+</div>
+
+@if (Model.Children.Count == 0)
+{
+    <div class="alert alert-info">No children yet. <a asp-page="Create">Add the first child</a> whose presents you'll keep here.</div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-head">
+                <tr><th>Name</th><th class="text-end">Presents</th><th></th></tr>
+            </thead>
+            <tbody>
+            @for (var i = 0; i < Model.Children.Count; i++)
+            {
+                var c = Model.Children[i];
+                <tr>
+                    <td>@c.Name</td>
+                    <td class="text-end">@c.Purchases</td>
+                    <td class="text-end text-nowrap">
+                        <form method="post" class="d-inline">
+                            <button type="submit" asp-page-handler="Up" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary" title="Move up" disabled="@(i == 0)"><i class="bi bi-arrow-up"></i></button>
+                            <button type="submit" asp-page-handler="Down" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary" title="Move down" disabled="@(i == Model.Children.Count - 1)"><i class="bi bi-arrow-down"></i></button>
+                        </form>
+                        <a asp-page="Edit" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a asp-page="Delete" asp-route-id="@c.Id" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

@@ -62,4 +62,5 @@ jobs:
           ConnectionStrings__VehicleManagerTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
           ConnectionStrings__PayAndPensionsTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
           ConnectionStrings__UtilitiesTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
+          ConnectionStrings__PresentsTests: Server=localhost,1433;Database=master;User ID=sa;Password=${{ env.MSSQL_SA_PASSWORD }};TrustServerCertificate=True
         run: dotnet test --no-build -c Release --logger "console;verbosity=normal"

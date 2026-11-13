@@ -455,6 +455,10 @@ src/Utilities/**/*.xlsx
 tests/Utilities/**/*.xlsx
 src/Utilities/**/*.pdf
 tests/Utilities/**/*.pdf
+
+# Presents: the presents workbook never goes in the repository (tests make their own)
+src/Presents/**/*.xlsx
+tests/Presents/**/*.xlsx
 *.bak
 # The local SQL Server's backups folder (compose.yaml)
 .sqlserver-backups/
