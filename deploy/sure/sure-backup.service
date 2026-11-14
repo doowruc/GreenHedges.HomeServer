@@ -1,0 +1,20 @@
+# Sure's nightly database backup (backup.sh), started by sure-backup.timer. Installed by deploy/sure/deploy-sure.sh into
+# /etc/systemd/system/. Runs as root, since it uses docker (the admin user isn't in the docker group); writes only the
+# backups folder. Settings: /etc/sure/backup.env (root, 0600). Run it now with
+# `sudo systemctl start sure-backup.service`; its output is in `journalctl -u sure-backup`.
+[Unit]
+Description=Sure database backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/sure/backup.sh
+EnvironmentFile=/etc/sure/backup.env
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/var/lib/sure/backups
