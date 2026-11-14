@@ -47,7 +47,12 @@ ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
   echo
   sudo docker compose -f /opt/sure/compose.yaml ps
   echo
-  curl -fsS -o /dev/null -w "GET /up: HTTP %{http_code}\n" http://127.0.0.1:5084/up
+  # Rails is still booting (and migrating) when the container starts, so retry for up to two minutes.
+  for i in $(seq 1 24); do
+    curl -fsS -o /dev/null -w "GET /up: HTTP %{http_code}\n" http://127.0.0.1:5084/up 2>/dev/null && break
+    [ "$i" -lt 24 ] || { echo "GET /up: no answer after 2 minutes (see: sudo docker compose -f /opt/sure/compose.yaml logs web)"; exit 1; }
+    sleep 5
+  done
   echo
   systemctl list-timers sure-backup.timer --no-pager
   sudo docker compose -f /opt/sure/compose.yaml logs --no-log-prefix --since 2m web worker | grep -iE "error|fatal" | tail -10 || true'

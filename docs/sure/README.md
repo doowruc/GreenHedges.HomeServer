@@ -4,6 +4,7 @@
 budgets, net worth). It is third-party software: it runs here as it comes, in Docker, and nothing in `src/` is ours.
 
 - **Where:** `https://sure.<home domain>`, on the tailnet only, through Caddy (`deploy/caddy/`).
+- **Version:** pinned to a release (see `image:` in the compose file); upgrade by editing it and redeploying.
 - **What runs:** `web` (Rails, `127.0.0.1:5084`), `worker` (Sidekiq), PostgreSQL 16 and Redis 7, from
   [`deploy/sure/compose.yaml`](../../deploy/sure/compose.yaml).
 - **Setup:** [`deploy/sure/HOST-SETUP.md`](../../deploy/sure/HOST-SETUP.md). Update with `deploy/sure/deploy-sure.sh`.
@@ -20,7 +21,3 @@ with `pg_restore --list`), an `age`-encrypted copy to the shared off-site bucket
 heartbeat. The Mac pulls the local copies daily (09:55, 30 kept). Only the database: uploaded files aren't included.
 Setup and restoring: [`deploy/sure/HOST-SETUP.md`](../../deploy/sure/HOST-SETUP.md). Personal financial data: treat the
 backups like Pay & Pensions'.
-
-## Still to do
-
-- **Pin the image** to a release tag instead of `stable`.

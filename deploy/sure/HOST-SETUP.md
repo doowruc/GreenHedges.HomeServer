@@ -63,8 +63,9 @@ All four `running` (`db` and `redis` `healthy`).
 
 ## Upgrading
 
-Change the `image:` tag in `x-sure-app` in `compose.yaml` and run `deploy/sure/deploy-sure.sh` again; migrations run on
-start. (While it says `stable`, the deploy script's `pull` fetches whatever `stable` is now.)
+Pick a release from <https://github.com/we-promise/sure/releases> and read its notes. Change the `image:` tag in
+`x-sure-app` in `compose.yaml` (image tags have no `v`: release `v0.7.6-hotfix.1` is `0.7.6-hotfix.1`) and run
+`deploy/sure/deploy-sure.sh` again; migrations run on start. Back up first if you like: `sudo systemctl start sure-backup.service`.
 
 ## Backups
 
