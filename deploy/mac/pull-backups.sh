@@ -31,7 +31,14 @@ RSYNC=/opt/homebrew/bin/rsync
 PING_URL=""
 [ -f "$PING_URL_FILE" ] && PING_URL="$(tr -d '[:space:]' < "$PING_URL_FILE")"
 
-ping_hc() { [ -n "$PING_URL" ] && curl -fsS -m 10 --retry 3 -o /dev/null "$PING_URL$1" || true; }
+# The Mac may have only just woken (launchd runs a missed job on wake), when the network can take a while to come
+# back, so retry every kind of failure for a few minutes. A ping that still fails is logged, not fatal: the backup is safe.
+ping_hc() {
+  [ -n "$PING_URL" ] || return 0
+  curl -fsS -m 20 --retry 6 --retry-delay 30 --retry-all-errors -o /dev/null "$PING_URL$1" \
+    || echo "$(date '+%Y-%m-%d %H:%M:%S') warning: could not ping healthchecks.io ($1)" >&2
+  return 0
+}
 trap 'ping_hc /fail' ERR
 
 echo "$(date '+%Y-%m-%d %H:%M:%S') pulling $NAME backups from $HOST"
