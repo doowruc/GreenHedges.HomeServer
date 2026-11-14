@@ -1,0 +1,12 @@
+# Starts sure-backup.service nightly at 04:30, clear of the other services' backups (03:30 Weather, 03:45 Pay & Pensions,
+# 04:00 Utilities, 04:15 Presents). Persistent: a night missed while the server was off runs at the next boot. Installed
+# and enabled by deploy/sure/deploy-sure.sh.
+[Unit]
+Description=Nightly Sure database backup
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

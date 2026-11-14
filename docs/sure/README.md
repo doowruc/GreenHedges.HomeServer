@@ -13,9 +13,14 @@ budgets, net worth). It is third-party software: it runs here as it comes, in Do
 - **Secrets:** `/etc/sure/sure.env` on the host (generated there, copy in the password manager). `SECRET_KEY_BASE` and the
   `ACTIVE_RECORD_ENCRYPTION_*` keys must never change after first use.
 
+## Backups
+
+Nightly at 04:30 (`sure-backup.timer`): `pg_dump` into `/var/lib/sure/backups` (`sure-<time>.dump.gz`, 7 kept, checked
+with `pg_restore --list`), an `age`-encrypted copy to the shared off-site bucket under `sure/`, and a healthchecks.io
+heartbeat. The Mac pulls the local copies daily (09:55, 30 kept). Only the database: uploaded files aren't included.
+Setup and restoring: [`deploy/sure/HOST-SETUP.md`](../../deploy/sure/HOST-SETUP.md). Personal financial data: treat the
+backups like Pay & Pensions'.
+
 ## Still to do
 
-- **Backups:** a nightly `pg_dump` into `/var/lib/sure/backups` (7 kept), off-site `age`-encrypted copies to the shared
-  bucket, the Mac's daily pull, and a healthchecks.io heartbeat, as for the other services. Personal financial data:
-  treat it like Pay & Pensions.
 - **Pin the image** to a release tag instead of `stable`.
