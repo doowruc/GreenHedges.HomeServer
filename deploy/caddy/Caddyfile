@@ -69,6 +69,12 @@
 		reverse_proxy 127.0.0.1:5083
 	}
 
+	# Sure (deploy/sure), third-party personal finance app, the same way.
+	@sure host sure.{$HOME_DOMAIN}
+	handle @sure {
+		reverse_proxy 127.0.0.1:5084
+	}
+
 	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
 	@nightscout host nightscout.{$HOME_DOMAIN}
 	handle @nightscout {
