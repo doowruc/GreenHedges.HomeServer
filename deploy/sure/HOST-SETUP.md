@@ -10,10 +10,11 @@ PostgreSQL and Redis, at `https://sure.<home domain>` through Caddy. How it's se
 ## 1. Folders and settings (on the server)
 
 ```bash
-sudo install -d -m 0755 /opt/sure && sudo install -d -m 0750 /etc/sure && sudo install -d -m 0711 /var/lib/sure && sudo install -d -m 0700 -o 999 -g 999 /var/lib/sure/postgres && sudo install -m 0600 /dev/null /etc/sure/sure.env
+sudo install -d -m 0755 /opt/sure && sudo install -d -m 0750 /etc/sure && sudo install -d -m 0711 /var/lib/sure && sudo install -d -m 0700 -o 10002 -g 10002 /var/lib/sure/postgres && sudo install -m 0600 /dev/null /etc/sure/sure.env
 ```
 
-PostgreSQL's image runs as uid 999, which is why its data folder is owned by 999. Generate every secret on the host, so
+PostgreSQL runs as uid 10002 (`user:` in `compose.yaml`), not the image's 999, which on this host belongs to another
+service; so its data folder is owned by 10002. Generate every secret on the host, so
 none leaves it:
 
 ```bash

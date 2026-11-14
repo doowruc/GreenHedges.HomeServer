@@ -70,6 +70,9 @@ services:
   db:
     image: postgres:16
     restart: unless-stopped
+    # Not the image's own uid 999: on this host that is another service's user (which could then read the data folder).
+    # The image supports an arbitrary --user as long as it owns the data folder (/var/lib/sure/postgres, 10002:10002).
+    user: "10002:10002"
     security_opt:
       - no-new-privileges:true
     env_file:
