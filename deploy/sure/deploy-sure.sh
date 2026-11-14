@@ -32,6 +32,7 @@ echo "==> Validating, installing and starting on $HOST"
 ssh -t "${SSH_OPTS[@]}" "$HOST" 'set -e
   sudo test -s /etc/sure/sure.env || { echo "Missing /etc/sure/sure.env (see deploy/sure/HOST-SETUP.md)"; exit 1; }
   sudo test -d /var/lib/sure/postgres || { echo "Missing /var/lib/sure/postgres (see HOST-SETUP.md)"; exit 1; }
+  [ "$(sudo stat -c %u /var/lib/sure/postgres)" = 10002 ] || { echo "/var/lib/sure/postgres must be owned by uid 10002, the PostgreSQL user in compose.yaml (see HOST-SETUP.md)"; exit 1; }
   sudo test -d /var/lib/sure/backups -a -f /etc/sure/backup.env || { echo "Missing /var/lib/sure/backups or /etc/sure/backup.env (see HOST-SETUP.md, \"Backups\")"; exit 1; }
   sudo docker compose -f ~/sure-release/compose.yaml config -q
   sudo install -d -m 0755 /opt/sure
