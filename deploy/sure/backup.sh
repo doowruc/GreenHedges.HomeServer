@@ -15,6 +15,7 @@ COMPOSE_FILE="${SURE_COMPOSE:-/opt/sure/compose.yaml}"
 BACKUP_DIR="${SURE_BACKUPS:-/var/lib/sure/backups}"
 KEEP="${SURE_BACKUPS_KEPT:-7}"
 NAME="sure-$(date -u +%Y%m%dT%H%M%SZ).dump.gz"
+RAW="$BACKUP_DIR/.$NAME.raw.tmp"
 TMP="$BACKUP_DIR/.$NAME.tmp"
 ENCRYPTED="$BACKUP_DIR/.$NAME.age.tmp"
 
@@ -30,16 +31,21 @@ fail() {
   exit 1
 }
 trap 'fail "command at line $LINENO exited with $?"' ERR
-trap 'rm -f "$TMP" "$ENCRYPTED"' EXIT
+trap 'rm -f "$RAW" "$TMP" "$ENCRYPTED"' EXIT
 
 ping_heartbeat /start ""
 [ -d "$BACKUP_DIR" ] || fail "no backups folder $BACKUP_DIR"
 
-# Custom format (pg_restore can restore all of it or single tables), compressed once by gzip so the file is a valid .gz
-# for the Mac's pull check. pipefail makes a failed pg_dump fail the whole pipe.
-docker compose -f "$COMPOSE_FILE" exec -T db pg_dump -U sure -d sure_production --format=custom --compress=0 | gzip -6 > "$TMP"
+# Custom format (pg_restore can restore all of it or single tables), first as a plain file: pg_restore --list reads only the
+# table of contents, so feeding it from a pipe ends in "Broken pipe" for the writer once the dump is bigger than the pipe's
+# buffer (64 KB), and pipefail turns that into a failed backup. A file redirect has no such problem.
+docker compose -f "$COMPOSE_FILE" exec -T db pg_dump -U sure -d sure_production --format=custom --compress=0 > "$RAW"
 # A dump pg_restore can read back, not just a file.
-gzip -dc "$TMP" | docker compose -f "$COMPOSE_FILE" exec -T db pg_restore --list > /dev/null || fail "pg_restore can't read $NAME"
+docker compose -f "$COMPOSE_FILE" exec -T db pg_restore --list < "$RAW" > /dev/null || fail "pg_restore can't read $NAME"
+# Compressed once by gzip, so the file is a valid .gz for the Mac's pull check.
+gzip -6 -c "$RAW" > "$TMP"
+gzip -t "$TMP" || fail "gzip can't read back $NAME"
+rm -f "$RAW"
 mv "$TMP" "$BACKUP_DIR/$NAME"
 SIZE="$(du -h "$BACKUP_DIR/$NAME" | cut -f1)"
 echo "Backed up $NAME ($SIZE)"
