@@ -4,7 +4,7 @@ namespace GreenHedges.HomeServer.Utilities.Services;
 public sealed record YearUsage(int Year, IReadOnlyList<decimal?> PerDay);
 
 /// <summary>
-/// Units a day for each calendar month, to compare the same month across the years: for a seasonal utility. Pure.
+/// Units a day for each calendar month, to follow each month across the years: for a seasonal utility. Pure.
 /// </summary>
 public static class MonthlyUsage
 {
