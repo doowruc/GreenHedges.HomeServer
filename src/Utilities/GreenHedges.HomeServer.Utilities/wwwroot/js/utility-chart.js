@@ -63,6 +63,49 @@
         });
     });
 
+    // <canvas data-by-month-chart='{"unit":"m³","decimals":2,"years":[{"year":2025,"values":[12.5,null,…12 of them]},…]}'>:
+    // units a day in each month of the year, a line per year, to compare the same month across the years. The latest
+    // year stands out; the ones before it fade from recent (strong) to old (pale).
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    charts.push(...[...document.querySelectorAll('canvas[data-by-month-chart]')].map(canvas => {
+        const d = JSON.parse(canvas.dataset.byMonthChart);
+        const number = new Intl.NumberFormat('en-GB', { minimumFractionDigits: d.decimals, maximumFractionDigits: d.decimals });
+        const axisNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: d.decimals });
+        const earlier = d.years.length - 1;
+        const datasets = d.years.map((y, i) => {
+            const latest = i === earlier;
+            // Blue, from 25% to 90% opaque as the years get more recent.
+            const colour = latest ? colours.trend : `rgba(13, 110, 253, ${(0.25 + 0.65 * (earlier > 1 ? i / (earlier - 1) : 1)).toFixed(2)})`;
+            return {
+                label: String(y.year), data: y.values,
+                borderColor: colour, backgroundColor: colour, borderWidth: latest ? 3 : 1.5,
+                pointRadius: latest ? 3 : 2, pointHoverRadius: 5, tension: .2, order: latest ? 0 : 1
+            };
+        });
+
+        return new Chart(canvas, {
+            type: 'line',
+            data: { labels: months, datasets },
+            options: {
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    // In year order (the latest is drawn on top, which would otherwise put it first).
+                    legend: { labels: { sort: (a, b) => a.datasetIndex - b.datasetIndex } },
+                    tooltip: {
+                        // Latest year first.
+                        itemSort: (a, b) => b.datasetIndex - a.datasetIndex,
+                        callbacks: { label: item => `${item.dataset.label}: ${number.format(item.parsed.y)} ${d.unit} a day` }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, ticks: { callback: v => axisNumber.format(v) }, title: { display: true, text: `${d.unit} a day` } }
+                }
+            }
+        });
+    }));
+
     // Follow the light/dark theme (color-mode.js).
     document.addEventListener('themechange', () => {
         styleDefaults();

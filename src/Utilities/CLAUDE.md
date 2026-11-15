@@ -59,7 +59,8 @@ GreenHedges.HomeServer.Utilities/
                Import/ (ReadingsWorkbook reads the spreadsheet; ReadingsImporter plans and imports it; the
                reading and planning are pure, unit tested),
                PolynomialTrend (a least-squares polynomial fit; pure, unit tested), UtilityChart (a utility's chart
-               data as JSON: units a day by date and the order 4 trendline)
+               data as JSON: units a day by date and the order 4 trendline; and each month year on year),
+               MonthlyUsage (units a day for each calendar month of each year; pure, unit tested)
   Data/        AppDbContext (per-user query filters; AuditedDbContext from Common.Web), DesignTimeDbContextFactory, Migrations/
   Monitoring/  AppHealth (database probes; the heartbeat source), UtilitiesAlertMonitor (database, and Common's
                BackupMonitor for backups and off-site copies), UtilitiesAlertOptions
@@ -92,6 +93,10 @@ GreenHedges.HomeServer.Utilities/
   on the meter it was taken from (`MeterRules`), so it's installed after the last reading of the meter before and no
   later than its own first. A utility's first meter has only a serial number to edit.
 - Utility and unit are enums stored as text, so order and group them in memory, not in SQL.
+- **Each month, year on year** (`MonthlyUsage`, on the Gas page only: `IndexModel.ByMonthChartJson`): a month runs
+  from the reading closest to its 1st to the reading closest to the next month's 1st, each within `NearFirst` (10)
+  days; the units between are each reading's units added up, so a meter change is counted. No figure without a
+  reading near both ends, and no chart with fewer than two years.
 - **Figures are worked out, never stored** (units, days, units a day, the trendline): see the design notes.
 - **The chart** plots units a day at each reading's date (water in litres), and the trendline is fitted against the
   date (`DateOnly.DayNumber`, scaled to -1..1 before fitting: day numbers to the 8th power would swamp a double). No

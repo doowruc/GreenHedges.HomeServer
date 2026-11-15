@@ -41,4 +41,22 @@ public static class UtilityChart
             trend = samples
         }, Json);
     }
+
+    /// <summary>
+    /// Units a day for each calendar month (water in litres), a series per year, oldest first, to compare the same
+    /// month across the years (<see cref="MonthlyUsage"/>). Null with fewer than two years to compare.
+    /// </summary>
+    public static string? ByMonth(UtilityHistory history)
+    {
+        var scale = history.Utility.PerDayUnit(history.Unit) == "litres" ? 1000m : 1m;
+        var years = MonthlyUsage.ByMonth(history.Rows);
+        if (years.Count < 2) return null;
+
+        return JsonSerializer.Serialize(new
+        {
+            unit = history.Utility.PerDayUnit(history.Unit),
+            decimals = scale == 1000m ? 0 : 2,
+            years = years.Select(y => new { year = y.Year, values = y.PerDay.Select(v => v is { } value ? Math.Round(value * scale, 3) : (decimal?)null) })
+        }, Json);
+    }
 }

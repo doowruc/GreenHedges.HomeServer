@@ -17,6 +17,12 @@ public class IndexModel(AppDbContext db, UtilityReadings readings) : UtilityPage
     /// <summary>The chart's data (<see cref="UtilityChart"/>); null with too few readings to draw one.</summary>
     public string? ChartJson => UtilityChart.For(History);
 
+    /// <summary>
+    /// The month-by-month, year-on-year chart's data (<see cref="UtilityChart.ByMonth"/>), for gas, whose use follows the
+    /// seasons; null for the others, or with fewer than two years to compare.
+    /// </summary>
+    public string? ByMonthChartJson => Type == UtilityType.Gas ? UtilityChart.ByMonth(History) : null;
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (!LoadUtility()) return NotFound();

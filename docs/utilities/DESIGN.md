@@ -80,6 +80,9 @@ credits and payments; gas calorific values. None of it changes the readings mode
 ## Pages
 
 - **Dashboard:** each utility's latest reading and units a day.
+- **Gas** also has each month year on year: units a day for each calendar month, a line per year, as its use follows
+  the seasons. A month runs from the reading closest to its 1st to the reading closest to the next month's 1st (each
+  within 10 days), so a month with no reading near one of its ends has no figure.
 - **Electricity, Gas, Water:** the chart (Chart.js, a true date axis) with its trendline; the add-reading form (date
   defaults to today); the table of readings with units, days and units a day; edit and delete.
 - **New meter:** for a replacement: the date, start reading and serial number. A meter can be edited while every

@@ -7,7 +7,10 @@ A web app for my home's electricity, gas and water meter readings, and later the
 date and what the meter shows) and the table of readings, latest first, with what the spreadsheet worked out: units
 used since the reading before, the days between them, and units a day (litres a day for water). Readings can be
 edited and deleted. Above the form, a **chart** of units a day at each reading's date, with a trendline (a polynomial
-of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. The **dashboard** shows each utility's latest reading and daily figure. **Importing** the spreadsheet
+of order 4, as the spreadsheet's chart had, fitted against the date); it appears once there are two daily figures. **Gas** has a second chart, each month
+year on year: m³ a day for each month of the year, a line per year (the latest stands out), to compare a month with
+the same month in other years. A month is worked out from the reading closest to its 1st to the reading closest to the
+next month's 1st, so it needs a reading within 10 days of each; months without are gaps. The **dashboard** shows each utility's latest reading and daily figure. **Importing** the spreadsheet
 the readings were kept in (below). And, as the other web apps, nightly **backups** with encrypted off-site copies and
 a daily pull to the Mac, email **alerts** and a **heartbeat** (below). It runs on the home server at
 `https://utilities.<home domain>`: [host setup](../../deploy/utilities/HOST-SETUP.md).

@@ -63,6 +63,38 @@ public class ReadingPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
+    public async Task Gas_has_a_chart_of_each_month_year_on_year_and_the_others_dont()
+    {
+        (DateOnly, decimal)[] readings = [(new(2020, 1, 1), 0m), (new(2020, 2, 1), 310m), (new(2021, 1, 1), 2000m), (new(2021, 2, 1), 2155m)];
+        await using (var db = Db())
+        {
+            await TestData.AddMeterAsync(db, UtilityType.Gas, readings: readings);
+            await TestData.AddMeterAsync(db, UtilityType.Electricity, readings: readings);
+        }
+        var client = app.ClientFor(UserId);
+
+        var gas = await client.GetAsync("/Gas");
+        var json = WebUtility.HtmlDecode(Regex.Match(gas.Html, "data-by-month-chart=\"([^\"]*)\"").Groups[1].Value);
+        using var chart = System.Text.Json.JsonDocument.Parse(json);
+        Assert.Equal([2020, 2021], chart.RootElement.GetProperty("years").EnumerateArray().Select(y => y.GetProperty("year").GetInt32()));
+        Assert.Contains("Each month, year on year", gas.Text);
+
+        Assert.DoesNotContain("data-by-month-chart", (await client.GetAsync("/Electricity")).Html);
+    }
+
+    [DatabaseFact]
+    public async Task Gas_with_one_year_of_readings_has_no_year_on_year_chart()
+    {
+        await using (var db = Db())
+            await TestData.AddMeterAsync(db, UtilityType.Gas, readings: [(new(2021, 1, 1), 0m), (new(2021, 2, 1), 310m), (new(2021, 3, 1), 600m)]);
+
+        var page = await app.ClientFor(UserId).GetAsync("/Gas");
+
+        Assert.Contains("data-utility-chart", page.Html);
+        Assert.DoesNotContain("data-by-month-chart", page.Html);
+    }
+
+    [DatabaseFact]
     public async Task Water_is_shown_in_litres_a_day()
     {
         await using (var db = Db())

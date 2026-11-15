@@ -43,6 +43,14 @@
         <div class="chart-box"><canvas data-utility-chart="@chartJson" role="img" aria-label="@Model.Type used a day at each reading, with its trend"></canvas></div>
     </div></div>
 }
+@{ var byMonthJson = Model.ByMonthChartJson; }
+@if (byMonthJson is not null)
+{
+    <div class="card shadow-sm mb-3"><div class="card-body">
+        <h2 class="h6" title="Each month runs from the reading closest to its 1st to the reading closest to the next month's 1st (within @MonthlyUsage.NearFirst days), so it's for about that month">Each month, year on year</h2>
+        <div class="chart-box"><canvas data-by-month-chart="@byMonthJson" role="img" aria-label="@Model.Type used a day in each month of the year, a line per year"></canvas></div>
+    </div></div>
+}
 
 <div class="card shadow-sm mb-4"><div class="card-body">
     <h2 class="h6">Add a reading</h2>
