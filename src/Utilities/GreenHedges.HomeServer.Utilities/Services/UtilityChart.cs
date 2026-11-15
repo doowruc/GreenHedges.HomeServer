@@ -43,7 +43,7 @@ public static class UtilityChart
     }
 
     /// <summary>
-    /// Units a day for each calendar month (water in litres), a series per year, oldest first, to compare the same
+    /// Units a day for each calendar month (water in litres), a set of twelve per year, oldest first, to follow the same
     /// month across the years (<see cref="MonthlyUsage"/>). Null with fewer than two years to compare.
     /// </summary>
     public static string? ByMonth(UtilityHistory history)

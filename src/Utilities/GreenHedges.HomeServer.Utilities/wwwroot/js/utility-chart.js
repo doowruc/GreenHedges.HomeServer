@@ -64,37 +64,36 @@
     });
 
     // <canvas data-by-month-chart='{"unit":"m³","decimals":2,"years":[{"year":2025,"values":[12.5,null,…12 of them]},…]}'>:
-    // units a day in each month of the year, a line per year, to compare the same month across the years. The latest
-    // year stands out; the ones before it fade from recent (strong) to old (pale).
+    // units a day in each month, the years across and a line per month, to see how each month's use changes over the
+    // years (how January is trending, say). A month's line joins the years it has a figure for, skipping those
+    // without; the points are the figures. Click a month in the legend to hide or show it.
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // Round the colour wheel with the year: blues in winter, through reds and yellows in summer, to greens in autumn.
+    const monthColour = month => `hsl(${(240 + month * 30) % 360}, 70%, 50%)`;
     charts.push(...[...document.querySelectorAll('canvas[data-by-month-chart]')].map(canvas => {
         const d = JSON.parse(canvas.dataset.byMonthChart);
         const number = new Intl.NumberFormat('en-GB', { minimumFractionDigits: d.decimals, maximumFractionDigits: d.decimals });
         const axisNumber = new Intl.NumberFormat('en-GB', { maximumFractionDigits: d.decimals });
-        const earlier = d.years.length - 1;
-        const datasets = d.years.map((y, i) => {
-            const latest = i === earlier;
-            // Blue, from 25% to 90% opaque as the years get more recent.
-            const colour = latest ? colours.trend : `rgba(13, 110, 253, ${(0.25 + 0.65 * (earlier > 1 ? i / (earlier - 1) : 1)).toFixed(2)})`;
-            return {
-                label: String(y.year), data: y.values,
-                borderColor: colour, backgroundColor: colour, borderWidth: latest ? 3 : 1.5,
-                pointRadius: latest ? 3 : 2, pointHoverRadius: 5, tension: .2, order: latest ? 0 : 1
-            };
-        });
+        // Every year from the first to the last, so the years are evenly spaced even if one has no figures at all.
+        const byYear = new Map(d.years.map(y => [y.year, y.values]));
+        const years = [];
+        for (let year = d.years[0].year; year <= d.years[d.years.length - 1].year; year++) years.push(year);
+        const datasets = months.map((label, month) => ({
+            label, data: years.map(year => byYear.get(year)?.[month] ?? null),
+            borderColor: monthColour(month), backgroundColor: monthColour(month), borderWidth: 2,
+            pointRadius: 3, pointHoverRadius: 5, tension: 0, spanGaps: true
+        }));
 
         return new Chart(canvas, {
             type: 'line',
-            data: { labels: months, datasets },
+            data: { labels: years.map(String), datasets },
             options: {
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    // In year order (the latest is drawn on top, which would otherwise put it first).
-                    legend: { labels: { sort: (a, b) => a.datasetIndex - b.datasetIndex } },
                     tooltip: {
-                        // Latest year first.
-                        itemSort: (a, b) => b.datasetIndex - a.datasetIndex,
+                        // Highest first, as the lines are stacked on the chart.
+                        itemSort: (a, b) => b.parsed.y - a.parsed.y,
                         callbacks: { label: item => `${item.dataset.label}: ${number.format(item.parsed.y)} ${d.unit} a day` }
                     }
                 },

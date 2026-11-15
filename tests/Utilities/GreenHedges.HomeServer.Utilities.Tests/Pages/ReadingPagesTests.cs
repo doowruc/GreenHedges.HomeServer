@@ -63,7 +63,7 @@ public class ReadingPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
     }
 
     [DatabaseFact]
-    public async Task Gas_has_a_chart_of_each_month_year_on_year_and_the_others_dont()
+    public async Task Gas_has_a_chart_of_each_month_over_the_years_and_the_others_dont()
     {
         (DateOnly, decimal)[] readings = [(new(2020, 1, 1), 0m), (new(2020, 2, 1), 310m), (new(2021, 1, 1), 2000m), (new(2021, 2, 1), 2155m)];
         await using (var db = Db())
@@ -77,13 +77,13 @@ public class ReadingPagesTests(AppFactory app) : DatabaseTest, IClassFixture<App
         var json = WebUtility.HtmlDecode(Regex.Match(gas.Html, "data-by-month-chart=\"([^\"]*)\"").Groups[1].Value);
         using var chart = System.Text.Json.JsonDocument.Parse(json);
         Assert.Equal([2020, 2021], chart.RootElement.GetProperty("years").EnumerateArray().Select(y => y.GetProperty("year").GetInt32()));
-        Assert.Contains("Each month, year on year", gas.Text);
+        Assert.Contains("Each month, over the years", gas.Text);
 
         Assert.DoesNotContain("data-by-month-chart", (await client.GetAsync("/Electricity")).Html);
     }
 
     [DatabaseFact]
-    public async Task Gas_with_one_year_of_readings_has_no_year_on_year_chart()
+    public async Task Gas_with_one_year_of_readings_has_no_chart_over_the_years()
     {
         await using (var db = Db())
             await TestData.AddMeterAsync(db, UtilityType.Gas, readings: [(new(2021, 1, 1), 0m), (new(2021, 2, 1), 310m), (new(2021, 3, 1), 600m)]);
