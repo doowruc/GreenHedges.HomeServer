@@ -61,6 +61,11 @@ Parameters:
     Default: sure
     Description: Key prefix for Sure's database dumps (OFFSITE_PREFIX in its backup.env).
     AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
+  FreshRssPrefix:
+    Type: String
+    Default: freshrss
+    Description: Key prefix for FreshRSS's backups (OFFSITE_PREFIX in its backup.env).
+    AllowedPattern: "^[a-z0-9][a-z0-9-]*$"
 
 Resources:
   OffsiteBucket:
@@ -259,6 +264,25 @@ Resources:
                 Action: s3:PutObject
                 Resource: !Sub "${OffsiteBucket.Arn}/${SurePrefix}/*"
 
+  FreshRssUploader:
+    Type: AWS::IAM::User
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: FreshRSS's off-site key (its backup script, deploy/freshrss/backup.sh); same shape as LibreUploader
+        must:
+          - s3:PutObject on its own prefix only
+    Properties:
+      UserName: !Sub "${AWS::StackName}-freshrss"
+      Policies:
+        - PolicyName: UploadOffsiteBackupsOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: UploadOffsiteBackupsOnly
+                Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${OffsiteBucket.Arn}/${FreshRssPrefix}/*"
+
 Outputs:
   BucketName:
     Description: Offsite:Bucket for every service.
@@ -284,3 +308,6 @@ Outputs:
   SureUser:
     Description: IAM user to create Sure's access key for.
     Value: !Ref SureUploader
+  FreshRssUser:
+    Description: IAM user to create FreshRSS's access key for.
+    Value: !Ref FreshRssUploader

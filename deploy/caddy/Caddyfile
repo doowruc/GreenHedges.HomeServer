@@ -75,6 +75,12 @@
 		reverse_proxy 127.0.0.1:5084
 	}
 
+	# FreshRSS (deploy/freshrss), third-party feed reader, the same way. ReadKit syncs through its API here too.
+	@rss host rss.{$HOME_DOMAIN}
+	handle @rss {
+		reverse_proxy 127.0.0.1:5085
+	}
+
 	# Nightscout (deploy/libre/nightscout). WebSockets pass through as they are.
 	@nightscout host nightscout.{$HOME_DOMAIN}
 	handle @nightscout {

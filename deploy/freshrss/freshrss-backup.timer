@@ -1,0 +1,12 @@
+# Starts freshrss-backup.service nightly at 04:45, clear of the other services' backups (03:30 Weather, 03:45 Pay &
+# Pensions, 04:00 Utilities, 04:15 Presents, 04:30 Sure). Persistent: a night missed while the server was off runs at the
+# next boot. Installed and enabled by deploy/freshrss/deploy-freshrss.sh.
+[Unit]
+Description=Nightly FreshRSS backup
+
+[Timer]
+OnCalendar=*-*-* 04:45:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
