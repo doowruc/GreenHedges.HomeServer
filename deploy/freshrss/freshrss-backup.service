@@ -1,0 +1,21 @@
+# FreshRSS's nightly backup (backup.sh), started by freshrss-backup.timer. Installed by
+# deploy/freshrss/deploy-freshrss.sh into /etc/systemd/system/. Runs as root, since it uses docker (the admin user isn't in
+# the docker group); writes only the backups folder (FreshRSS itself writes the users' backup.sqlite, in its container).
+# Settings: /etc/freshrss/backup.env (root, 0600). Run it now with `sudo systemctl start freshrss-backup.service`; its
+# output is in `journalctl -u freshrss-backup`.
+[Unit]
+Description=FreshRSS backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/freshrss/backup.sh
+EnvironmentFile=/etc/freshrss/backup.env
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+ReadWritePaths=/var/lib/freshrss/backups

@@ -39,13 +39,14 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/caddy/` | Caddy, the web apps' front door: `https://<app>.<home domain>` on the tailnet, one wildcard certificate |
 | `deploy/grafana/` | Grafana: dashboards (so far the Weather collector's), its data sources (including the web apps' telemetry) and dashboards as files, deploy and database scripts |
 | `deploy/sure/`, `docs/sure/` | [Sure](https://github.com/we-promise/sure), a self-hosted personal finance app (third-party, in Docker): compose file, deploy script, nightly backup and host setup |
+| `deploy/freshrss/`, `docs/freshrss/` | [FreshRSS](https://github.com/FreshRSS/FreshRSS), a self-hosted feed reader (third-party, in Docker) that ReadKit syncs with: compose file, deploy script, nightly backup and host setup |
 | `deploy/telemetry/` | Where the web apps' OpenTelemetry goes, for Grafana: Alloy (OTLP) into Loki, Tempo and Prometheus, in Docker; deploy script and host setup |
 | `deploy/deploy.sh` | Publishes services and installs them on the host: `deploy/deploy.sh all`, or name them (`deploy/deploy.sh libre weather`; `deploy/<service>/deploy.sh` for one). Services run on the host's .NET runtime (Ubuntu's package); `--self-contained` bundles the SDK's runtime instead, for a security fix Ubuntu hasn't shipped yet |
 | `deploy/libre/` | The Libre collector's systemd unit, deploy script, host setup and Nightscout stack |
 | `docs/libre/` | Its README (setup and use) and design notes |
 | `deploy/weather/` | The Weather collector's systemd unit, deploy script and host setup |
 | `docs/weather/` | Its README (day to day) and design notes |
-| `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities\|presents\|sure>`) |
+| `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities\|presents\|sure\|freshrss>`) |
 | `deploy/aws/` | CloudFormation for the shared off-site backup bucket and its write-only users |
 | `deploy/local.env.example` | Personal defaults for the deploy scripts (copy to the git-ignored `deploy/local.env`) |
 

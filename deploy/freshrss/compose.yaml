@@ -1,0 +1,54 @@
+# FreshRSS (https://github.com/FreshRSS/FreshRSS): a self-hosted feed reader, in place of Feedly, at
+# https://rss.<home domain> on the tailnet, through Caddy. ReadKit (Mac, iPad) syncs with it over its API. Installed on the
+# host in /opt/freshrss; data in /var/lib/freshrss. See deploy/freshrss/HOST-SETUP.md. Install or update with
+# deploy/freshrss/deploy-freshrss.sh.
+#
+# One container (Apache + PHP, with cron for the feed refreshes) and FreshRSS's built-in SQLite: no database server and
+# no secrets in the environment. The first start is unconfigured; FreshRSS's web installer then writes data/config.php
+# and the first user (HOST-SETUP.md §4). Only port 127.0.0.1:5085 is published (Docker's published ports bypass ufw).
+
+name: freshrss
+
+services:
+  freshrss:
+    # Pinned to a release (image tags have no "v"). Upgrading is an edit here and a deploy: releases at
+    # https://github.com/FreshRSS/FreshRSS/releases, and read their notes first. The Debian image, not -alpine: the
+    # CLI commands in HOST-SETUP.md and backup.sh run as its www-data user.
+    image: freshrss/freshrss:1.30.4
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: Europe/London
+      # The image's cron refreshes every feed at these minutes (each feed can also set its own interval in FreshRSS).
+      CRON_MIN: "1,16,31,46"
+      # Caddy reaches the container through Docker's port proxy, so requests come from the bridge gateway (in
+      # 172.16.0.0/12). Trust X-Forwarded-For and -Proto from there only: logs then show the tailnet device, and FreshRSS
+      # sees https.
+      TRUSTED_PROXY: 172.16.0.0/12
+    volumes:
+      # Apache runs as www-data (33:33, the same ids as the host's unused www-data); the entrypoint (root) gives data/
+      # to group www-data with group write. data/ holds config.php, and per user their settings and SQLite database
+      # (users/<user>/db.sqlite): the only thing to back up.
+      - /var/lib/freshrss/data:/var/www/FreshRSS/data
+      # A named volume, as upstream, so Docker fills it from the image's own extensions folder. Not backed up:
+      # extensions can be installed again.
+      - extensions:/var/www/FreshRSS/extensions
+    ports:
+      - "127.0.0.1:5085:80"
+    networks:
+      - freshrss_net
+    # No healthcheck: FreshRSS's own (cli/health.php) fails until the web installer has run, which would stop the
+    # first deploy's --wait. deploy-freshrss.sh runs it once installed.
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  extensions:
+
+networks:
+  freshrss_net:
