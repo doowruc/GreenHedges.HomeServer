@@ -8,7 +8,10 @@ third-party software: it runs here as it comes, in Docker, and nothing in `src/`
   address, so each device needs Tailscale (VPN On Demand) to sync.
 - **Version:** pinned to a release (see `image:` in the compose file); upgrade by editing it and redeploying.
 - **What runs:** one container, `freshrss/freshrss` (Apache, PHP and cron), on `127.0.0.1:5085`, from
-  [`deploy/freshrss/compose.yaml`](../../deploy/freshrss/compose.yaml). Feeds refresh at minutes 1, 16, 31 and 46.
+  [`deploy/freshrss/compose.yaml`](../../deploy/freshrss/compose.yaml). A refresh runs every 5 minutes and fetches each
+  feed once its minimum time between refreshes has passed (set to 20 minutes, FreshRSS's lowest; its default is 1 hour),
+  so a new post shows within about 20-25 minutes. Actualise follows the same rule; refreshing one feed from its own menu
+  fetches it at once.
 - **Data:** FreshRSS's built-in SQLite, one database per user, in `/var/lib/freshrss/data`. No database server.
 - **Setup:** [`deploy/freshrss/HOST-SETUP.md`](../../deploy/freshrss/HOST-SETUP.md), including the move from Feedly
   (OPML) and ReadKit. Update with `deploy/freshrss/deploy-freshrss.sh`.
