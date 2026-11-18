@@ -20,8 +20,11 @@ services:
       - no-new-privileges:true
     environment:
       TZ: Europe/London
-      # The image's cron refreshes every feed at these minutes (each feed can also set its own interval in FreshRSS).
-      CRON_MIN: "1,16,31,46"
+      # The image's cron runs a refresh at these minutes. Each run fetches only the feeds whose minimum time between
+      # refreshes (FreshRSS: Settings → Archiving, default 1 hour, lowest 20 minutes; or per feed) has passed, so a
+      # frequent run costs little, and with 20 minutes a feed is fetched every 20-25 minutes. (Every 15 minutes would make
+      # it 30: the run 15 minutes after a fetch is too early.)
+      CRON_MIN: "*/5"
       # Caddy reaches the container through Docker's port proxy, so requests come from the bridge gateway (in
       # 172.16.0.0/12). Trust X-Forwarded-For and -Proto from there only: logs then show the tailnet device, and FreshRSS
       # sees https.

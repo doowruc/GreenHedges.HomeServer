@@ -98,6 +98,10 @@ Then, signed in:
   off (FreshRSS's defaults: only you, the admin), and tick **Allow API access (required for mobile apps)**.
 - **Settings → Profile → API management**: set an **API password**, generated in your password manager ("Home server
   FreshRSS API password") and pasted in. ReadKit signs in with this, not your web password.
+- **Settings → Archiving**: set **Do not automatically refresh more often than** to **20 minutes** (the lowest; the
+  default is 1 hour). The refresh runs every 5 minutes but fetches a feed only once this has passed since its last
+  fetch, so new posts then show within about 20-25 minutes. **Actualise** follows the same rule; to fetch one feed now,
+  refresh it from its own menu.
 
 ## 5. Move from Feedly
 
@@ -105,7 +109,7 @@ Then, signed in:
    holds only the subscriptions and their folders: read state and saved (starred) articles don't come across, so save
    anything you want to keep first.
 2. **Import** in FreshRSS: **Subscription management → Import / export → Import**, choose the `.opml` file. The
-   folders become categories. The next refresh (minutes 1, 16, 31 and 46) fetches them, or use **Actualise** now.
+   folders become categories. The next refresh (every 5 minutes) fetches them, or use **Actualise** now.
 3. **ReadKit** (Mac and iPad; the free version has one account, so this replaces Feedly): remove the Feedly account,
    then add a **FreshRSS** account with the server address `https://rss.<home domain>`, your username and the **API
    password**. If ReadKit asks for the API address rather than the site, FreshRSS shows it under **Settings → Profile →
