@@ -1,0 +1,131 @@
+SPDX-License-Identifier: GPL-2.0-only
+
+Changes to UGREEN's DXP2800 GT driver (ugreen-opensource/kernel-6.12, drivers/ugreen/ug_201x.c and
+leds-sio-201x.c at commit 0e4d73a6893d2aaa9772345c85bcccb3798784c1), applied by DKMS before building.
+This file is a modification of GPL-2.0 code, so it is GPL-2.0-only, unlike the rest of this repository (MIT).
+
+- /proc/it86/fan and startup are root-only (0600) and temp read-only (0444); UGREEN made them writable by anyone,
+  so any local account could stop the fans or change the power-on-after-power-fail setting.
+- Writes to fan and startup reject an empty write, which read the byte before their buffer.
+- The proc files are opened with single_open, so they're released with single_release; seq_release leaked a little
+  memory on every open.
+- remove() no longer removes a "version" entry that is never created.
+- LEDs: any brightness above 0 turns the LED on (UGREEN treated only 1 as on, so the kernel's own triggers, which
+  write the maximum, could switch an LED off but never back on); led_set_on_off's bounds check is fixed.
+
+--- a/ug_201x.c
++++ b/ug_201x.c
+@@ -473,7 +473,7 @@
+ 	char *p;
+ 	unsigned long pwm;
+ 
+-	if (count > sizeof(buf) - 1){
++	if (count == 0 || count > sizeof(buf) - 1){
+ 		return -EINVAL;
+ 	}
+ 	if (copy_from_user(buf, buffer, count)) {
+@@ -577,7 +577,7 @@
+     int result = 0;
+     char buf[12] = { '\0' };
+ 
+-    if (count > sizeof(buf) - 1){
++    if (count == 0 || count > sizeof(buf) - 1){
+         return -EINVAL;
+     }
+     if (copy_from_user(buf, buffer, count)) {
+@@ -640,20 +640,20 @@
+     .proc_open           = null_proc_open,
+     .proc_write		= fan_write,
+     .proc_read		= fan_read,
+-    .proc_release        = seq_release,
++    .proc_release        = single_release,
+ };
+ 
+ static const struct proc_ops startup_proc_fops = {
+     .proc_open           = null_proc_open,
+     .proc_write		= startup_write,
+     .proc_read		= startup_read,
+-    .proc_release        = seq_release,
++    .proc_release        = single_release,
+ };
+ 
+ static const struct proc_ops temp_proc_fops = {
+     .proc_open           = null_proc_open,
+     .proc_read		= temp_read,
+-    .proc_release        = seq_release,
++    .proc_release        = single_release,
+ };
+ 
+ static int wdt_start(struct watchdog_device *wdd)
+@@ -734,20 +734,20 @@
+ 		return -ENODEV;
+ 	}
+ 
+-	entry = proc_create_data("fan", S_IWUGO, nas_dir, &fan_proc_fops, NULL);
++	entry = proc_create_data("fan", 0600, nas_dir, &fan_proc_fops, NULL);
+ 	if (!entry) {
+ 		ret = -ENODEV;
+ 		goto remove_dev_dir;
+ 	}
+ 
+ 	/* create /proc/nas/startup */
+-	entry = proc_create_data("startup", S_IRWXUGO, nas_dir, &startup_proc_fops, NULL);
++	entry = proc_create_data("startup", 0600, nas_dir, &startup_proc_fops, NULL);
+ 	if (!entry) {
+ 		ret = -ENODEV;
+ 		goto remove_dev_dir;
+ 	}
+ 	
+-	entry = proc_create_data("temp", S_IWUGO, nas_dir, &temp_proc_fops, NULL);
++	entry = proc_create_data("temp", 0444, nas_dir, &temp_proc_fops, NULL);
+ 	if (!entry) {
+ 		ret = -ENODEV;
+ 		goto remove_dev_dir;
+@@ -820,7 +820,6 @@
+ 	remove_proc_entry("fan", nas_dir);
+ 	remove_proc_entry("startup", nas_dir);
+ 	remove_proc_entry("temp", nas_dir);
+-	remove_proc_entry("version", nas_dir);
+ 	remove_proc_entry(MAIN_DIR, NULL);
+ 	ug_201_leds_remove();
+ 	mutex_destroy(&ug_201x_lock);
+--- a/leds-sio-201x.c
++++ b/leds-sio-201x.c
+@@ -136,7 +136,7 @@
+ static int do_color_set(int addr,int color);
+ 
+ static int led_set_on_off(int addr, int run_state) {	
+-    if((0 > addr) || (LED_COUNT < addr) ) {
++    if((0 > addr) || (LED_COUNT <= addr) ) {
+         pr_info("%s addr:%d is invalid\n",__func__, addr);
+         return -EINVAL;
+     }
+@@ -168,19 +168,18 @@
+ static int do_brightness_set(int addr, int brightness) {
+     int run_state = -1;
+     DEBUG_PRINTK(LOG_MSG,"%s, addr:%d, bri:%d\n", __func__,addr,brightness);
+-    if(1 == brightness){
+-        run_state = LED_ON;
+-    }
+-    else if( 0 == brightness) {
++    if( 0 == brightness) {
+         run_state = LED_OFF;
+     }
+-
+-    if(run_state != -1) {
+-        if(run_state != atomic_read(&ug_leds[addr].cur_state.run_state))
+-            led_set_on_off(addr,run_state);
+-        return 0;
++    else {
++        run_state = LED_ON;
+     }
+-    		
++
++    if(run_state != atomic_read(&ug_leds[addr].cur_state.run_state))
++        led_set_on_off(addr,run_state);
++    if(1 == brightness || 0 == brightness)
++        return 0;
++
+     if(atomic_read(&ug_leds[addr].cur_state.brightness) != brightness) {
+         if(mutex_lock_interruptible(&ug_201x_lock) < 0){
+             pr_err("led brightness mux lock failed!\n");
