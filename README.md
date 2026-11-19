@@ -47,6 +47,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/weather/` | The Weather collector's systemd unit, deploy script and host setup |
 | `docs/weather/` | Its README (day to day) and design notes |
 | `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities\|presents\|sure\|freshrss>`) |
+| `deploy/dxp2800gt/` | The UGREEN DXP2800 GT's fans and LEDs under Ubuntu: UGREEN's driver (built and signed by DKMS, with our patch), `ug-hw` running the fans on UGREEN's curves, deploy script and [host setup](deploy/dxp2800gt/HOST-SETUP.md) |
 | `deploy/aws/` | CloudFormation for the shared off-site backup bucket and its write-only users |
 | `deploy/local.env.example` | Personal defaults for the deploy scripts (copy to the git-ignored `deploy/local.env`) |
 
@@ -84,7 +85,9 @@ printf '%s\n' 'export EDITOR=ttt VISUAL=ttt SUDO_EDITOR="$HOME/.local/bin/ttt"' 
 
 ## Licence
 
-[MIT](LICENSE)
+[MIT](LICENSE), except [`deploy/dxp2800gt/driver/ug201x.patch`](deploy/dxp2800gt/driver/ug201x.patch) and
+[`deploy/dxp2800gt/driver/Kbuild`](deploy/dxp2800gt/driver/Kbuild), which are GPL-2.0-only: the patch changes UGREEN's GPL-2.0 driver,
+which is fetched from UGREEN at deploy time and not kept here.
 
 ---
 
