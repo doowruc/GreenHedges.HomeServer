@@ -164,7 +164,7 @@ if you like: `sudo systemctl start freshrss-backup.service`.
 
 ## Backups
 
-Every night at 04:45, [`backup.sh`](backup.sh) (run by `freshrss-backup.timer`) has FreshRSS write a consistent SQLite
+Every night at 04:47, [`backup.sh`](backup.sh) (run by `freshrss-backup.timer`) has FreshRSS write a consistent SQLite
 copy of each user's database (`cli/db-backup.php`, into `users/<user>/backup.sqlite`), checks each copy with SQLite's
 integrity check, packs them with `config.php` and the users' settings into `/var/lib/freshrss/backups`
 (`freshrss-<time>.tar.gz`, 7 kept), uploads an `age`-encrypted copy to the off-site bucket under `freshrss/`, and pings

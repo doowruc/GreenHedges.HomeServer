@@ -53,10 +53,16 @@ for db in "$DATA_DIR"/users/*/backup.sqlite; do
 done
 [ "$USERS" -gt 0 ] || fail "no users/*/backup.sqlite written"
 
-# The settings and the copies; GNU tar's --exclude comes before the names it applies to.
-tar -C "$DATA_DIR" -czf "$TMP" \
+# The settings and the copies; GNU tar's --exclude comes before the names it applies to. Not the users' logs: the feed
+# refresh (every 5 minutes) appends to them. It also creates and removes SQLite's -wal and -shm files beside db.sqlite,
+# which changes the user's folder while tar reads it. tar then exits 1 ("file changed as we read it"); the files backed
+# up don't change after db-backup.php, so 1 is fine, and only 2 or more (a real error) fails the backup.
+TAR_STATUS=0
+tar -C "$DATA_DIR" -czf "$TMP" --warning=no-file-changed \
   --exclude='users/*/db.sqlite' --exclude='users/*/db.sqlite-*' --exclude='users/*/sqlite-backups' \
-  config.php users
+  --exclude='users/*/log*.txt' \
+  config.php users || TAR_STATUS=$?
+[ "$TAR_STATUS" -le 1 ] || fail "tar exited with $TAR_STATUS"
 gzip -t "$TMP" || fail "gzip can't read back $NAME"
 mv "$TMP" "$BACKUP_DIR/$NAME"
 SIZE="$(du -h "$BACKUP_DIR/$NAME" | cut -f1)"

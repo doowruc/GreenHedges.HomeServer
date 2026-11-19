@@ -23,7 +23,7 @@ third-party software: it runs here as it comes, in Docker, and nothing in `src/`
 
 ## Backups
 
-Nightly at 04:45 (`freshrss-backup.timer`): FreshRSS's own consistent SQLite copy of each user's database, checked with
+Nightly at 04:47 (`freshrss-backup.timer`): FreshRSS's own consistent SQLite copy of each user's database, checked with
 SQLite's integrity check and packed with the settings into `/var/lib/freshrss/backups` (`freshrss-<time>.tar.gz`, 7
 kept), an `age`-encrypted copy to the shared off-site bucket under `freshrss/`, and a healthchecks.io heartbeat. The Mac
 pulls the local copies daily (09:05, 30 kept). Setup and restoring:
