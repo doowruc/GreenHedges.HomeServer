@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# UGREEN's two files built as one module, as UGOS does: the LED code uses the fan driver's lock and registers.
+obj-m := ug201x.o
+ug201x-y := ug_201x.o leds-sio-201x.o
