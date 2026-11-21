@@ -44,9 +44,17 @@ trap 'ping_hc /fail' ERR
 echo "$(date '+%Y-%m-%d %H:%M:%S') pulling $NAME backups from $HOST"
 mkdir -p "$DEST"
 
-"$RSYNC" -a --ignore-existing --include="$NAME-*.gz" --exclude='*' \
+# Six tries, 30 seconds apart (about 3 to 5 minutes in all), for the same reason: just after a wake, DNS and the
+# network may not be back yet. --ignore-existing makes a retry fetch only what's still missing.
+tries=0
+until "$RSYNC" -a --ignore-existing --include="$NAME-*.gz" --exclude='*' \
   -e "ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20" \
-  "$REMOTE_USER@$HOST:./" "$DEST/"
+  "$REMOTE_USER@$HOST:./" "$DEST/"; do
+  tries=$((tries + 1))
+  [ "$tries" -lt 6 ] || { echo "$(date '+%Y-%m-%d %H:%M:%S') rsync failed $tries times, giving up" >&2; false; }
+  echo "$(date '+%Y-%m-%d %H:%M:%S') rsync failed, retrying in 30 seconds" >&2
+  sleep 30
+done
 
 # Keep the newest $KEEP backups (names sort by timestamp).
 find "$DEST" -maxdepth 1 -name "$NAME-*.gz" | sort -r | tail -n +$((KEEP + 1)) | while read -r old; do
