@@ -53,7 +53,15 @@ back on the network, Eufy, the ZBT-1).
 
 - **The ZBT-1 Zigbee dongle**: not needed while the Hue bridge is supported. No USB passthrough, no `privileged`.
 - **Eufy** doorbell and HomeBase: community integration only (HACS plus an `eufy-security-ws` container), cloud
-  dependent and the most fragile part.
+  dependent and the most fragile part. **The models (checked 2026-11-24):** the doorbell is a **T8210** (Video
+  Doorbell S220, the battery 2K model, here run from the old doorbell wires, so it stays charged) on a **HomeBase 2,
+  T8010** (also called HomeBase S280). Both are marked "Supported" in eufy-security-client's
+  [supported devices list](https://github.com/bropat/eufy-security-client/blob/master/docs/supported_devices.md) (the
+  library behind the bridge), with no per-feature notes; Eufy's own HomeBase compatibility guide lists the T8210 on
+  the HomeBase 2. Expected: presses, motion, battery and status reliably; snapshots and live view best effort, as
+  video goes through the HomeBase over Eufy's peer-to-peer connection, not a local RTSP stream. If taken up: a
+  separate Eufy account shared the devices, the `eufy-security-ws` container on HA's network with that account in a
+  root-only env file, HACS, the Eufy Security integration, and a DHCP reservation for the HomeBase.
 - **Alexa through HA** (Nabu Casa, or my own skill and Lambda): Alexa keeps its own Hue and Tapo skills.
 - **Matter**, Bluetooth and anything that needs HA's network discovery.
 - **Off-site backups, heartbeat and the Mac's pull**: HA's own local backups only (see "Backups").
