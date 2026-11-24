@@ -1,0 +1,48 @@
+# Home Assistant (https://www.home-assistant.io/), on trial: one app and dashboard for the house's smart devices
+# (Hue through its bridge, Tapo through its hub), at https://ha.<home domain> on the tailnet, through Caddy. Installed
+# on the host in /opt/home-assistant; data in /var/lib/home-assistant. See deploy/home-assistant/HOST-SETUP.md and
+# docs/home-assistant/PLAN.md. Install or update with deploy/home-assistant/deploy-home-assistant.sh.
+#
+# Not the host network HA's own guide uses: discovery (mDNS, SSDP) wouldn't get past ufw anyway, and the Hue bridge and
+# Tapo devices are added by address, with every connection going out from HA. So, as FreshRSS: its own bridge network
+# and only 127.0.0.1:8123 published (Docker's published ports bypass ufw). No privileged, no devices: no USB dongle or
+# Bluetooth in the trial. Matter or Bluetooth later would need host networking.
+
+name: homeassistant
+
+services:
+  homeassistant:
+    # Pinned to a release. Upgrading is an edit here and a deploy: releases at
+    # https://github.com/home-assistant/core/releases; read the release notes' "Backward-incompatible changes" first.
+    image: ghcr.io/home-assistant/home-assistant:2026.11.3
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      TZ: Europe/London
+    volumes:
+      # HA's whole state: configuration.yaml, .storage/ (integrations, users, sign-ins such as the TP-Link account), the
+      # recorder's SQLite database and backups/. HA runs as root in the official image, so the folder is root's 0700.
+      - /var/lib/home-assistant/config:/config
+    ports:
+      - "127.0.0.1:8123:8123"
+    networks:
+      - homeassistant_net
+    # manifest.json needs no sign-in, and answers once the web server is up (also before onboarding). Python, because
+    # it's certainly in the image.
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8123/manifest.json', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    # HA uses about 300-600 MB with a few integrations.
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  homeassistant_net:

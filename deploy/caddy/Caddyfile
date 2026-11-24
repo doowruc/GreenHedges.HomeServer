@@ -93,6 +93,13 @@
 		reverse_proxy 127.0.0.1:3000
 	}
 
+	# Home Assistant (deploy/home-assistant), on trial. WebSockets pass through as they are. HA trusts X-Forwarded-For
+	# only from the Docker bridge range, set in its own Network settings (HOST-SETUP.md §3).
+	@ha host ha.{$HOME_DOMAIN}
+	handle @ha {
+		reverse_proxy 127.0.0.1:8123
+	}
+
 	# Any other name under the wildcard: no such app.
 	handle {
 		respond "Not found" 404
