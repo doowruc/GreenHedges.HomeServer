@@ -142,12 +142,19 @@ Done so far is marked **(done)**, with what was found.
      addresses and add them the same way.
 5. **(partly) The app** on the iPhone, a dashboard and a first few automations.
    - **Dashboard (done):** a **Home** dashboard, the default for all users: a **House** view with a section per room
-     (room light, then its bulbs) and a **Batteries** view (Hue dimmers and Tapo buttons). Section headings and icons
-     are copied from the areas, so they're updated by hand when an area changes. The built-in Overview is left as HA
-     makes it.
-   - **Renames:** done in the Hue (or Tapo) app, so Alexa gets them too. HA picks up device and light names from the
-     bridge, but not area names (renamed in HA to match) or the dashboard's headings. Entity IDs keep their old names,
-     and the dashboard refers to IDs, so it keeps working.
+     and a **Batteries** view (Hue dimmers and Tapo buttons). One button per thing that's switched together: a room
+     with one bulb shows the bulb; a room whose bulbs always go together shows a group (a Hue room, or an HA group);
+     no individual bulbs from those. Section headings and icons are copied from the areas, so they're updated by hand
+     when an area changes. The built-in Overview is left as HA makes it.
+   - **Groups (HA light groups):** for Tapo bulbs that are always switched together, as Tapo groups don't reach HA:
+     the kitchen's nine, and the two in each of two rooms. They're helpers (**Settings → Devices & services →
+     Helpers**), each in its room's area, and HA-only: Alexa and the Tapo app don't see them. Hue rooms are already
+     groups (HA shows each as a light), so Hue needs none.
+   - **Renames:** done in the Hue or Tapo app, so Alexa gets them too, in sentence case ("Kitchen light A1", "Office
+     light", "<room> lights" for a group). **Hue** renames reach HA by themselves; **Tapo** renames need the device's
+     TP-Link entry reloaded (the device's ⋮ → Reload). Neither renames HA's areas, which are renamed in HA to match the
+     Hue rooms, or the dashboard's headings. HA's own groups are renamed in HA. Entity IDs keep their old names, and
+     the dashboard refers to IDs, so it keeps working.
    - **To do:** the app on the iPhone (and the Mac's), and the first automations.
 6. **(done) Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the
    private notes, with the devices' names in HA, the areas and the dashboard.
