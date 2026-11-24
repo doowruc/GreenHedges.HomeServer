@@ -5,7 +5,8 @@ whether one app and dashboard for the house's smart devices, with automations ac
 to look after. Nothing in the house changes during the trial: the devices stay on their own hubs and Alexa keeps
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
-**Status:** step 1 (the deploy files) written 2026-11-24; not deployed yet.
+**Status:** deployed and set up 2026-11-24 (steps 1-4), with Hue and the Tapo hub; the trial runs to about
+2026-12-15.
 
 ## Why, and what it should show
 
@@ -42,10 +43,15 @@ Today each brand has its own app (Hue, Tapo, Eufy) and Alexa ties them together 
 - **Tapo buttons (S200B):** HA's docs say the built-in integration doesn't report presses of hub-connected buttons:
   they show up, but only with connection entities. So "a Tapo button drives Hue lights" may not work through the
   built-in integration. Alternatives, after the trial: the H100 as a **Matter bridge** into HA (needs a Matter Server
-  container and host networking), or a community integration.
+  container and host networking), or a community integration. **Found (2026-11-24):** confirmed. The buttons come in
+  (battery entities disabled by default) but presses never reach HA: python-kasa found the hub's press log isn't
+  readable over the local API, so this won't be fixed in the integration. For HA automations, use Hue buttons and
+  dimmers (their presses do come through), or Zigbee buttons on the ZBT-1 later.
 - **H100 firmware:** some newer H100 firmware uses an encryption scheme the built-in integration refuses ("Unsupported
   device ... TPAP"). Check whether ours sets up. If not, Tapo waits for a fix or a community integration, and the
-  trial carries on with Hue.
+  trial carries on with Hue. **Found (2026-11-24):** ours was refused, and set up after turning on **Third-Party
+  Compatibility** in the Tapo app, which makes it fall back to a sign-in HA supports. TPAP support itself is still an
+  open python-kasa pull request.
 - **Disk writes:** HA's recorder writes every state change to SQLite (`home-assistant_v2.db`), and the NVMe is at 57%
   of its rated writes. Watch the writes during the trial (`sysstat` already collects them) and trim the recorder if
   they're high.
