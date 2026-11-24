@@ -6,7 +6,9 @@ to look after. Nothing in the house changes during the trial: the devices stay o
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
 **Status:** deployed and set up 2026-11-24, with Hue, the Tapo hub and the Tapo and Kasa Wi-Fi devices, areas, a
-dashboard, the app and a low battery alert, with a cross-brand automation tested and then removed (steps 1-4 and 6 done, step 5 mostly: see "Steps"); the trial runs to about 2026-12-15.
+dashboard, the app and a low battery alert, with a cross-brand automation tested and then removed (steps 1-4 and 6 done, step 5 mostly: see "Steps"). **Early verdict
+(2026-11-24): likely keep**, subject to the disk-write check about 2026-12-01 (see "Verdict so far"); the trial runs
+to about 2026-12-15.
 
 ## Why, and what it should show
 
@@ -16,6 +18,24 @@ Today each brand has its own app (Hue, Tapo, Eufy) and Alexa ties them together 
 - **Automations:** are there automations worth having that Alexa routines can't do (conditions, state, time windows,
   one brand driving another)?
 - **Cost:** memory, disk writes and upkeep (HA releases monthly) on the server.
+
+### Verdict so far (2026-11-24)
+
+**Likely keep.** The early answers, after the first day:
+
+- **One app: yes.** HA's app and the **Home** dashboard control the Hue and Tapo lights together, so it replaces the
+  Hue and Tapo apps day to day, and it passes the household test. Alexa stays for voice.
+- **Automations: proven.** A Hue switch press drove a Kasa lamp within milliseconds (tested, then removed as not
+  wanted in that room), and a low battery alert across both brands runs daily. Automations that Hue can run alone stay
+  on the bridge (see "Decided").
+- **Cost: still to check.** Memory (capped at 1 GB: check with `docker stats`, HOST-SETUP §7) and **disk writes**,
+  the main question (the NVMe is at 57% of
+  its rated writes). Compare with the baseline about **2026-12-01**: if HA adds little, keep it; if a lot, trim the
+  recorder first.
+
+**If kept** (step 7): the full backups (an off-site copy by a `home-assistant-backup.timer`, its IAM user, a
+healthchecks.io check and the Mac's pull, as for FreshRSS), then the next stage as wanted (the Tapo plugs when they're
+back on the network, Eufy, the ZBT-1).
 
 ## Scope
 
@@ -176,7 +196,8 @@ Done so far is marked **(done)**, with what was found.
 6. **(done) Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the
    private notes, with the devices' names in HA, the areas and the dashboard.
 7. **After about three weeks: decide.** Keep it (then backups as above, and the next stage: Tapo buttons, Eufy, Alexa
-   or the ZBT-1) or remove it.
+   or the ZBT-1) or remove it. **Early verdict: likely keep** (see "Verdict so far"); the disk-write check about
+   2026-12-01 decides.
 
 ## Removing it
 
