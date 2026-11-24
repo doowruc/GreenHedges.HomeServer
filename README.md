@@ -40,6 +40,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/grafana/` | Grafana: dashboards (so far the Weather collector's), its data sources (including the web apps' telemetry) and dashboards as files, deploy and database scripts |
 | `deploy/sure/`, `docs/sure/` | [Sure](https://github.com/we-promise/sure), a self-hosted personal finance app (third-party, in Docker): compose file, deploy script, nightly backup and host setup |
 | `deploy/freshrss/`, `docs/freshrss/` | [FreshRSS](https://github.com/FreshRSS/FreshRSS), a self-hosted feed reader (third-party, in Docker) that ReadKit syncs with: compose file, deploy script, nightly backup and host setup |
+| `deploy/home-assistant/`, `docs/home-assistant/` | [Home Assistant](https://www.home-assistant.io/), home automation (third-party, in Docker), on trial: compose file, deploy script, host setup and the [trial plan](docs/home-assistant/PLAN.md) |
 | `deploy/telemetry/` | Where the web apps' OpenTelemetry goes, for Grafana: Alloy (OTLP) into Loki, Tempo and Prometheus, in Docker; deploy script and host setup |
 | `deploy/deploy.sh` | Publishes services and installs them on the host: `deploy/deploy.sh all`, or name them (`deploy/deploy.sh libre weather`; `deploy/<service>/deploy.sh` for one). Services run on the host's .NET runtime (Ubuntu's package); `--self-contained` bundles the SDK's runtime instead, for a security fix Ubuntu hasn't shipped yet |
 | `deploy/libre/` | The Libre collector's systemd unit, deploy script, host setup and Nightscout stack |

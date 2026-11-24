@@ -5,7 +5,7 @@ whether one app and dashboard for the house's smart devices, with automations ac
 to look after. Nothing in the house changes during the trial: the devices stay on their own hubs and Alexa keeps
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
-**Status:** planned, nothing built yet (2026-11-22).
+**Status:** step 1 (the deploy files) written 2026-11-24; not deployed yet.
 
 ## Why, and what it should show
 
