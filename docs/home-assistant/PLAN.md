@@ -5,8 +5,8 @@ whether one app and dashboard for the house's smart devices, with automations ac
 to look after. Nothing in the house changes during the trial: the devices stay on their own hubs and Alexa keeps
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
-**Status:** deployed and set up 2026-11-24 (steps 1-4), with Hue and the Tapo hub; the trial runs to about
-2026-12-15.
+**Status:** deployed and set up 2026-11-24, with Hue, the Tapo hub and the Tapo and Kasa Wi-Fi devices, areas and a
+dashboard (steps 1-4 and 6 done, step 5 partly: see "Steps"); the trial runs to about 2026-12-15.
 
 ## Why, and what it should show
 
@@ -54,7 +54,10 @@ Today each brand has its own app (Hue, Tapo, Eufy) and Alexa ties them together 
   open python-kasa pull request.
 - **Disk writes:** HA's recorder writes every state change to SQLite (`home-assistant_v2.db`), and the NVMe is at 57%
   of its rated writes. Watch the writes during the trial (`sysstat` already collects them) and trim the recorder if
-  they're high.
+  they're high. **Baseline (2026-11-24):** the drive's total written noted (private notes) and the recorder's database
+  at 600 KB; compare after a week (about 2026-12-01).
+- **Hue dimmer batteries:** most of the dimmer switches reported 0-5% battery on the first day. Check one in the Hue
+  app before replacing them: the readings may be stale.
 
 ## Design
 
@@ -117,18 +120,37 @@ automations), so there's no off-site copy, heartbeat or Mac pull yet.
 
 ## Steps
 
-1. **PR: the deploy files.** `deploy/home-assistant/` with `compose.yaml`, `deploy-home-assistant.sh` (copy, validate,
+Done so far is marked **(done)**, with what was found.
+
+1. **(done) PR: the deploy files.** `deploy/home-assistant/` with `compose.yaml`, `deploy-home-assistant.sh` (copy, validate,
    pull, start, check `127.0.0.1:8123` answers; in the style of `deploy-freshrss.sh`) and `HOST-SETUP.md`;
    `docs/home-assistant/README.md`; the `ha` block in the Caddyfile; the README's list of services.
-2. **Server (my commands):** create `/opt/home-assistant` and `/var/lib/home-assistant/config`; run
+2. **(done) Server (my commands):** create `/opt/home-assistant` and `/var/lib/home-assistant/config`; run
    `deploy-home-assistant.sh`; run `deploy-caddy.sh`.
-3. **First run, in the browser:** owner account (password in 1Password); home location, units and time zone; the HTTP
-   proxy settings; automatic backups and their key in 1Password.
-4. **Integrations:** Hue (by the bridge's address; press the bridge's button to pair); TP-Link (the H100 and each Wi-Fi
-   device by address, with the TP-Link account typed into HA's form). Note in the private notes which devices came in
-   and which didn't.
-5. **The app** on the iPhone, a dashboard and a first few automations.
-6. **Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the private notes.
+3. **(done) First run, in the browser:** owner account (password in 1Password); home location, units and time zone;
+   the HTTP proxy settings; automatic backups and their key in 1Password. Backups go to "This system", HA's only local
+   choice (no path to pick).
+4. **(done) Integrations:** Hue (by the bridge's address; press the bridge's button to pair); TP-Link (the H100 and
+   each Wi-Fi device by address, with the TP-Link account typed into HA's form). Note in the private notes which
+   devices came in and which didn't.
+   - **Hue:** found by Philips' online discovery; the bulbs, rooms, zones, scenes and dimmer switches came in, and the
+     rooms became HA areas. Four spare bulbs (not plugged in) are disabled in HA rather than left unavailable.
+   - **Tapo:** the hub after turning on Third-Party Compatibility (see "Known limits"), then every Wi-Fi bulb and switch
+     (and a Kasa bulb) by address; after the hub, no further sign-in was asked for. Each needed a **DHCP reservation**
+     on the router first, at the address it already had. Areas assigned by hand, as the Tapo devices brought none.
+   - **Tapo plugs:** not yet; they run seasonal lights and join the network when those go up. Then: reserve their
+     addresses and add them the same way.
+5. **(partly) The app** on the iPhone, a dashboard and a first few automations.
+   - **Dashboard (done):** a **Home** dashboard, the default for all users: a **House** view with a section per room
+     (room light, then its bulbs) and a **Batteries** view (Hue dimmers and Tapo buttons). Section headings and icons
+     are copied from the areas, so they're updated by hand when an area changes. The built-in Overview is left as HA
+     makes it.
+   - **Renames:** done in the Hue (or Tapo) app, so Alexa gets them too. HA picks up device and light names from the
+     bridge, but not area names (renamed in HA to match) or the dashboard's headings. Entity IDs keep their old names,
+     and the dashboard refers to IDs, so it keeps working.
+   - **To do:** the app on the iPhone (and the Mac's), and the first automations.
+6. **(done) Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the
+   private notes, with the devices' names in HA, the areas and the dashboard.
 7. **After about three weeks: decide.** Keep it (then backups as above, and the next stage: Tapo buttons, Eufy, Alexa
    or the ZBT-1) or remove it.
 
@@ -145,3 +167,8 @@ it out of `SERVER.md`. Nothing in the house needs undoing: the hubs, devices and
 - Alexa unchanged.
 - **Name:** `ha.<home domain>` (2026-11-24).
 - **Trial backups:** HA's own only; the full set only if HA stays (2026-11-24).
+- **Claude through HA's MCP Server** (2026-11-24): HA's **Model Context Protocol Server** integration is on, and
+  Claude Code connects to `https://ha.<home domain>/api/mcp` (signing in through HA's OAuth). It needs HA's own URL
+  set (**Settings → System → Network**, the local network URL `https://ha.<home domain>`), or HA's OAuth metadata has
+  no issuer and the sign-in fails. It offers HA's Assist tools (control devices, read their state), not settings:
+  areas, the dashboard and device setup were done through HA's own websocket API in the browser.
