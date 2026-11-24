@@ -123,7 +123,7 @@ The old file server's shares are mounted by the host, not by the containers, rea
 ### Network: the TVs need a LAN port
 
 Every service here is on `127.0.0.1` behind Caddy, reached over Tailscale, and the firewall rule so far is **no LAN
-ports**. Roku TVs can't run Tailscale, so the media server is the first exception:
+ports**. Roku TVs can't run Tailscale, so the media server is the first exception (agreed 2026-11-24):
 
 - **Jellyfin** publishes `8096` on the server's **LAN address** (not `0.0.0.0`). Docker's published ports bypass
   `ufw`, so the bind address is what keeps it off any other interface. The Roku app connects to the server's LAN name
@@ -231,10 +231,14 @@ On the server: `sudo docker compose -f /opt/<server>/compose.yaml down --rmi all
 the `media` user; Caddy's `jellyfin` block. The old file server and its shares are never changed, apart from the
 read-only account.
 
+## Decided
+
+- **The LAN exception** (2026-11-24): a LAN-only port for the TVs is acceptable, as in "Network: the TVs need a LAN
+  port": bound to the server's LAN address only, nothing public, Plex's Remote Access off. No alternative lets a Roku
+  reach the server.
+
 ## Open questions
 
-- **The LAN exception:** is a LAN-only port for the TVs acceptable, as above? (No alternative lets a Roku reach the
-  server.)
 - **The photo copies' size and place:** the NVMe, or the old file server (a writable share), until the drives go in?
   Decided by the HEIC count in step 6.
 - **Script or .NET service** for the photo job.
