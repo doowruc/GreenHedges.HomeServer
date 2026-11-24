@@ -6,7 +6,7 @@ to look after. Nothing in the house changes during the trial: the devices stay o
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
 **Status:** deployed and set up 2026-11-24, with Hue, the Tapo hub and the Tapo and Kasa Wi-Fi devices, areas, a
-dashboard, the app and a first automation (steps 1-4 and 6 done, step 5 mostly: see "Steps"); the trial runs to about 2026-12-15.
+dashboard, the app and two automations (steps 1-4 and 6 done, step 5 mostly: see "Steps"); the trial runs to about 2026-12-15.
 
 ## Why, and what it should show
 
@@ -162,8 +162,14 @@ Done so far is marked **(done)**, with what was found.
      one notification to the iPhone's app listing them; nothing on days with none. It picks batteries by **device
      class**, not a list, so new battery devices are included without editing it. Tested 2026-11-24: the notification
      arrived. Neither brand's app does this across both brands.
-   - **To do:** more automations, ideally ones Alexa routines can't do, such as a Hue dimmer switch (whose presses do
-     reach HA) also switching a Tapo or Kasa light.
+   - **Second automation (done): a Hue switch drives a Kasa lamp.** The Hue dimmer switch (the older RWL021: On, dim
+     up, dim down, Off) in one room also controls that room's Kasa lamp: On and Off switch it, and the dim buttons
+     step it 10% (held: keeps stepping). HA shows each button as an **event entity**; the automation triggers on those
+     and acts on `short_release` (and `repeat` for dimming), ignoring the `initial_press` that comes first. The switch
+     still controls its Hue room as before; the lamp only follows while HA is up. Tested 2026-11-24: On and Off
+     reached the lamp within milliseconds of the press reaching HA. This is the trial's "one brand driving another":
+     neither brand's app can use a Hue switch press to drive a Kasa light (and Alexa routines don't, as set up here).
+   - **To do:** more automations as they come up.
 6. **(done) Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the
    private notes, with the devices' names in HA, the areas and the dashboard.
 7. **After about three weeks: decide.** Keep it (then backups as above, and the next stage: Tapo buttons, Eufy, Alexa
