@@ -185,8 +185,8 @@ A small job on the server that keeps a JPEG copy of every HEIC photo, for the me
 - **Size:** at about 0.5 MB a copy, 10,000 photos is about 5 GB. Count the HEIC files on the share before the first
   run (test step); if it doesn't fit comfortably in the 112 GB free, the copies wait for the hard drives.
 - **Watched** like the other jobs: a healthchecks.io heartbeat each night, an alert on failure.
-- **Where it lives:** a shell script and timer in `deploy/media-server/` to start with. If it grows (reports, retries,
-  alerts with detail), a small .NET service under `src/` like the collectors.
+- **Where it lives:** a shell script and timer in `deploy/media-server/` (decided 2026-11-24). If it ever grows
+  (reports, retries, alerts with detail), it can become a small .NET service under `src/` like the collectors.
 
 ### Backups
 
@@ -236,12 +236,13 @@ read-only account.
 - **The LAN exception** (2026-11-24): a LAN-only port for the TVs is acceptable, as in "Network: the TVs need a LAN
   port": bound to the server's LAN address only, nothing public, Plex's Remote Access off. No alternative lets a Roku
   reach the server.
+- **The photo job is a shell script** (2026-11-24), with a systemd timer: it's a loop around `heif-convert` and
+  `exiftool`, so a .NET service would be more to build than it's worth.
 
 ## Open questions
 
 - **The photo copies' size and place:** the NVMe, or the old file server (a writable share), until the drives go in?
   Decided by the HEIC count in step 6.
-- **Script or .NET service** for the photo job.
 
 ## Sources
 
