@@ -196,3 +196,8 @@ it out of `SERVER.md`. Nothing in the house needs undoing: the hubs, devices and
   set (**Settings → System → Network**, the local network URL `https://ha.<home domain>`), or HA's OAuth metadata has
   no issuer and the sign-in fails. It offers HA's Assist tools (control devices, read their state), not settings:
   areas, the dashboard and device setup were done through HA's own websocket API in the browser.
+- **Hue's own automations stay on the bridge** (2026-11-24): e.g. a light on around sunset and off around sunrise
+  (randomised). The bridge runs them itself, without the internet (only its clock sync needs it); in HA the same
+  automation would also depend on the server, Docker, HA and the network, with the bridge still doing the switching.
+  HA sees each as a switch (pause or resume it from HA). Move one to HA only when it needs something Hue can't do: a
+  Tapo device, a sensor, or who's home.
