@@ -8,7 +8,7 @@ The details: the comments in [`compose.yaml`](compose.yaml).
 **First:** Docker (Libre collector's [HOST-SETUP §9](../libre/HOST-SETUP.md)) and Caddy
 ([deploy/caddy/HOST-SETUP.md](../caddy/HOST-SETUP.md)). It needs about 300-600 MB of RAM (capped at 1 GB). The Hue bridge
 and the Tapo hub and Wi-Fi devices need **fixed addresses**: DHCP reservations on the router (list them in the private
-notes), since HA finds them by address, not by discovery.
+notes), since HA adds the Tapo devices by address (local discovery doesn't get past `ufw`).
 
 ## 1. Folders (on the server)
 
@@ -61,7 +61,9 @@ HA's sign-in.
 
 **Settings → System → Backups → Set up backups:**
 
-- **Automatic:** daily, keep **7**, to **this system** (`/var/lib/home-assistant/config/backups`).
+- **Automatic:** daily, keep **7**, location **This system**: the only local choice, with no path to pick. It's HA's
+  `backups` folder, `/var/lib/home-assistant/config/backups` on the host. (The other locations are cloud or network
+  storage.)
 - **Include:** settings and history.
 - **Encryption key:** HA makes one. Download the **emergency kit** and save it in your password manager ("Home server
   Home Assistant backup key"): **without it a backup can't be restored.**
@@ -73,15 +75,22 @@ During the trial that's all: no off-site copy, heartbeat or Mac pull. If HA stay
 
 **Settings → Devices & services → Add integration:**
 
-- **Philips Hue:** enter the bridge's address (not the discovered one: there won't be any), then press the round button
-  on the bridge when HA asks. The bulbs, rooms, scenes and switches come in. Switch and dimmer presses show as events,
-  for automations.
-- **TP-Link Smart Home:** enter the **H100's** address, then your TP-Link account (typed into HA's form; HA keeps it in
+- **Philips Hue:** HA usually **finds the bridge** itself, through Philips' online discovery service (a request going
+  out, so `ufw` doesn't stop it); otherwise enter its address. Press the round button on the bridge when HA asks. The
+  bulbs, rooms, scenes and switches come in. Switch and dimmer presses show as events, for automations.
+- **TP-Link Smart Home:** first, in the **Tapo app**, turn on **Third-Party Compatibility** (under Me → Third-Party
+  Services). Newer Tapo firmware signs in with TPAP, which HA's integration (python-kasa) doesn't support yet, and is
+  refused with `Unsupported device ... encrypt_type='TPAP'`; with the setting on, the devices fall back to a sign-in HA
+  supports. Then enter the **H100's** address and your TP-Link account (typed into HA's form; HA keeps it in
   `.storage/`). The hub's devices come in with it. Then the same again for each Tapo device on Wi-Fi (bulbs, plugs) by
   its address.
+  - **S200B buttons** come in, but **can't report presses**: the hub's press log isn't readable over the local API. Their
+    battery entities are disabled by default (HA's diagnostic entities): enable them under **Settings → Entities**
+    (search "battery", select them, enable).
+  - If a Tapo device goes **unavailable** after a firmware update or when a device is added, turn Third-Party
+    Compatibility off and on again.
 
-Two things to watch for (PLAN.md, "Known limits"): the S200B buttons come in without press events, and some newer H100
-firmware is refused ("Unsupported device ... TPAP"). Note in the private notes what came in and what didn't.
+Note in the private notes what came in and what didn't.
 
 ## 6. The app
 
