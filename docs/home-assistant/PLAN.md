@@ -132,15 +132,10 @@ On the server: `sudo docker compose -f /opt/home-assistant/compose.yaml down --r
 `/opt/home-assistant` and `/var/lib/home-assistant`; take the `ha` block out of the Caddyfile and redeploy Caddy; take
 it out of `SERVER.md`. Nothing in the house needs undoing: the hubs, devices and Alexa were never changed.
 
-## Decided, and still open
-
-**Decided:**
+## Decided
 
 - HA Container, not HA OS (HA OS wants the whole machine).
 - Hue stays on its bridge; the ZBT-1 waits.
 - Alexa unchanged.
-
-**Open (before step 1):**
-
-- **Name:** `ha.<home domain>`, or something else?
-- **Trial backups:** HA's own only (as above), or the full set from the start?
+- **Name:** `ha.<home domain>` (2026-11-24).
+- **Trial backups:** HA's own only; the full set only if HA stays (2026-11-24).
