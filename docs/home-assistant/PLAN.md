@@ -5,8 +5,8 @@ whether one app and dashboard for the house's smart devices, with automations ac
 to look after. Nothing in the house changes during the trial: the devices stay on their own hubs and Alexa keeps
 working as it does now. If it isn't worth it, removing it is one container and three folders.
 
-**Status:** deployed and set up 2026-11-24, with Hue, the Tapo hub and the Tapo and Kasa Wi-Fi devices, areas and a
-dashboard (steps 1-4 and 6 done, step 5 partly: see "Steps"); the trial runs to about 2026-12-15.
+**Status:** deployed and set up 2026-11-24, with Hue, the Tapo hub and the Tapo and Kasa Wi-Fi devices, areas, a
+dashboard, the app and a first automation (steps 1-4 and 6 done, step 5 mostly: see "Steps"); the trial runs to about 2026-12-15.
 
 ## Why, and what it should show
 
@@ -140,7 +140,9 @@ Done so far is marked **(done)**, with what was found.
      on the router first, at the address it already had. Areas assigned by hand, as the Tapo devices brought none.
    - **Tapo plugs:** not yet; they run seasonal lights and join the network when those go up. Then: reserve their
      addresses and add them the same way.
-5. **(partly) The app** on the iPhone, a dashboard and a first few automations.
+5. **(mostly) The app** on the iPhone, a dashboard and a first few automations.
+   - **The app (done):** on the iPhone, the iPad and the Mac, each signed in at `https://ha.<home domain>`. Each
+     registers with HA as a device, which gives HA a notification service for it (`notify.mobile_app_<device>`).
    - **Dashboard (done):** a **Home** dashboard, the default for all users: a **House** view with a section per room
      and a **Batteries** view (Hue dimmers and Tapo buttons). One button per thing that's switched together: a room
      with one bulb shows the bulb; a room whose bulbs always go together shows a group (a Hue room, or an HA group);
@@ -155,7 +157,13 @@ Done so far is marked **(done)**, with what was found.
      TP-Link entry reloaded (the device's ⋮ → Reload). Neither renames HA's areas, which are renamed in HA to match the
      Hue rooms, or the dashboard's headings. HA's own groups are renamed in HA. Entity IDs keep their old names, and
      the dashboard refers to IDs, so it keeps working.
-   - **To do:** the app on the iPhone (and the Mac's), and the first automations.
+   - **First automation (done): low battery alert.** Every day at 18:00, if any battery sensor is below 20% (the Hue
+     dimmers report a percentage) or any battery binary sensor reports low (the Tapo buttons only say normal or low),
+     one notification to the iPhone's app listing them; nothing on days with none. It picks batteries by **device
+     class**, not a list, so new battery devices are included without editing it. Tested 2026-11-24: the notification
+     arrived. Neither brand's app does this across both brands.
+   - **To do:** more automations, ideally ones Alexa routines can't do, such as a Hue dimmer switch (whose presses do
+     reach HA) also switching a Tapo or Kasa light.
 6. **(done) Notes:** `SERVER.md` (port 8123, folders, the service row, history) and the device addresses in the
    private notes, with the devices' names in HA, the areas and the dashboard.
 7. **After about three weeks: decide.** Keep it (then backups as above, and the next stage: Tapo buttons, Eufy, Alexa
