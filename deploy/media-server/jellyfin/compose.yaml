@@ -1,0 +1,73 @@
+# Jellyfin (https://jellyfin.org/), on trial against Plex: films, TV and photos for the Roku TVs, with hardware
+# transcoding on the graphics chip (PGS subtitles burnt in). Installed on the host in /opt/jellyfin; data in
+# /var/lib/jellyfin. See deploy/media-server/HOST-SETUP.md and docs/media-server/PLAN.md. Install or update with
+# deploy/media-server/deploy-media-server.sh jellyfin.
+#
+# ${…} come from /opt/jellyfin/.env, a link to /etc/media-server/compose.env (compose.env.example).
+#
+# The first service here with a LAN port: Roku TVs can't use Tailscale, so 8096 is published on the server's LAN address
+# (and nothing else but 127.0.0.1, for Caddy). Docker's published ports bypass ufw: the bind address is the boundary.
+
+name: jellyfin
+
+services:
+  jellyfin:
+    # Pinned to a release. Upgrading is an edit here and a deploy: releases at
+    # https://github.com/jellyfin/jellyfin/releases (Docker tags at https://hub.docker.com/r/jellyfin/jellyfin/tags);
+    # read the release notes first.
+    image: jellyfin/jellyfin:12.4.20261026-211555
+    restart: unless-stopped
+    # The host's media user, not root; plus the render group, for the graphics chip. (Compose's user: doesn't bring the
+    # user's host groups with it, so the group is added by number.)
+    user: "${MEDIA_UID:?}:${MEDIA_GID:?}"
+    group_add:
+      - "${RENDER_GID:?}"
+    security_opt:
+      - no-new-privileges:true
+    # Only the render node (VA-API, and Vulkan for tone mapping), not the whole of /dev/dri.
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    environment:
+      TZ: Europe/London
+    volumes:
+      # Settings, users, the library database, watched state.
+      - /var/lib/jellyfin/config:/config
+      # Artwork and image caches (rebuilt by a rescan, no backup).
+      - /var/lib/jellyfin/cache:/cache
+      # The media, read-only: /media/films, /media/tv, and /media/photos-tv (the photo job's TV-sized JPEG copies, the
+      # photo library; not /media/photos, the originals). rslave: the shares under /srv/media are systemd automounts,
+      # mounted on the host when first used (or later, if the old file server was off at boot); without it the container
+      # would never see them.
+      - type: bind
+        source: /srv/media
+        target: /media
+        read_only: true
+        bind:
+          propagation: rslave
+    # Transcodes write video segments all the time; the NVMe is at 57% of its rated writes, so they go to memory.
+    # Jellyfin's transcode folder is <cache>/transcodes by default (Dashboard → Playback → Transcoding: check it).
+    # Within the memory limit below.
+    tmpfs:
+      - /cache/transcodes:size=1g,mode=1777
+    ports:
+      - "${LAN_ADDRESS:?}:8096:8096"
+      - "127.0.0.1:8096:8096"
+    networks:
+      - jellyfin_net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    # Jellyfin uses about 0.5-1 GB, plus the transcode folder (up to 1 GB). Raise both with the RAM if a 4K transcode
+    # needs it.
+    mem_limit: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  jellyfin_net:

@@ -100,6 +100,21 @@
 		reverse_proxy 127.0.0.1:8123
 	}
 
+	# Jellyfin (deploy/media-server), on trial: for the tailnet's apps (the Roku TVs use its LAN port). WebSockets pass
+	# through as they are. Jellyfin trusts X-Forwarded-For from its network's gateway, set in its Networking settings
+	# (deploy/media-server/HOST-SETUP.md §5).
+	@jellyfin host jellyfin.{$HOME_DOMAIN}
+	handle @jellyfin {
+		reverse_proxy 127.0.0.1:8096
+	}
+
+	# Plex (deploy/media-server), on trial, the same way: Plex lists https://plex.<home domain>:443 as a custom server
+	# access URL (HOST-SETUP.md §6), so its apps find it over the tailnet.
+	@plex host plex.{$HOME_DOMAIN}
+	handle @plex {
+		reverse_proxy 127.0.0.1:32400
+	}
+
 	# Any other name under the wildcard: no such app.
 	handle {
 		respond "Not found" 404

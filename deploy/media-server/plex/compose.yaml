@@ -1,0 +1,72 @@
+# Plex Media Server (https://www.plex.tv/), on trial against Jellyfin: the same films, TV and photos for the Roku TVs,
+# with hardware transcoding on the graphics chip if Plex manages it on AMD (docs/media-server/PLAN.md). Installed on the
+# host in /opt/plex; data in /var/lib/plex. See deploy/media-server/HOST-SETUP.md. Install or update with
+# deploy/media-server/deploy-media-server.sh plex.
+#
+# ${…} come from /opt/plex/.env, a link to /etc/media-server/compose.env (compose.env.example).
+#
+# 32400 on the server's LAN address, for the Roku TVs (their app finds the server through the Plex account, then
+# connects to the address advertised below), and on 127.0.0.1 for Caddy, for the tailnet. Plex's Remote Access stays
+# off. Docker's published ports bypass ufw: the bind address is the boundary.
+
+name: plex
+
+services:
+  plex:
+    # Pinned to a release. Upgrading is an edit here and a deploy: tags at
+    # https://hub.docker.com/r/plexinc/pms-docker/tags. Plex updates itself inside the container only with
+    # VERSION=latest, which isn't set: the image's own version is what runs.
+    image: plexinc/pms-docker:1.43.5.11079-b3b13e506
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # Only the render node, not the whole of /dev/dri.
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    # The image starts as root and runs Plex as its plex user, given the media user's ids below. The render group is
+    # added for root here; whether the plex user gets it too is checked in HOST-SETUP.md §6 (the image is meant to add
+    # it to the device's group itself).
+    group_add:
+      - "${RENDER_GID:?}"
+    environment:
+      TZ: Europe/London
+      PLEX_UID: "${MEDIA_UID:?}"
+      PLEX_GID: "${MEDIA_GID:?}"
+      # Empty after the first start.
+      PLEX_CLAIM: "${PLEX_CLAIM:-}"
+      # The address the apps are told to use. Without it, Plex would offer its container address, which nothing outside
+      # can reach. The tailnet address (https://plex.<home domain>:443) is added in Plex's own Network settings.
+      ADVERTISE_IP: "http://${LAN_ADDRESS:?}:32400/"
+    volumes:
+      # Plex's whole state: settings, the library database, metadata, watched state.
+      - /var/lib/plex/config:/config
+      # The media, read-only, with rslave for the automounts (as for Jellyfin); the photo library is /media/photos-tv.
+      - type: bind
+        source: /srv/media
+        target: /media
+        read_only: true
+        bind:
+          propagation: rslave
+    # The image's transcoder folder; in memory, as for Jellyfin, within the memory limit.
+    tmpfs:
+      - /transcode:size=1g,mode=1777
+    ports:
+      - "${LAN_ADDRESS:?}:32400:32400"
+      - "127.0.0.1:32400:32400"
+    networks:
+      - plex_net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:32400/identity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    mem_limit: 2g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  plex_net:

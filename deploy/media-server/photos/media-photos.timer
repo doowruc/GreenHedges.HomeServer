@@ -1,0 +1,12 @@
+# Starts media-photos.service nightly at 01:30, before the other services' backups (03:30 to 04:47) and with the house
+# asleep. Persistent: a night missed while the server was off runs at the next boot. Installed and enabled by
+# deploy/media-server/deploy-media-server.sh photos.
+[Unit]
+Description=Nightly media server photo copies
+
+[Timer]
+OnCalendar=*-*-* 01:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
