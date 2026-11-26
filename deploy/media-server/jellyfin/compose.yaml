@@ -34,7 +34,7 @@ services:
       - /var/lib/jellyfin/config:/config
       # Artwork and image caches (rebuilt by a rescan, no backup).
       - /var/lib/jellyfin/cache:/cache
-      # The media, read-only: /media/videos (the video share: its folders are the video libraries) and
+      # The media, read-only: /media/videos (the video share: its folders are the video libraries), /media/music and
       # /media/photos-tv (the photo job's TV-sized JPEG copies, the photo library; not /media/photos, the originals). rslave: the shares under /srv/media are systemd automounts,
       # mounted on the host when first used (or later, if the old file server was off at boot); without it the container
       # would never see them.
