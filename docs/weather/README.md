@@ -30,7 +30,7 @@ Subjects start `[WeatherCollector]`. Every PROBLEM email is followed by one RESO
 | Subject | Meaning | What to do |
 |---|---|---|
 | **No station messages** | Nothing from the station's ids for 5 minutes (it sends every 12 s) | Usually the sensor: batteries, or out of range. Not sent while a receiver or station-id alert already explains it. |
-| **Receiver problem** | rtl_433 finds no usable RTL-SDR dongle, or has restarted 3 times in an hour | Check the dongle is plugged in (`lsusb \| grep 2838`) and the DVB-T driver isn't loaded ([HOST-SETUP §2](../../deploy/weather/HOST-SETUP.md)). rtl_433 is retried with a back-off. |
+| **Receiver problem** | rtl_433 finds no usable RTL-SDR dongle, or has restarted 3 times in an hour (resolved once a run has lasted 10 minutes) | Check the dongle is plugged in (`lsusb \| grep 2838`) and the DVB-T driver isn't loaded ([HOST-SETUP §2](../../deploy/weather/HOST-SETUP.md)). rtl_433 is retried with a back-off. |
 | **Station id changed** | The station's ids are silent and a new sensor of the same model is being heard, first heard after the station went quiet (a neighbour's sensor heard all along doesn't count) | After a battery change the sensor may pick a new id; the email names it. See [Battery changes](#battery-changes). |
 | **Sensor battery low** | The sensor has reported `battery_ok` = 0 for an hour | Change its batteries. |
 | **Backups failing** | No good backup for 36 hours | Check disk space and the log. |
