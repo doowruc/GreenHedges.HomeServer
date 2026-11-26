@@ -14,7 +14,7 @@ photo job at 1.5 GB.
 
 | Where | What |
 |---|---|
-| `/srv/media/{videos,photos}` | The old file server's video and photo shares, read-only CIFS automounts, owned by `media`. Films and TV are folders in the video share. Its "Extra" shares are private and never mounted |
+| `/srv/media/{videos,music,photos}` | The old file server's video, music and photo shares, read-only CIFS automounts, owned by `media`. Films and TV are folders in the video share. Its "Extra" shares are private and never mounted |
 | `/srv/media/photos-tv` | The photo job's copies: a share of their own on the old file server, mounted read-write. Later a dataset on the home server's drives, at the same path |
 | `/etc/media-server/` | `compose.env` (LAN address and ids, for both servers), `smb-credentials` (reader), `smb-credentials-tv` (writer), `photos.env` |
 | `/opt/jellyfin`, `/var/lib/jellyfin/{config,cache}` | Jellyfin's compose file; its settings, library database and caches (`media`) |
@@ -31,7 +31,7 @@ sudo adduser --system --group --no-create-home --home /nonexistent media && sudo
 ```
 
 ```bash
-sudo install -d -m 0755 /srv/media /srv/media/videos /srv/media/photos /srv/media/photos-tv /etc/media-server && sudo chattr +i /srv/media/videos /srv/media/photos /srv/media/photos-tv && sudo install -d -m 0750 -o media -g media /var/lib/jellyfin /var/lib/jellyfin/config /var/lib/jellyfin/cache /var/lib/plex /var/lib/plex/config
+sudo install -d -m 0755 /srv/media /srv/media/videos /srv/media/music /srv/media/photos /srv/media/photos-tv /etc/media-server && sudo chattr +i /srv/media/videos /srv/media/music /srv/media/photos /srv/media/photos-tv && sudo install -d -m 0750 -o media -g media /var/lib/jellyfin /var/lib/jellyfin/config /var/lib/jellyfin/cache /var/lib/plex /var/lib/plex/config
 ```
 
 `chattr +i` makes the empty mount folders unwritable while nothing is mounted on them, so a missing share can never
@@ -54,7 +54,7 @@ sudo apt install cifs-utils libheif-examples imagemagick libimage-exiftool-perl
   **beside** the other shares' folders, never inside one: inside the photo share, the job would find its own copies
   as photos and copy them again, every night. Keep it out of the old file server's backups too (the copies are
   remade from the originals).
-- A **reader** user that may only **read** the video and photo shares, and nothing else (none of the "Extra" shares:
+- A **reader** user that may only **read** the video, music and photo shares, and nothing else (none of the "Extra" shares:
   they're kept private on purpose).
 - A **writer** user that may **read and write** the copies' share, and nothing else.
 
@@ -89,6 +89,7 @@ sudoedit /etc/fstab
 
 ```text
 //<file server>/<video share>  /srv/media/videos  cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
+//<file server>/<music share>  /srv/media/music   cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 //<file server>/<photo share>  /srv/media/photos  cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 //<file server>/<copies share> /srv/media/photos-tv  cifs  rw,vers=2.1,credentials=/etc/media-server/smb-credentials-tv,uid=media,gid=media,file_mode=0664,dir_mode=0775,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 ```
@@ -98,14 +99,16 @@ sudoedit /etc/fstab
 - **`x-systemd.automount`**: mounted the first time something looks, so a boot with the old file server off neither
   hangs nor leaves the mount missing for good. The containers see it through `rslave` (compose files).
 - **`vers=2.1`**: the newest the old file server offers.
+- **A space in a share name** is written `\040` (fstab splits fields on spaces): a share called `My Share` is
+  `//<file server>/My\040Share`.
 
 Load them and look:
 
 ```bash
-sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target && sudo -u media ls /srv/media/videos /srv/media/photos /srv/media/photos-tv | head -20 && sudo -u media touch /srv/media/photos-tv/.write-test && sudo -u media rm /srv/media/photos-tv/.write-test && findmnt -t cifs
+sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target && sudo -u media ls /srv/media/videos /srv/media/music /srv/media/photos /srv/media/photos-tv | head -20 && sudo -u media touch /srv/media/photos-tv/.write-test && sudo -u media rm /srv/media/photos-tv/.write-test && findmnt -t cifs
 ```
 
-The three shares listed as `media`, the write test silent, and `findmnt` showing two `ro` and the copies `rw`.
+The four shares listed as `media`, the write test silent, and `findmnt` showing three `ro` and the copies `rw`.
 
 **Later, the hard drives:** mount their datasets at the same `/srv/media/...` paths (and take these lines out), and the
 libraries carry on without a rescan.
@@ -141,10 +144,12 @@ after the deploy, as whoever gets there first becomes the administrator: `http:/
    Jellyfin").
 2. **Libraries** (Jellyfin's paths, not the host's):
    - **Movies:** content type Movies, folder `/media/videos/Movies`.
-   - **Music:** content type Music Videos, folder `/media/videos/Music`.
+   - **Music Videos:** content type Music Videos, folder `/media/videos/Music`.
    - **TV:** content type Shows, folder `/media/videos/TV`.
    - **YouTube:** content type Shows, folder `/media/videos/YouTube` (a folder per series, episodes named `s01e01`).
    - **Theatre:** content type Movies, folder `/media/videos/Theatre`.
+   - **Music:** content type Music, folder `/media/music` (the music share: MP3 and AAC; its iTunes `.m4p` purchases
+     are copy-protected and won't play anywhere but Apple's apps).
    - Only those folders of the video share: its other folders (`West Ham`, `Wildlife Cam`) stay out unless you add a
      library for one later.
    - **Photos:** content type Photos, folder `/media/photos-tv` (the photo job's copies, §7; empty until it has run).
@@ -205,9 +210,10 @@ note it and stop there, as it needs a change to the compose file.
 
 **First run, from the Mac on the LAN:** `http://<server LAN address>:32400/web`, signed in to the Plex account. Give
 the server a name (not the old file server's), then the libraries, each its own: **Movies** (type Movies)
-`/media/videos/Movies`; **Music** (type Other Videos: Plex has no music video library type, and a Music library
-expects audio) `/media/videos/Music`; **TV** (type TV Shows) `/media/videos/TV`; **YouTube** (type TV Shows)
-`/media/videos/YouTube`; **Theatre** (type Movies) `/media/videos/Theatre`; **Photos** `/media/photos-tv`. Then
+`/media/videos/Movies`; **Music Videos** (type Other Videos: Plex has no music video library type, and a Music
+library expects audio) `/media/videos/Music`; **TV** (type TV Shows) `/media/videos/TV`; **YouTube** (type TV Shows)
+`/media/videos/YouTube`; **Theatre** (type Movies) `/media/videos/Theatre`; **Music** (type Music) `/media/music`; **Photos**
+`/media/photos-tv`. Then
 **Settings**, with **Show Advanced** on:
 
 - **Remote Access: disabled.** Nothing is published to the internet.
@@ -330,6 +336,6 @@ Then its block out of `deploy/caddy/Caddyfile` and Caddy redeployed, its compose
 
 **Everything** (if neither stays): both servers as above; then
 `sudo systemctl disable --now media-photos.timer && sudo rm /etc/systemd/system/media-photos.{service,timer} && sudo systemctl daemon-reload`,
-`sudo rm -rf /opt/media-server /etc/media-server`, the three `/etc/fstab` lines (then `sudo systemctl daemon-reload`
+`sudo rm -rf /opt/media-server /etc/media-server`, the four `/etc/fstab` lines (then `sudo systemctl daemon-reload`
 and a reboot, which leaves the shares unmounted), `sudo chattr -i /srv/media/* && sudo rmdir /srv/media/* /srv/media`
 and `sudo deluser media`. On the old file server: the copies' share and the two users. The originals are untouched.

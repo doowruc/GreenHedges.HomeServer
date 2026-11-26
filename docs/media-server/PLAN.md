@@ -87,13 +87,13 @@ watched most, whichever server wins; burn-in stays for the rest.
 
 - **Jellyfin and Plex**, each in Docker, side by side for the trial, both reading the same shares read-only.
 - **Hardware transcoding** on the Vega graphics, in both.
-- **The SMB shares** (videos, photos) mounted read-only on the server.
+- **The SMB shares** (videos, music, photos) mounted read-only on the server.
 - **The photo job:** JPEG copies of the HEIC photos.
 - **The Roku apps** on the TVs; the iPhone, iPad and Mac apps if wanted, over Tailscale.
 
 **Out, for now:**
 
-- **Music**, audiobooks, live TV and DVR.
+- **Audiobooks**, live TV and DVR. (Music came in on 2026-11-26.)
 - **Watching away from home** beyond the tailnet (no public port, no Plex relay set up on purpose).
 - **Pre-converting PGS to SRT** (worth doing, but a job of its own after the trial).
 - **The hard drives and ZFS**: their own step (`DXP2800-MIGRATION.md` in the private notes). The design below keeps
@@ -107,15 +107,16 @@ The old file server's shares are mounted by the host, not by the containers, at 
 
 | Mount | What |
 |---|---|
-| `/srv/media/videos` | the video share (read-only); its `Movies`, `Music`, `TV`, `YouTube` and `Theatre` folders are a library each |
+| `/srv/media/videos` | the video share (read-only); its `Movies`, `Music` (music videos), `TV`, `YouTube` and `Theatre` folders are a library each |
+| `/srv/media/music` | the music share (read-only), the music library |
 | `/srv/media/photos` | the photo share (read-only) |
 | `/srv/media/photos-tv` | a new share for the photo job's copies (read-write; the containers see it read-only) |
 
 - **CIFS**, read-only (`ro`), through **systemd automount** (`x-systemd.automount,nofail,_netdev`), so a boot with the
   old file server off doesn't hang, and a mount comes back when it's on again. SMB 2.1, the newest the old file
   server offers.
-- **Credentials:** a reader account on the old file server that can only read the video and photo shares, and a writer
-  account that can only write the copies' share, each in a root-only file (`/etc/media-server/smb-credentials` and
+- **Credentials:** a reader account on the old file server that can only read the video, music and photo shares, and
+  a writer account that can only write the copies' share, each in a root-only file (`/etc/media-server/smb-credentials` and
   `smb-credentials-tv`, 0600), passwords in 1Password. Not in the repo.
 - **File owner** in the mount: a `media` user and group (`uid`/`gid` mount options), so the containers read the files
   as `media` and never as root.
@@ -214,8 +215,8 @@ heartbeat and Mac pull. Not the cache or metadata (rebuilt by a rescan).
    (copy, validate, pull, start, check each answers), the photo job's script and timer, and `HOST-SETUP.md` (the
    `media` user, the read-only SMB account and mounts, the folders, the graphics group, the LAN ports);
    `docs/media-server/README.md`; the `jellyfin` and `plex` blocks in the Caddyfile; the README's list of services.
-3. **Old file server (by hand):** a reader account for the video and photo shares, a writer account and a share for
-   the photo copies.
+3. **Old file server (by hand):** a reader account for the video, music and photo shares, a writer account and a
+   share for the photo copies.
 4. **Server (my commands):** the `media` user, the credentials file and mounts, the folders; check the mounts as
    `media`; `vainfo` in the Jellyfin container. Run the deploy script; redeploy Caddy.
 5. **First run:** Jellyfin's admin account and household accounts, the libraries, the transcoding settings; Plex signed
@@ -257,9 +258,10 @@ shares are never changed.
 - **The photo copies go to a share of their own on the old file server** (2026-11-26), mounted read-write at
   `/srv/media/photos-tv`, not on the NVMe: 15-30 GB is a lot of the NVMe's free space, and it matches the layout once
   the hard drives are in (a dataset beside the others under `/srv/media`).
-- **Only the video and photo shares** (2026-11-26). The old file server's "Extra" shares hold what isn't for
+- **Only the video, music and photo shares** (2026-11-26). The old file server's "Extra" shares hold what isn't for
   sharing, so none of them is mounted, and the reader account can't read them. The video share is one mount, and
-  its `Movies`, `Music` (as music videos), `TV`, `YouTube` and `Theatre` folders are a library each (2026-11-26).
+  its `Movies`, `Music` (as music videos), `TV`, `YouTube` and `Theatre` folders are a library each; the music share
+  is a music library (2026-11-26).
 - **1920 px for every photo**, re-encoded even when smaller (2026-11-26).
 
 ## Sources
