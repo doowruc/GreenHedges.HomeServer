@@ -148,7 +148,7 @@ public sealed class WeatherAlertMonitorTests : IDisposable
     }
 
     [Fact]
-    public async Task Repeated_rtl433_restarts_alert_and_resolve_once_an_hour_has_passed_with_lines()
+    public async Task Repeated_rtl433_restarts_alert_and_resolve_once_a_run_has_been_stable()
     {
         _receiver.RecordRunStarted();
         _receiver.RecordLine();
@@ -165,16 +165,56 @@ public sealed class WeatherAlertMonitorTests : IDisposable
         Assert.Equal("[WeatherCollector] PROBLEM: Receiver problem", problem.Subject);
         Assert.Contains("restarted 3 times in the last hour", problem.Body);
 
-        // Running fine again, but the restarts still count until they're an hour old.
-        for (var minute = 0; minute < 61; minute++)
+        // The dongle is back (a USB blip): one run, writing lines. Not resolved until the run is stable...
+        _receiver.RecordRunStarted();
+        for (var minute = 0; minute < 9; minute++)
         {
             _receiver.RecordLine();
             await HearAsync(StationId);
             await CheckAfter(TimeSpan.FromMinutes(1));
         }
 
-        Assert.Equal("[WeatherCollector] RESOLVED: Receiver problem", _sender.Sent[^1].Subject);
+        Assert.Single(_sender.Sent);
+
+        // ...then resolved once it has run for Rtl433:StableAfter (10 minutes), not an hour after the restarts.
+        for (var minute = 0; minute < 2; minute++)
+        {
+            _receiver.RecordLine();
+            await HearAsync(StationId);
+            await CheckAfter(TimeSpan.FromMinutes(1));
+        }
+
         Assert.Equal(2, _sender.Sent.Count);
+        Assert.Equal("[WeatherCollector] RESOLVED: Receiver problem", _sender.Sent[^1].Subject);
+
+        // The restarts before the stable run no longer count: one more end within the hour doesn't raise it again.
+        EndRun();
+        _receiver.RecordRunStarted();
+        _receiver.RecordLine();
+        await HearAsync(StationId);
+        await CheckAfter(TimeSpan.FromSeconds(30));
+        Assert.Equal(2, _sender.Sent.Count);
+    }
+
+    [Fact]
+    public async Task Rtl433_crash_loop_with_short_runs_keeps_the_receiver_alert_open()
+    {
+        // Each run writes lines for a few minutes, then ends: never stable, so the ends add up.
+        for (var run = 0; run < 12; run++)
+        {
+            _receiver.RecordRunStarted();
+            for (var minute = 0; minute < 4; minute++)
+            {
+                _receiver.RecordLine();
+                await HearAsync(StationId);
+                await CheckAfter(TimeSpan.FromMinutes(1));
+            }
+
+            EndRun();
+        }
+
+        var problem = Assert.Single(_sender.Sent);
+        Assert.Equal("[WeatherCollector] PROBLEM: Receiver problem", problem.Subject);
     }
 
     [Fact]

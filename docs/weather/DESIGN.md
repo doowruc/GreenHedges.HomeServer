@@ -143,7 +143,7 @@ Shared with the Libre collector through `Common`: nightly SQLite backup API → 
 | Alert | Raised when |
 |---|---|
 | No station messages | Nothing from the station's ids for 5 minutes (from startup, so a restart gets a grace period) |
-| Receiver problem | rtl_433 reports no usable dongle, or 3 rtl_433 runs ended (exit, silence, failed start) in the last hour |
+| Receiver problem | rtl_433 reports no usable dongle, or 3 rtl_433 runs ended (exit, silence, failed start) in the last hour; ends before a run that has lasted `Rtl433:StableAfter` (10 minutes) stop counting, so a short burst resolves once rtl_433 has been running that long |
 | Station id changed | The station's ids silent for 5 minutes while an id of the same model is heard that was first heard after them (so a neighbour heard all along doesn't count) |
 | Sensor battery low | `battery_ok` = 0 for an hour (only the temperature messages carry it) |
 | Summaries for Grafana stalled | Publishing minute summaries to SQL Server failing for 30 minutes |
