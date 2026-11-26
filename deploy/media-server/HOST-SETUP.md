@@ -50,7 +50,10 @@ sudo apt install cifs-utils libheif-examples imagemagick libimage-exiftool-perl
 
 **On the old file server:**
 
-- A new share for the **copies** (name in the private notes), on a drive with room for about 30 GB.
+- A new share for the **copies** (name in the private notes), on a drive with room for about 30 GB. Its folder goes
+  **beside** the other shares' folders, never inside one: inside the photo share, the job would find its own copies
+  as photos and copy them again, every night. Keep it out of the old file server's backups too (the copies are
+  remade from the originals).
 - A **reader** user that may only **read** the films, TV and photo shares, and nothing else.
 - A **writer** user that may **read and write** the copies' share, and nothing else.
 
