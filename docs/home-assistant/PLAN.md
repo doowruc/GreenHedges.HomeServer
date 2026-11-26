@@ -140,8 +140,9 @@ the backups are encrypted.
 
 For the trial, HA's own **automatic backups**: nightly, a few kept, in `/var/lib/home-assistant/config/backups`,
 **encrypted** with HA's backup key. Save the key (HA's "emergency kit") in 1Password when backups are set up: without
-it a backup can't be restored. Nothing here is hard to rebuild during the trial (two integrations and some
-automations), so there's no off-site copy, heartbeat or Mac pull yet.
+it a backup can't be restored. Everything set up in HA (the integrations, areas, light groups, the dashboard and the
+automation) lives in `.storage/`, so it's in these backups. It took about a day to set up and could be redone if the server's disk
+were lost, so during the trial there's no off-site copy, heartbeat or Mac pull.
 
 **If HA stays:** the usual set, like FreshRSS: a `home-assistant-backup.timer` that copies the newest HA backup
 (already encrypted) off-site, an IAM user in the off-site stack, a healthchecks.io check and the Mac's pull.
