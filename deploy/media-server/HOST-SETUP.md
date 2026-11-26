@@ -99,6 +99,8 @@ sudoedit /etc/fstab
 - **`x-systemd.automount`**: mounted the first time something looks, so a boot with the old file server off neither
   hangs nor leaves the mount missing for good. The containers see it through `rslave` (compose files).
 - **`vers=2.1`**: the newest the old file server offers.
+- **A space in a share name** is written `\040` (fstab splits fields on spaces): a share called `My Share` is
+  `//<file server>/My\040Share`.
 
 Load them and look:
 
