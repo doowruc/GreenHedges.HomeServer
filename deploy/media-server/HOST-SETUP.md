@@ -140,9 +140,13 @@ after the deploy, as whoever gets there first becomes the administrator: `http:/
 1. **Language** English (UK); **administrator** account (save it in your password manager first, "Home server
    Jellyfin").
 2. **Libraries** (Jellyfin's paths, not the host's):
-   - **Films:** content type Movies, folder `/media/videos/Movies`.
+   - **Movies:** content type Movies, folder `/media/videos/Movies`.
+   - **Music:** content type Music Videos, folder `/media/videos/Music`.
    - **TV:** content type Shows, folder `/media/videos/TV`.
-   - Only those folders of the video share: its other folders stay out unless you add a library for one later.
+   - **YouTube:** content type Shows, folder `/media/videos/YouTube` (a folder per series, episodes named `s01e01`).
+   - **Theatre:** content type Movies, folder `/media/videos/Theatre`.
+   - Only those folders of the video share: its other folders (`West Ham`, `Wildlife Cam`) stay out unless you add a
+     library for one later.
    - **Photos:** content type Photos, folder `/media/photos-tv` (the photo job's copies, §7; empty until it has run).
      Not `/media/photos`: the originals have HEIC and Live Photo videos.
    - For each: metadata language English, country United Kingdom; **real-time monitoring off** (SMB shares don't
@@ -200,8 +204,11 @@ The render group's number (from `compose.env`) should be in the list. If it isn'
 note it and stop there, as it needs a change to the compose file.
 
 **First run, from the Mac on the LAN:** `http://<server LAN address>:32400/web`, signed in to the Plex account. Give
-the server a name (not the old file server's), then the libraries: **Movies** `/media/videos/Movies`, **TV Shows**
-`/media/videos/TV`, **Photos** `/media/photos-tv`. Then **Settings**, with **Show Advanced** on:
+the server a name (not the old file server's), then the libraries, each its own: **Movies** (type Movies)
+`/media/videos/Movies`; **Music** (type Other Videos: Plex has no music video library type, and a Music library
+expects audio) `/media/videos/Music`; **TV** (type TV Shows) `/media/videos/TV`; **YouTube** (type TV Shows)
+`/media/videos/YouTube`; **Theatre** (type Movies) `/media/videos/Theatre`; **Photos** `/media/photos-tv`. Then
+**Settings**, with **Show Advanced** on:
 
 - **Remote Access: disabled.** Nothing is published to the internet.
 - **Network:** Custom server access URLs `https://plex.<home domain>:443` (the tailnet, through Caddy, §8); Secure

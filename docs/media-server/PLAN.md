@@ -107,7 +107,7 @@ The old file server's shares are mounted by the host, not by the containers, at 
 
 | Mount | What |
 |---|---|
-| `/srv/media/videos` | the video share (read-only); films and TV are its `Movies` and `TV` folders |
+| `/srv/media/videos` | the video share (read-only); its `Movies`, `Music`, `TV`, `YouTube` and `Theatre` folders are a library each |
 | `/srv/media/photos` | the photo share (read-only) |
 | `/srv/media/photos-tv` | a new share for the photo job's copies (read-write; the containers see it read-only) |
 
@@ -258,8 +258,8 @@ shares are never changed.
   `/srv/media/photos-tv`, not on the NVMe: 15-30 GB is a lot of the NVMe's free space, and it matches the layout once
   the hard drives are in (a dataset beside the others under `/srv/media`).
 - **Only the video and photo shares** (2026-11-26). The old file server's "Extra" shares hold what isn't for
-  sharing, so none of them is mounted, and the reader account can't read them. Films and TV are the video share's
-  `Movies` and `TV` folders, one mount (2026-11-26).
+  sharing, so none of them is mounted, and the reader account can't read them. The video share is one mount, and
+  its `Movies`, `Music` (as music videos), `TV`, `YouTube` and `Theatre` folders are a library each (2026-11-26).
 - **1920 px for every photo**, re-encoded even when smaller (2026-11-26).
 
 ## Sources
