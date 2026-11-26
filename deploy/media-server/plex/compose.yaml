@@ -40,14 +40,13 @@ services:
     volumes:
       # Plex's whole state: settings, the library database, metadata, watched state.
       - /var/lib/plex/config:/config
-      # The media, read-only, with rslave for the automounts (as for Jellyfin).
+      # The media, read-only, with rslave for the automounts (as for Jellyfin); the photo library is /media/photos-tv.
       - type: bind
         source: /srv/media
         target: /media
         read_only: true
         bind:
           propagation: rslave
-      - /srv/photos-jpeg:/photos:ro
     # The image's transcoder folder; in memory, as for Jellyfin, within the memory limit.
     tmpfs:
       - /transcode:size=1g,mode=1777

@@ -8,8 +8,9 @@ and [Plex](https://www.plex.tv/) run side by side against the same files until o
   `/srv/media/{films,tv,photos}`; later the home server's own drives, at the same paths.
 - **Transcoding** runs on the home server's graphics chip (VA-API), so films with PGS subtitles, which Roku can't
   show, play with the subtitles burnt in.
-- **Photos:** a nightly job (`media-photos.timer`, 01:30) keeps a copy of the photo share as JPEGs sized for TVs in
-  `/srv/photos-jpeg`, since no server shows HEIC on Roku. The photo libraries read the copies.
+- **Photos:** a nightly job (`media-photos.timer`, 01:30) keeps a copy of the photo share as JPEGs sized for TVs, in
+  a share of its own on the old file server (`/srv/media/photos-tv`), since no server shows HEIC on Roku. The photo
+  libraries read the copies.
 - **Reached:** on the home LAN for the TVs (Jellyfin `http://<server>:8096`, Plex through its Roku channel), and on the
   tailnet at `https://jellyfin.<home domain>` and `https://plex.<home domain>`.
 

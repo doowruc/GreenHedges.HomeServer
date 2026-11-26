@@ -3,7 +3,7 @@
 The media server trial: **Jellyfin** and **Plex** side by side in Docker, reading the old file server's films, TV and
 photo shares (mounted read-only on the host), transcoding on the graphics chip, and published on the **LAN** for the
 Roku TVs as well as through Caddy for the tailnet. Plus the **photo job**, which keeps a JPEG copy of the photo share
-sized for TVs (no server shows HEIC on Roku). Why it's set up this way, and what the trial should show:
+sized for TVs (no server shows HEIC on Roku), in a share of its own on the old file server. Why it's set up this way, and what the trial should show:
 [docs/media-server/PLAN.md](../../docs/media-server/PLAN.md). The details: the comments in
 [`jellyfin/compose.yaml`](jellyfin/compose.yaml), [`plex/compose.yaml`](plex/compose.yaml) and
 [`photos/media-photos.sh`](photos/media-photos.sh).
@@ -15,8 +15,8 @@ photo job at 1.5 GB.
 | Where | What |
 |---|---|
 | `/srv/media/{films,tv,photos}` | The old file server's shares, read-only CIFS automounts, owned by `media` |
-| `/srv/photos-jpeg` | The photo job's copies (`media`) |
-| `/etc/media-server/` | `compose.env` (LAN address and ids, for both servers), `smb-credentials`, `photos.env` |
+| `/srv/media/photos-tv` | The photo job's copies: a share of their own on the old file server, mounted read-write. Later a dataset on the home server's drives, at the same path |
+| `/etc/media-server/` | `compose.env` (LAN address and ids, for both servers), `smb-credentials` (reader), `smb-credentials-tv` (writer), `photos.env` |
 | `/opt/jellyfin`, `/var/lib/jellyfin/{config,cache}` | Jellyfin's compose file; its settings, library database and caches (`media`) |
 | `/opt/plex`, `/var/lib/plex/config` | Plex's compose file; its whole state (`media`) |
 | `/opt/media-server/media-photos.sh` | The photo job, run by `media-photos.timer` |
@@ -31,8 +31,11 @@ sudo adduser --system --group --no-create-home --home /nonexistent media && sudo
 ```
 
 ```bash
-sudo install -d -m 0755 /srv/media /srv/media/films /srv/media/tv /srv/media/photos /etc/media-server && sudo install -d -m 0775 -o media -g media /srv/photos-jpeg && sudo install -d -m 0750 -o media -g media /var/lib/jellyfin /var/lib/jellyfin/config /var/lib/jellyfin/cache /var/lib/plex /var/lib/plex/config
+sudo install -d -m 0755 /srv/media /srv/media/films /srv/media/tv /srv/media/photos /srv/media/photos-tv /etc/media-server && sudo chattr +i /srv/media/films /srv/media/tv /srv/media/photos /srv/media/photos-tv && sudo install -d -m 0750 -o media -g media /var/lib/jellyfin /var/lib/jellyfin/config /var/lib/jellyfin/cache /var/lib/plex /var/lib/plex/config
 ```
+
+`chattr +i` makes the empty mount folders unwritable while nothing is mounted on them, so a missing share can never
+fill the NVMe (the mounts sit on top as usual). `lsattr -d /srv/media/*` shows the `i`.
 
 ## 2. Packages (on the server)
 
@@ -45,10 +48,16 @@ sudo apt install cifs-utils libheif-examples imagemagick libimage-exiftool-perl
 
 ## 3. The shares
 
-**On the old file server:** a user that may only **read** the films, TV and photo shares (no write access anywhere),
-with a long random password, saved in your password manager ("Old file server media reader").
+**On the old file server:**
 
-**On the server:** its credentials, in a root-only file. Create it empty, then type the password in yourself:
+- A new share for the **copies** (name in the private notes), on a drive with room for about 30 GB.
+- A **reader** user that may only **read** the films, TV and photo shares, and nothing else.
+- A **writer** user that may **read and write** the copies' share, and nothing else.
+
+Each with a long random password, saved in your password manager ("Old file server media reader" and "… media
+writer"). Two users, so the job that writes can't touch the originals, and the servers can't change anything.
+
+**On the server:** their credentials, in root-only files. Create them empty, then type each password in yourself:
 
 ```bash
 sudo install -m 0600 /dev/null /etc/media-server/smb-credentials && sudoedit /etc/media-server/smb-credentials
@@ -56,6 +65,15 @@ sudo install -m 0600 /dev/null /etc/media-server/smb-credentials && sudoedit /et
 
 ```text
 username=<the reader user>
+password=<its password>
+```
+
+```bash
+sudo install -m 0600 /dev/null /etc/media-server/smb-credentials-tv && sudoedit /etc/media-server/smb-credentials-tv
+```
+
+```text
+username=<the writer user>
 password=<its password>
 ```
 
@@ -69,9 +87,11 @@ sudoedit /etc/fstab
 //<file server>/<films share>  /srv/media/films   cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 //<file server>/<TV share>     /srv/media/tv      cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 //<file server>/<photo share>  /srv/media/photos  cifs  ro,vers=2.1,credentials=/etc/media-server/smb-credentials,uid=media,gid=media,file_mode=0444,dir_mode=0555,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
+//<file server>/<copies share> /srv/media/photos-tv  cifs  rw,vers=2.1,credentials=/etc/media-server/smb-credentials-tv,uid=media,gid=media,file_mode=0664,dir_mode=0775,iocharset=utf8,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=30  0  0
 ```
 
-- **`ro`**, and a reader account: nothing here can change the files.
+- **`ro`**, and a reader account, for the originals: nothing here can change them. The copies' share is the only one
+  mounted read-write, with the writer account (the containers still see it read-only).
 - **`x-systemd.automount`**: mounted the first time something looks, so a boot with the old file server off neither
   hangs nor leaves the mount missing for good. The containers see it through `rslave` (compose files).
 - **`vers=2.1`**: the newest the old file server offers.
@@ -79,10 +99,10 @@ sudoedit /etc/fstab
 Load them and look:
 
 ```bash
-sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target && sudo -u media ls /srv/media/films /srv/media/tv /srv/media/photos | head -20 && findmnt -t cifs
+sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target && sudo -u media ls /srv/media/films /srv/media/tv /srv/media/photos /srv/media/photos-tv | head -20 && sudo -u media touch /srv/media/photos-tv/.write-test && sudo -u media rm /srv/media/photos-tv/.write-test && findmnt -t cifs
 ```
 
-The three shares listed as `media`, and `findmnt` showing them `ro`.
+The four shares listed as `media`, the write test silent, and `findmnt` showing three `ro` and the copies `rw`.
 
 **Later, the hard drives:** mount their datasets at the same `/srv/media/...` paths (and take these lines out), and the
 libraries carry on without a rescan.
@@ -119,8 +139,8 @@ after the deploy, as whoever gets there first becomes the administrator: `http:/
 2. **Libraries** (Jellyfin's paths, not the host's):
    - **Films:** content type Movies, folder `/media/films`.
    - **TV:** content type Shows, folder `/media/tv`.
-   - **Photos:** content type Photos, folder `/photos` (the photo job's copies, §7; empty until it has run). Not
-     `/media/photos`: the originals have HEIC and Live Photo videos.
+   - **Photos:** content type Photos, folder `/media/photos-tv` (the photo job's copies, §7; empty until it has run).
+     Not `/media/photos`: the originals have HEIC and Live Photo videos.
    - For each: metadata language English, country United Kingdom; **real-time monitoring off** (SMB shares don't
      report changes: the scheduled scan picks them up); **trickplay images off** (lots of writes and CPU for scrub-bar
      previews).
@@ -177,7 +197,7 @@ note it and stop there, as it needs a change to the compose file.
 
 **First run, from the Mac on the LAN:** `http://<server LAN address>:32400/web`, signed in to the Plex account. Give
 the server a name (not the old file server's), then the libraries: **Movies** `/media/films`, **TV Shows**
-`/media/tv`, **Photos** `/photos`. Then **Settings**, with **Show Advanced** on:
+`/media/tv`, **Photos** `/media/photos-tv`. Then **Settings**, with **Show Advanced** on:
 
 - **Remote Access: disabled.** Nothing is published to the internet.
 - **Network:** Custom server access URLs `https://plex.<home domain>:443` (the tailnet, through Caddy, §8); Secure
@@ -218,9 +238,8 @@ That enables the nightly timer (01:30) but doesn't run it. **First, a dry run**,
 sudo -u media /opt/media-server/media-photos.sh --dry-run
 ```
 
-`<n> photos on the share, 0 copies; <n> to convert, 0 to delete`. At about 0.3-0.6 MB a copy, check `<n>` fits on the
-NVMe with room to spare (`df -h /`): about 10,000 photos is about 5 GB. If it doesn't, stop: the copies wait for the
-hard drives (PLAN.md, "Open questions"). Note the count in the private notes.
+`<n> photos on the share, 0 copies; <n> to convert, 0 to delete`. At about 0.3-0.6 MB a copy, check the copies'
+share has room (about 48,000 photos is 15-30 GB). Note the count in the private notes.
 
 **Then the first run**, now rather than at 01:30 (it carries on if you log out):
 
@@ -234,6 +253,9 @@ order, HEIC ones included. After that it runs nightly, converting only new and c
 
 **A photo that won't convert** (a damaged file) doesn't stop the others, but fails the run, and so every night's run
 until it's fixed or taken off the share: `journalctl -u media-photos` names it (`Could not convert …`).
+
+**If a run says a share "isn't mounted":** the old file server was off or unreachable; the run stopped without
+touching anything. It runs again the next night, or start it once the server is back.
 
 **If a run says "would delete … copies":** the share was probably empty or half-mounted. Check `ls /srv/media/photos`;
 if photos really were deleted, run it once with `PHOTOS_MAX_DELETE_PERCENT=100` set
@@ -297,7 +319,6 @@ Then its block out of `deploy/caddy/Caddyfile` and Caddy redeployed, its compose
 
 **Everything** (if neither stays): both servers as above; then
 `sudo systemctl disable --now media-photos.timer && sudo rm /etc/systemd/system/media-photos.{service,timer} && sudo systemctl daemon-reload`,
-`sudo rm -rf /opt/media-server /srv/photos-jpeg /etc/media-server`, the three `/etc/fstab` lines (then
-`sudo systemctl daemon-reload` and a reboot, which leaves the shares unmounted), `sudo rmdir /srv/media/* /srv/media` and
-`sudo deluser media`.
-The old file server and its shares are untouched, apart from the reader account.
+`sudo rm -rf /opt/media-server /etc/media-server`, the four `/etc/fstab` lines (then `sudo systemctl daemon-reload`
+and a reboot, which leaves the shares unmounted), `sudo chattr -i /srv/media/* && sudo rmdir /srv/media/* /srv/media`
+and `sudo deluser media`. On the old file server: the copies' share and the two users. The originals are untouched.

@@ -3,6 +3,9 @@
 # nor Jellyfin shows HEIC on Roku, and the share also holds Live Photo videos that a library would show as clips, so the
 # library reads this copy, not the share.
 #
+# The copies go to a share of their own on the old file server, mounted read-write at /srv/media/photos-tv (later a
+# dataset on the home server's own drives, at the same path), beside the originals' read-only /srv/media/photos.
+#
 # For every photo on the share (HEIC/HEIF, JPEG, PNG), a JPEG at most 1920 px on its long side (Roku's interface is
 # 1920 × 1080, even on 4K TVs), quality 85, turned the right way up, with its EXIF data (date taken) kept. Each copy is
 # named after its original plus .jpg (IMG_0001.HEIC → IMG_0001.HEIC.jpg), in the same folders, and gets the original's
@@ -15,13 +18,17 @@
 #   media-photos.sh            convert, then delete orphaned copies, then ping healthchecks.io
 #   media-photos.sh --dry-run  only count: what would be converted and deleted (nothing written, no ping)
 #
-# PHOTOS_SOURCE, PHOTOS_TARGET, PHOTOS_SIZE, PHOTOS_QUALITY and PHOTOS_JOBS override the defaults below, e.g. to try it
-# on a dev machine.
+# PHOTOS_SOURCE, PHOTOS_TARGET, PHOTOS_SIZE, PHOTOS_QUALITY and PHOTOS_JOBS override the defaults below;
+# PHOTOS_CHECK_MOUNTS=0 skips the check that both are mounts, e.g. to try it on a dev machine with plain folders.
 set -euo pipefail
 umask 022
 
 SOURCE="${PHOTOS_SOURCE:-/srv/media/photos}"
-TARGET="${PHOTOS_TARGET:-/srv/photos-jpeg}"
+TARGET="${PHOTOS_TARGET:-/srv/media/photos-tv}"
+CHECK_MOUNTS="${PHOTOS_CHECK_MOUNTS:-1}"
+# Not on the share (SMB and flock don't mix well): /run/media-photos, the service's own runtime folder, kept between
+# runs so a run by hand finds it too.
+LOCK_DIR="${PHOTOS_LOCK_DIR:-/run/media-photos}"
 SIZE="${PHOTOS_SIZE:-1920}"
 QUALITY="${PHOTOS_QUALITY:-85}"
 # Conversions at once. The box has 8 threads; 3 leaves room for everything else, and the service runs at low priority.
@@ -88,13 +95,20 @@ ping_heartbeat /start ""
 LIST="$(mktemp -d "${TMPDIR:-/tmp}/media-photos.XXXXXX")"
 trap 'rm -rf "$LIST"' EXIT
 
-# The share must really be there: listing it also triggers the automount. An empty or missing share must never look
-# like "every photo deleted".
-ls "$SOURCE" >/dev/null 2>&1 || fail "can't read $SOURCE (is the share mounted?)"
-[ -d "$TARGET" ] || fail "no $TARGET"
+# Both shares must really be there. Listing a folder triggers its automount; then it must be a mount of its own, not
+# the empty folder underneath (writing there would fill the NVMe, and an empty source would look like "every photo
+# deleted").
+mounted() {
+  ls "$1" >/dev/null 2>&1 || return 1
+  [ "$CHECK_MOUNTS" = 1 ] || return 0
+  [ "$(findmnt -n -o TARGET --target "$1")" = "$1" ] && [ "$(findmnt -n -o FSTYPE --target "$1")" != autofs ]
+}
+mounted "$SOURCE" || fail "$SOURCE isn't mounted (the photo share)"
+mounted "$TARGET" || fail "$TARGET isn't mounted (the copies' share)"
 # One run at a time (the timer's and one started by hand).
 if [ "$DRY_RUN" = 0 ]; then
-  exec 9>"$TARGET/.lock"
+  [ -d "$LOCK_DIR" ] && [ -w "$LOCK_DIR" ] || LOCK_DIR="${TMPDIR:-/tmp}"
+  exec 9>"$LOCK_DIR/media-photos.lock"
   flock -n 9 || fail "another run is still going"
 fi
 

@@ -73,7 +73,6 @@ need() { sudo test "$@" || { echo "Missing: test $* (see deploy/media-server/HOS
 id media >/dev/null 2>&1 || { echo "No media user (HOST-SETUP.md §1)"; exit 1; }
 need -f /etc/media-server/compose.env
 need -d /srv/media
-need -d /srv/photos-jpeg
 
 # A server: its folders, its compose file, the .env link, then pull and start.
 server() {
@@ -118,6 +117,8 @@ for t in $WANT; do
     photos)
       echo "--- Photo job"
       need -f /etc/media-server/photos.env
+      need -d /srv/media/photos
+      need -d /srv/media/photos-tv
       for tool in heif-convert exiftool; do
         command -v "$tool" >/dev/null || { echo "Missing $tool (HOST-SETUP.md §2)"; exit 1; }
       done

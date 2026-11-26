@@ -1,11 +1,13 @@
 # The photo job (media-photos.sh): JPEG copies of the photo share, sized for TVs, for the media servers. Started by
 # media-photos.timer. Installed by deploy/media-server/deploy-media-server.sh photos into /etc/systemd/system/. Runs as
-# the media user, who reads the share (mounted read-only, owned by media) and owns the copies. Settings:
+# the media user, who reads the photo share (mounted read-only) and writes the copies' share (mounted read-write, both
+# owned by media). Settings:
 # /etc/media-server/photos.env (root, 0600; systemd reads it before dropping to media). Run it now with
 # `sudo systemctl start media-photos.service`; its output is in `journalctl -u media-photos`.
 [Unit]
 Description=Media server photo copies
 After=network-online.target remote-fs.target
+RequiresMountsFor=/srv/media/photos /srv/media/photos-tv
 Wants=network-online.target
 
 [Service]
@@ -26,4 +28,7 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=true
-ReadWritePaths=/srv/photos-jpeg
+ReadWritePaths=/srv/media/photos-tv
+# /run/media-photos, for the lock; kept after a run, so a run by hand uses the same lock.
+RuntimeDirectory=media-photos
+RuntimeDirectoryPreserve=yes
