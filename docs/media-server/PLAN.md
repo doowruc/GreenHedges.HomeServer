@@ -5,7 +5,8 @@ the home server, and for choosing the software: **Jellyfin** or **Plex**, tried 
 keeps the files and goes on sharing them over SMB until the home server's hard drives go in; the media server reads
 them from there, then from the drives.
 
-**Status:** planned 2026-11-24. Nothing deployed. Waits for the RAM upgrade (see "Before it starts").
+**Status:** planned 2026-11-24; deploy files written 2026-11-26 (`deploy/media-server/`, step 2). Nothing deployed.
+Waits for the RAM upgrade (see "Before it starts").
 
 ## What it has to do
 
@@ -57,7 +58,7 @@ is paid and offers nothing here over Jellyfin. Immich is excellent at photos but
 ### HEIC: JPEG copies, made on the server
 
 None of Plex, Jellyfin or Emby shows HEIC reliably on Roku, so switching software won't fix it. The fix is a job on
-the server that keeps **JPEG copies** of the HEIC photos, which the media server's photo library shows instead (see
+the server that keeps **JPEG copies** of the photos, which the media server's photo library shows instead (see
 "The photo job").
 
 ### A cheaper fix for PGS, alongside
@@ -131,7 +132,9 @@ ports**. Roku TVs can't run Tailscale, so the media server is the first exceptio
 - **Plex** publishes `32400` the same way. Its Roku app finds the server through the plex.tv account and then
   connects over the LAN. Plex's "Remote Access" stays **off**.
 - **Over Tailscale** (phone, iPad, Mac): Jellyfin also at `https://jellyfin.<home domain>` through Caddy, like the
-  other apps, so its sign-in isn't sent in plain HTTP off the LAN. Plex's own apps connect to it directly.
+  other apps, so its sign-in isn't sent in plain HTTP off the LAN. Plex the same way, at `https://plex.<home domain>`,
+  listed in Plex's settings as a custom server access URL so its apps find it there (both servers also listen on
+  `127.0.0.1`, for Caddy).
 - **Discovery** (Jellyfin's and Plex's LAN broadcasts) isn't needed: the TVs are given the address once.
 
 The exception is noted in `SERVER.md`'s port table and firewall line when it's made.
@@ -171,19 +174,22 @@ generating it for a whole library is a lot of writes and CPU for a nicety.
 
 A small job on the server that keeps a JPEG copy of every HEIC photo, for the media server to show:
 
-- **Reads** `/srv/media/photos` (read-only), **writes** `/srv/photos-jpeg`, keeping the same folder layout and file
-  names (`.jpg` for `.heic`). The photo library in Jellyfin and Plex points at **both**: the share for photos already in
-  JPEG, the copies for the HEIC ones. HEIC originals are never added (they'd show as broken).
+- **Reads** `/srv/media/photos` (read-only), **writes** `/srv/photos-jpeg`, keeping the same folder layout, each copy
+  named after its original plus `.jpg` (`IMG_0001.HEIC.jpg`). **Every photo** gets a copy, JPEG and PNG as well as
+  HEIC, and the photo library in Jellyfin and Plex points at the **copies only** (changed 2026-11-26, when the deploy
+  files were written: a library on the share itself would also list the HEIC originals, shown broken, and the Live
+  Photo videos, and neither server can leave files out by type). It also means every photo is sized for a TV and
+  turned the right way up.
 - **Converts** with `heif-convert` (libheif) or ImageMagick with libheif, both in Ubuntu; resizes to **1920 px on the
   long side**, quality 85. Roku's interface is 1920 × 1080 even on 4K TVs, so more is wasted on the NVMe.
 - **Keeps the EXIF data** (date taken, so photos sort properly; orientation, so they aren't sideways), copying it
   across with `exiftool` if the converter drops it.
-- **Skips Live Photo videos** (the `.MOV` with the same name as a HEIC): they'd show as short videos. The media
-  libraries ignore `.MOV` files in the photo folders, or the job leaves them out.
+- **Skips videos**, Live Photo `.MOV`s included: the copies are photos only. (Videos people filmed are left out of
+  the photo library too; they could be a library of their own later.)
 - **Incremental:** converts only files that are new or newer than their copy, and deletes copies whose original has
   gone. Nightly, as a systemd timer, as user `media` (read access to the share, write access to the copies).
-- **Size:** at about 0.5 MB a copy, 10,000 photos is about 5 GB. Count the HEIC files on the share before the first
-  run (test step); if it doesn't fit comfortably in the 112 GB free, the copies wait for the hard drives.
+- **Size:** at about 0.3-0.6 MB a copy, 10,000 photos is about 5 GB. Count the photos on the share before the first
+  run (the job's `--dry-run`); if they don't fit comfortably in the 112 GB free, the copies wait for the hard drives.
 - **Watched** like the other jobs: a healthchecks.io heartbeat each night, an alert on failure.
 - **Where it lives:** a shell script and timer in `deploy/media-server/` (decided 2026-11-24). If it ever grows
   (reports, retries, alerts with detail), it can become a small .NET service under `src/` like the collectors.
@@ -197,16 +203,17 @@ heartbeat and Mac pull. Not the cache or metadata (rebuilt by a rescan).
 ## Steps
 
 1. **RAM upgrade** (the DXP2800 GT's own step).
-2. **PR: deploy files.** `deploy/media-server/` with the compose files (Jellyfin, Plex), `deploy-media-server.sh`
+2. **(written) PR: deploy files.** `deploy/media-server/` with the compose files (Jellyfin, Plex), `deploy-media-server.sh`
    (copy, validate, pull, start, check each answers), the photo job's script and timer, and `HOST-SETUP.md` (the
    `media` user, the read-only SMB account and mounts, the folders, the graphics group, the LAN ports);
-   `docs/media-server/README.md`; the `jellyfin` block in the Caddyfile; the README's list of services.
+   `docs/media-server/README.md`; the `jellyfin` and `plex` blocks in the Caddyfile; the README's list of services.
 3. **Old file server (by hand):** a read-only account with access to the films, TV and photo shares.
 4. **Server (my commands):** the `media` user, the credentials file and mounts, the folders; check the mounts as
    `media`; `vainfo` in the Jellyfin container. Run the deploy script; redeploy Caddy.
 5. **First run:** Jellyfin's admin account and household accounts, the libraries, the transcoding settings; Plex signed
    in with the claim token, the same libraries, Remote Access off. Passwords in 1Password.
-6. **The photo job:** count the HEIC files, a dry run, then the first full run; add the copies to both photo libraries.
+6. **The photo job:** a dry run (it counts the photos), then the first full run; the copies are both servers' photo
+   library.
 7. **The test set, on a Roku TV, in both:** each file played for ten minutes, with the server's dashboard showing
    whether the transcode is in hardware (Jellyfin: "(HW)" in the playback info; Plex: "(hw)" on the dashboard), the CPU
    use, and whether it keeps up (no buffering). Two streams at once. The photos: HEIC copies shown the right way up and
@@ -228,7 +235,7 @@ heartbeat and Mac pull. Not the cache or metadata (rebuilt by a rescan).
 
 On the server: `sudo docker compose -f /opt/<server>/compose.yaml down --rmi all`, delete `/opt/<server>` and
 `/var/lib/<server>`; the photo job's timer and `/srv/photos-jpeg`; the mounts (`/etc/fstab` lines, credentials file);
-the `media` user; Caddy's `jellyfin` block. The old file server and its shares are never changed, apart from the
+the `media` user; Caddy's `jellyfin` and `plex` blocks. The old file server and its shares are never changed, apart from the
 read-only account.
 
 ## Decided
@@ -242,7 +249,7 @@ read-only account.
 ## Open questions
 
 - **The photo copies' size and place:** the NVMe, or the old file server (a writable share), until the drives go in?
-  Decided by the HEIC count in step 6.
+  Decided by the photo count in step 6.
 
 ## Sources
 

@@ -1,0 +1,29 @@
+# The photo job (media-photos.sh): JPEG copies of the photo share, sized for TVs, for the media servers. Started by
+# media-photos.timer. Installed by deploy/media-server/deploy-media-server.sh photos into /etc/systemd/system/. Runs as
+# the media user, who reads the share (mounted read-only, owned by media) and owns the copies. Settings:
+# /etc/media-server/photos.env (root, 0600; systemd reads it before dropping to media). Run it now with
+# `sudo systemctl start media-photos.service`; its output is in `journalctl -u media-photos`.
+[Unit]
+Description=Media server photo copies
+After=network-online.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=media
+Group=media
+ExecStart=/opt/media-server/media-photos.sh
+EnvironmentFile=/etc/media-server/photos.env
+# The first run converts the whole share and can take hours: no start timeout (the default for oneshot), and at low
+# priority so the TVs and the other services come first.
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=300%
+# Three conversions at once need a few hundred MB; the cap keeps a strange photo from taking the box's memory.
+MemoryMax=1536M
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=true
+ReadWritePaths=/srv/photos-jpeg
