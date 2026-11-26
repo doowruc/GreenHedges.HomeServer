@@ -5,7 +5,8 @@ and [Plex](https://www.plex.tv/) run side by side against the same files until o
 [PLAN.md](PLAN.md).
 
 - **The files** stay on the old file server for now, shared over SMB and mounted read-only on the home server at
-  `/srv/media/{films,tv,photos}`; later the home server's own drives, at the same paths.
+  `/srv/media/videos` (its `Movies`, `Music`, `TV`, `YouTube` and `Theatre` folders are a library each) and
+  `/srv/media/photos`; later the home server's own drives, at the same paths.
 - **Transcoding** runs on the home server's graphics chip (VA-API), so films with PGS subtitles, which Roku can't
   show, play with the subtitles burnt in.
 - **Photos:** a nightly job (`media-photos.timer`, 01:30) keeps a copy of the photo share as JPEGs sized for TVs, in
