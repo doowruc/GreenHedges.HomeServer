@@ -1,8 +1,8 @@
 # Host setup (Ubuntu Server 26.04 LTS)
 
-Steps to prepare a fresh Ubuntu Server host for LibreCollector. Tested on an old laptop; sections marked *laptop only* can be skipped on other hardware.
+Steps to prepare a fresh Ubuntu Server host for LibreCollector. It runs on a UGREEN DXP2800 GT (a small x86-64 NAS, with Ubuntu in place of UGOS: its fans and LEDs need [deploy/dxp2800gt](../dxp2800gt/HOST-SETUP.md)); it ran on an old laptop before that, so sections marked *laptop only* are kept for laptops and can be skipped on other hardware.
 
-**Placeholders:** `<your-user>` is your login on the server, `<interface>` is its wired network interface, and `<Area/City>` is your time zone (e.g. `Europe/London`). The host is assumed to be named `librecollector` and reachable as `librecollector.lan`; adjust if your network uses a different domain.
+**Placeholders:** `<your-user>` is your login on the server, `<interface>` is its wired network interface, `<luks-partition>` is its encrypted partition (e.g. `/dev/nvme0n1p3`), and `<Area/City>` is your time zone (e.g. `Europe/London`). The host is assumed to be named `librecollector` and reachable as `librecollector.lan`; adjust if your network uses a different domain.
 
 Run everything on the server (over SSH or at its console) unless a step says **on the Mac**.
 
@@ -12,7 +12,7 @@ The services run on the host's **shared .NET runtime** from Ubuntu's own package
 
 ## 0. Name and address
 
-Name the host after its role, and give it a **DHCP reservation** in the router so its IP never changes. Remote LUKS unlock is reached by IP early in boot, so the IP needs to be fixed.
+Name the host after its role, and give it a **DHCP reservation** in the router so its IP never changes.
 
 ```bash
 sudo hostnamectl set-hostname librecollector && sudo sed -i 's/^127\.0\.1\.1\s.*/127.0.1.1 librecollector/' /etc/hosts
@@ -56,11 +56,13 @@ Look for `System clock synchronized: yes`. Reboot if the upgrade installed a new
 
 ## 2. SSD health
 
+Find the disk with `lsblk` (an NVMe drive is `/dev/nvme0`, a SATA one `/dev/sda`), then:
+
 ```bash
-sudo smartctl -a /dev/sda
+sudo smartctl -a /dev/nvme0
 ```
 
-Look for `SMART overall-health self-assessment test result: PASSED`, attribute **231 `SSD_Life_Left`** (or "Percentage Used"), and reallocated / uncorrectable sector counts at or near 0.
+Look for `SMART overall-health self-assessment test result: PASSED`, then on NVMe **Percentage Used**, **Available Spare** and **Media and Data Integrity Errors** (0); on SATA, attribute **231 `SSD_Life_Left`** and reallocated / uncorrectable sector counts at or near 0.
 
 ## 3. Run as a server with the lid shut (*laptop only*)
 
@@ -146,16 +148,55 @@ sudo pro attach
 sudo pro status
 ```
 
-Check `livepatch` is `enabled`. Leave automatic reboots **off** if the disk is LUKS-encrypted: an unattended reboot would stop at the passphrase prompt.
+Check `livepatch` is `enabled`. Leave automatic reboots **off** if the disk is LUKS-encrypted without TPM unlock (6a): an unattended reboot would stop at the passphrase prompt.
 
 ## 6a. Disk encryption (LUKS) and reboots
 
-The disk is LUKS-encrypted, so **every boot waits for the passphrase at the console**. On this laptop (dracut, no TPM, Ubuntu 26.04) there's no packaged way to unlock over SSH:
+With LUKS, a boot waits for the passphrase at the console unless something else unlocks the disk. Ubuntu 26.04 builds its boot image with **dracut**, which has no packaged way to unlock over SSH (**don't** install `dropbear-initramfs`: it needs initramfs-tools, which conflicts with dracut).
 
-- **Don't** install `dropbear-initramfs`. It needs initramfs-tools, which conflicts with dracut, so installing it would swap out the tool that builds the boot image.
-- `clevis-dracut` (with a Tang server elsewhere on the LAN) is the packaged route to automatic unlock at home, if it's ever needed.
+### With a TPM: unlock at boot (the DXP2800 GT)
 
-In practice: reboot only when you're at home (check `/var/run/reboot-required` occasionally; Livepatch covers most kernel fixes), and rely on the off-machine heartbeat to tell you if the machine is down.
+The TPM unlocks the disk when the firmware and boot chain are as enrolled (PCR 7, the Secure Boot state), so reboots and recovery after a power cut need no one at the console. The passphrase keeps working. Turn **Secure Boot on** first, and enrol on the **second** boot with it on: shim updates its SBAT level on the first, which changes PCR 7 and stops the enrolment matching.
+
+dracut's `tpm2-tss` module is skipped unless `tpm2-tools` is installed:
+
+```bash
+sudo apt install -y tpm2-tools
+```
+
+Find the LUKS partition (`lsblk -f`, type `crypto_LUKS`), then enrol the TPM on it:
+
+```bash
+sudo systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 <luks-partition>
+```
+
+Add `tpm2-device=auto` to the options (the fourth field) of that partition's line in `/etc/crypttab`:
+
+```bash
+sudoedit /etc/crypttab
+```
+
+Add the module and rebuild the running kernel's image (`--regenerate-all` can fail on an old kernel's leftovers):
+
+```bash
+echo 'add_dracutmodules+=" tpm2-tss "' | sudo tee /etc/dracut.conf.d/tpm2.conf && sudo dracut -f --kver "$(uname -r)"
+```
+
+```bash
+sudo lsinitrd /boot/initrd.img-$(uname -r) | grep -E 'tcti-device|token-systemd-tpm2'
+```
+
+Both should be listed. Reboot: it should come up with no passphrase.
+
+**Anything that changes PCR 7** (a BIOS update, Secure Boot keys, a shim/SBAT update, a dbx update from fwupd) means one boot at the console: type the passphrase, then enrol again and reboot to check:
+
+```bash
+sudo systemd-cryptenroll --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=7 <luks-partition>
+```
+
+### Without a TPM (the old laptop)
+
+Every boot waits for the passphrase at the console. `clevis-dracut` (with a Tang server elsewhere on the LAN) is the packaged route to automatic unlock at home, if it's ever needed. Otherwise reboot only when you're at home (check `/var/run/reboot-required` occasionally; Livepatch covers most kernel fixes), and rely on the off-machine heartbeat to tell you if the machine is down.
 
 ## 7. Tailscale (remote access, no open ports)
 
@@ -395,7 +436,7 @@ Set up Caddy ([deploy/caddy/HOST-SETUP.md](../caddy/HOST-SETUP.md)); its Caddyfi
 
 ### Devices that view Nightscout
 
-Each needs **Tailscale installed and signed in to the same account** (the laptop is the only one so far):
+Each needs **Tailscale installed and signed in to the same account** (the server is the only one at first):
 
 - **Your computer:** Tailscale from <https://tailscale.com/download> (or the Mac App Store).
 - **iPhone:** Tailscale from the App Store. Allow the VPN configuration when asked.
@@ -460,6 +501,7 @@ sudo rm /var/lib/librecollector/libreview-import.csv
 - [ ] SSH key-only, tested from a new session
 - [ ] ufw on (SSH allowed)
 - [ ] Unattended upgrades on; Ubuntu Pro + Livepatch attached
+- [ ] Disk unlocked by the TPM, tested with a reboot (or, without a TPM, reboots planned for when you're home)
 - [ ] Tailscale up, key expiry disabled
 - [ ] `librecollector` user, `/opt/librecollector`, `/var/lib/librecollector`, `/etc/librecollector/env`
 - [ ] Off-site copies: age key in password manager, bucket (versioning + lifecycle), write-only IAM key, `Offsite__*` in env, first upload logged, restore test passed
