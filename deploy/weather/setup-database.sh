@@ -13,7 +13,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$HERE/../local.env" ]; then . "$HERE/../local.env"; fi
-HOST="${1:-${COLLECTORS_SSH:-${LIBRECOLLECTOR_SSH:-}}}"
+HOST="${1:-${COLLECTORS_SSH:-}}"
 case "$HOST" in
   ""|-*) echo "Usage: deploy/weather/setup-database.sh [user@host] (or set COLLECTORS_SSH in deploy/local.env)" >&2; exit 2 ;;
 esac

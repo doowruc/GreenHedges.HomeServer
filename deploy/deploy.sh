@@ -5,7 +5,7 @@
 # e.g. deploy/deploy.sh all, or deploy/deploy.sh libre weather. (deploy/<service>/deploy.sh does one service.)
 # Every service is published before anything is copied, so a failed build leaves the host untouched; then they're all
 # installed and restarted in one SSH session (one sudo password).
-# The host defaults to COLLECTORS_SSH (or LIBRECOLLECTOR_SSH) from deploy/local.env (see local.env.example).
+# The host defaults to COLLECTORS_SSH from deploy/local.env (see local.env.example).
 # The host must be prepared first (deploy/<service>/HOST-SETUP.md). You'll be asked for your sudo password on the host.
 #
 # Builds run on the host's shared .NET runtime (Ubuntu's aspnetcore-runtime package, patched by unattended upgrades),
@@ -57,7 +57,7 @@ for name in $ALL; do
   case "$WANTED" in *" $name "*) NAMES="$NAMES $name" ;; esac
 done
 if [ -z "$NAMES" ]; then echo "$USAGE" >&2; exit 2; fi
-HOST="${HOST_ARG:-${COLLECTORS_SSH:-${LIBRECOLLECTOR_SSH:-}}}"
+HOST="${HOST_ARG:-${COLLECTORS_SSH:-}}"
 case "$HOST" in
   ""|-*) echo "$USAGE (or set COLLECTORS_SSH in deploy/local.env)" >&2; exit 2 ;;
 esac

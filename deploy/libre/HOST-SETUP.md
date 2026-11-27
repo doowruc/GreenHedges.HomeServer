@@ -271,7 +271,7 @@ brew install rsync
 deploy/mac/install-backup-pull.sh libre
 ```
 
-It takes your server user and host from `deploy/local.env` (`COLLECTORS_USER` and `COLLECTORS_HOST`, or the older `LIBRECOLLECTOR_USER` and `LIBRECOLLECTOR_HOST`; see `deploy/local.env.example`) or the environment, and saves them into the scheduled job. The same scripts pull the Weather collector's backups (`… weather`; see its HOST-SETUP).
+It takes your server user and host from `deploy/local.env` (`COLLECTORS_USER` and `COLLECTORS_HOST`; see `deploy/local.env.example`) or the environment, and saves them in `~/.config/librecollector/backup-pull.env`, which the job reads. The same scripts pull the Weather collector's backups (`… weather`; see its HOST-SETUP).
 
 **On the server**, append the printed line to `~/.ssh/authorized_keys` (as one line). It limits that key to **read-only rsync of the backups folder**: no shell, no forwarding, nothing else readable.
 

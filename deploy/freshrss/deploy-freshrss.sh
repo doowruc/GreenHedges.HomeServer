@@ -2,7 +2,7 @@
 # Install or update FreshRSS on the host: its compose file, then pull the image, (re)start it and check it answers;
 # and its nightly backup (backup.sh, with its systemd service and timer).
 # Run on the dev machine:  deploy/freshrss/deploy-freshrss.sh [user@host]
-# The host defaults to COLLECTORS_SSH (or LIBRECOLLECTOR_SSH) from deploy/local.env (see local.env.example).
+# The host defaults to COLLECTORS_SSH from deploy/local.env (see local.env.example).
 # The host must be prepared first (deploy/freshrss/HOST-SETUP.md). You'll be asked for your sudo password on the host.
 set -euo pipefail
 
@@ -11,7 +11,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$HERE/../local.env" ]; then . "$HERE/../local.env"; fi
-HOST="${1:-${COLLECTORS_SSH:-${LIBRECOLLECTOR_SSH:-}}}"
+HOST="${1:-${COLLECTORS_SSH:-}}"
 case "$HOST" in
   ""|-*) echo "Usage: deploy/freshrss/deploy-freshrss.sh [user@host] (or set COLLECTORS_SSH in deploy/local.env)" >&2; exit 2 ;;
 esac

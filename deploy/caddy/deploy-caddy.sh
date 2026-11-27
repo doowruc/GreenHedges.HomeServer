@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Install or update Caddy on the host: copy its files, build the image, (re)start it and load the Caddyfile.
 # Run on the dev machine:  deploy/caddy/deploy-caddy.sh [user@host]
-# The host defaults to COLLECTORS_SSH (or LIBRECOLLECTOR_SSH) from deploy/local.env (see local.env.example).
+# The host defaults to COLLECTORS_SSH from deploy/local.env (see local.env.example).
 # The host must be prepared first (deploy/caddy/HOST-SETUP.md). You'll be asked for your sudo password on the host.
 set -euo pipefail
 
@@ -10,7 +10,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$HERE/../local.env" ]; then . "$HERE/../local.env"; fi
-HOST="${1:-${COLLECTORS_SSH:-${LIBRECOLLECTOR_SSH:-}}}"
+HOST="${1:-${COLLECTORS_SSH:-}}"
 case "$HOST" in
   ""|-*) echo "Usage: deploy/caddy/deploy-caddy.sh [user@host] (or set COLLECTORS_SSH in deploy/local.env)" >&2; exit 2 ;;
 esac

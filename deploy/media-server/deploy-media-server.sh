@@ -6,7 +6,7 @@
 #             enabled. It doesn't start the job: the first run is by hand (HOST-SETUP.md §7)
 #   all       all three (the default)
 # Run on the dev machine:  deploy/media-server/deploy-media-server.sh [jellyfin|plex|photos|all ...] [user@host]
-# The host defaults to COLLECTORS_SSH (or LIBRECOLLECTOR_SSH) from deploy/local.env (see local.env.example).
+# The host defaults to COLLECTORS_SSH from deploy/local.env (see local.env.example).
 # The host must be prepared first (deploy/media-server/HOST-SETUP.md). You'll be asked for your sudo password on the
 # host.
 set -euo pipefail
@@ -34,7 +34,7 @@ for arg in "$@"; do
   esac
 done
 [ "${#TARGETS[@]}" -gt 0 ] || TARGETS=(jellyfin plex photos)
-HOST="${HOST:-${COLLECTORS_SSH:-${LIBRECOLLECTOR_SSH:-}}}"
+HOST="${HOST:-${COLLECTORS_SSH:-}}"
 [ -n "$HOST" ] || usage
 # One of each, in a fixed order.
 WANT=""

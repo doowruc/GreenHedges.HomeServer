@@ -3,8 +3,8 @@
 #   deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|presents|sure|freshrss>
 # Safe to re-run (updates the script and job, keeps the existing key).
 # Reads, from the environment or deploy/local.env, for the service's prefix P (LIBRECOLLECTOR,
-# WEATHERCOLLECTOR, VEHICLEMANAGER, PAYANDPENSIONS, UTILITIES, PRESENTS, SURE or FRESHRSS): P_USER and P_HOST (else COLLECTORS_USER / COLLECTORS_HOST, else LIBRECOLLECTOR_USER /
-# LIBRECOLLECTOR_HOST), and optionally P_BACKUP_DIR and P_LAUNCHD_LABEL. It saves them in
+# WEATHERCOLLECTOR, VEHICLEMANAGER, PAYANDPENSIONS, UTILITIES, PRESENTS, SURE or FRESHRSS): P_USER and P_HOST (else COLLECTORS_USER /
+# COLLECTORS_HOST), and optionally P_BACKUP_DIR and P_LAUNCHD_LABEL. It saves them in
 # ~/.config/<collector>/backup-pull.env, which the pull script reads.
 set -euo pipefail
 
@@ -27,7 +27,7 @@ case "${1:-}" in
   *) echo "Usage: deploy/mac/install-backup-pull.sh <libre|weather|vehicle-manager|pay-and-pensions|utilities|presents|sure|freshrss>" >&2; exit 2 ;;
 esac
 P="$(echo "$NAME" | tr '[:lower:]' '[:upper:]')"
-setting() { local v="${P}_$1" c="COLLECTORS_$1" l="LIBRECOLLECTOR_$1"; echo "${!v:-${!c:-${!l:-}}}"; }
+setting() { local v="${P}_$1" c="COLLECTORS_$1"; echo "${!v:-${!c:-}}"; }
 
 LABEL_VAR="${P}_LAUNCHD_LABEL"; LABEL="${!LABEL_VAR:-local.$NAME.pull-backups}"
 DEST_VAR="${P}_BACKUP_DIR";     DEST="${!DEST_VAR:-$HOME/Backups/$TITLE}"
