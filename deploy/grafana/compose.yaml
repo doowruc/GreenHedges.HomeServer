@@ -12,7 +12,7 @@ name: grafana
 services:
   grafana:
     # Pinned. grafana/grafana is the open-source edition (grafana/grafana-oss is no longer updated).
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.2
     restart: unless-stopped
     network_mode: host
     user: "472"                          # grafana in the image; owns /var/lib/grafana

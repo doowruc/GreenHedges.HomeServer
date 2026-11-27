@@ -28,7 +28,7 @@ jobs:
       # For the web apps' database and page tests, which each create their own throwaway database on it.
       # Same image as compose.yaml.
       sqlserver:
-        image: mcr.microsoft.com/mssql/server:2025-CU10-ubuntu-24.04
+        image: mcr.microsoft.com/mssql/server:2025-CU11-ubuntu-24.04
         env:
           ACCEPT_EULA: "Y"
           MSSQL_PID: Developer

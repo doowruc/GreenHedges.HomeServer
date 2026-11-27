@@ -9,7 +9,7 @@ name: nightscout
 
 services:
   mongo:
-    # Version used by Nightscout 15.0.8's own example compose. Newer MongoDB versions aren't confirmed
+    # Version used by Nightscout 15.0.9's own example compose (as in 15.0.8). Newer MongoDB versions aren't confirmed
     # for Nightscout yet (cgm-remote-monitor#8305). 5.0 is past end of life, which is acceptable only
     # because Mongo is never reachable from outside Docker (internal network, no published port).
     image: mongo:5.0.32
@@ -26,7 +26,7 @@ services:
         max-file: "3"
 
   nightscout:
-    image: nightscout/cgm-remote-monitor:15.0.8
+    image: nightscout/cgm-remote-monitor:15.0.9
     restart: unless-stopped
     depends_on:
       - mongo

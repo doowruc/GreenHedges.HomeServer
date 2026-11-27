@@ -428,7 +428,7 @@ sudo cat /etc/nightscout/nightscout.env
 deploy/libre/nightscout/deploy-nightscout.sh <your-user>@librecollector.lan
 ```
 
-It should end with `Nightscout is up:` and a JSON status that includes `"version":"15.0.8"`. Re-run the same script after changing `compose.yaml`, e.g. to upgrade an image tag.
+It should end with `Nightscout is up:` and a JSON status that includes `"version":"15.0.9"`. Re-run the same script after changing `compose.yaml`, e.g. to upgrade an image tag.
 
 ### HTTPS over the tailnet
 

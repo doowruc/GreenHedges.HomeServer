@@ -14,7 +14,7 @@ services:
     # Pinned to a release (image tags have no "v"). Upgrading is an edit here and a deploy: releases at
     # https://github.com/FreshRSS/FreshRSS/releases, and read their notes first. The Debian image, not -alpine: the
     # CLI commands in HOST-SETUP.md and backup.sh run as its www-data user.
-    image: freshrss/freshrss:1.30.4
+    image: freshrss/freshrss:1.31.0
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true

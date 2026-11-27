@@ -25,9 +25,9 @@ x-sure-env: &sure-env
   # ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY, ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT.
 
 x-sure-app: &sure-app
-  # Pinned to a release (image tags have no "v": release v0.7.6-hotfix.1 is 0.7.6-hotfix.1). Upgrading is an edit here and
+  # Pinned to a release (image tags have no "v": release v0.7.6-hotfix.2 is 0.7.6-hotfix.2). Upgrading is an edit here and
   # a deploy: releases at https://github.com/we-promise/sure/releases, and read their notes first.
-  image: ghcr.io/we-promise/sure:0.7.6-hotfix.1
+  image: ghcr.io/we-promise/sure:0.7.6-hotfix.2
   restart: unless-stopped
   security_opt:
     - no-new-privileges:true
