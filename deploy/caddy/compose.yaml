@@ -13,7 +13,7 @@ name: caddy
 services:
   caddy:
     build: .
-    image: local/caddy-cloudflare:2.11.7
+    image: local/caddy-cloudflare:2.11.9
     restart: unless-stopped
     network_mode: host
     security_opt:

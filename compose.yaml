@@ -6,7 +6,7 @@ name: greenhedges-homeserver
 services:
   sqlserver:
     # Pinned: update deliberately, and keep in step with the server's version.
-    image: mcr.microsoft.com/mssql/server:2025-CU10-ubuntu-24.04
+    image: mcr.microsoft.com/mssql/server:2025-CU11-ubuntu-24.04
     platform: linux/amd64 # the image is x86 only; Apple Silicon runs it under Rosetta
     environment:
       ACCEPT_EULA: "Y"

@@ -11,7 +11,7 @@ services:
   sqlserver:
     # Pinned, and the same version as the repo's compose.yaml for local development. To update: change both, then
     # re-run deploy-sqlserver.sh (the container restarts on the new image; databases upgrade in place).
-    image: mcr.microsoft.com/mssql/server:2025-CU10-ubuntu-24.04
+    image: mcr.microsoft.com/mssql/server:2025-CU11-ubuntu-24.04
     restart: unless-stopped
     env_file:
       - /etc/sqlserver/sqlserver.env   # MSSQL_SA_PASSWORD only

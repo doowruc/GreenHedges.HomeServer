@@ -29,7 +29,7 @@ services:
   alloy:
     <<: *defaults
     # Pinned, as are the others: update deliberately (HOST-SETUP.md, "Updating").
-    image: grafana/alloy:v1.21.3
+    image: grafana/alloy:v1.22.0
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
@@ -48,7 +48,7 @@ services:
 
   loki:
     <<: *defaults
-    image: grafana/loki:3.7.9
+    image: grafana/loki:3.7.10
     command: ["-config.file=/etc/loki/loki.yaml"]
     ports:
       - "127.0.0.1:3100:3100"            # Grafana's Loki data source
@@ -70,7 +70,7 @@ services:
 
   prometheus:
     <<: *defaults
-    image: prom/prometheus:v3.15.1
+    image: prom/prometheus:v3.16.0
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
