@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Off-site copy of the home server's photos: a private, versioned S3 bucket that an rclone (crypt)
+  sync on the host keeps in step with the photo folders, stored in Glacier Deep Archive. Deleted or
+  overwritten photos stay as older versions for a set number of days, and the sync's IAM user can
+  never delete versions or change the bucket's rules, so a stolen key can only hide files for that long.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    arch: host photo folders -> rclone crypt (contents and names) -> s3 sync, objects stored DEEP_ARCHIVE -> versioning keeps deleted/overwritten copies for NoncurrentDays
+    must:
+      - the sync user may list, read (HEAD), add and delete current objects only; never delete versions or change bucket settings
+      - access keys are created by hand after deploy straight into the password manager; never in this template or its outputs
+      - separate from the greenhedges-offsite stack, whose users may only ever PutObject
+    ref:
+      - at: docs/photos-offsite/PLAN.md
+        has: why rclone and Deep Archive, the job, restore
+      - at: deploy/aws/README.md
+        has: deploy and access key steps
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Globally unique name for the photos' off-site bucket.
+    AllowedPattern: "^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+  NoncurrentDays:
+    Type: Number
+    Default: 90
+    MinValue: 30
+    Description: Days a deleted or overwritten photo is kept (as an older version) before it is gone for good.
+
+Resources:
+  PhotosBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: >-
+          one object per photo (rclone crypt), uploaded straight to Deep Archive by the sync (about
+          $0.002/GB a month); versioning plus NoncurrentVersionExpiration replaces CloudBerry's
+          "delete after 30 days" and can't be shortened from the host; the transition rule only
+          catches anything uploaded without the storage class
+        must:
+          - never public
+          - versioning stays Enabled (it is what makes deletes recoverable)
+          - current objects never expire; only non-current versions do
+        mutable: change-with-constraints
+        mutability:
+          BucketName: must-never-change
+    Properties:
+      BucketName: !Ref BucketName
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: KeepDeletedAndOverwritten
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: !Ref NoncurrentDays
+            ExpiredObjectDeleteMarker: true
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: DeepArchive
+            Status: Enabled
+            Transitions:
+              - StorageClass: DEEP_ARCHIVE
+                TransitionInDays: 0
+
+  PhotosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: refuse anything not over TLS
+    Properties:
+      Bucket: !Ref PhotosBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt PhotosBucket.Arn
+              - !Sub "${PhotosBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  SyncUser:
+    Type: AWS::IAM::User
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: >-
+          the host's rclone key (/etc/photos-offsite/rclone.conf); a sync needs list, HEAD, put and
+          delete; on a versioned bucket DeleteObject only adds a delete marker, so the older version
+          survives for NoncurrentDays
+        must:
+          - no s3:DeleteObjectVersion, no bucket configuration changes (explicit deny as well)
+          - no s3:RestoreObject (restores are done by an administrator)
+    Properties:
+      UserName: !Sub "${AWS::StackName}-sync"
+      Policies:
+        - PolicyName: SyncPhotosOnly
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListBucket
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !GetAtt PhotosBucket.Arn
+              - Sid: SyncObjects
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:AbortMultipartUpload
+                  - s3:ListMultipartUploadParts
+                Resource: !Sub "${PhotosBucket.Arn}/*"
+              - Sid: NeverRemoveVersionsOrChangeTheBucket
+                Effect: Deny
+                Action:
+                  - s3:DeleteObjectVersion
+                  - s3:DeleteBucket
+                  - s3:DeleteBucketPolicy
+                  - s3:PutBucketPolicy
+                  - s3:PutBucketVersioning
+                  - s3:PutLifecycleConfiguration
+                  - s3:PutEncryptionConfiguration
+                  - s3:PutBucketPublicAccessBlock
+                  - s3:PutBucketOwnershipControls
+                  - s3:PutBucketObjectLockConfiguration
+                  - s3:PutObjectRetention
+                  - s3:PutObjectLegalHold
+                  - s3:BypassGovernanceRetention
+                Resource:
+                  - !GetAtt PhotosBucket.Arn
+                  - !Sub "${PhotosBucket.Arn}/*"
+
+Outputs:
+  BucketName:
+    Description: The bucket for rclone's S3 remote.
+    Value: !Ref PhotosBucket
+  SyncUser:
+    Description: IAM user to create the host's access key for.
+    Value: !Ref SyncUser

@@ -60,3 +60,42 @@ Then the log shows `Off-site backup to s3://<bucket>/librecollector` and `Off-si
 ## Checks
 
 CI lints the template with `cfn-lint` on every pull request.
+
+# Photos' off-site bucket
+
+[`photos-offsite.yaml`](photos-offsite.yaml) is a stack of its own for the photos' off-site copy (plan:
+[docs/photos-offsite/PLAN.md](../../docs/photos-offsite/PLAN.md)). It isn't a prefix in the bucket above: an rclone
+sync has to list and delete, and the users above may only ever add files.
+
+| Resource | Settings |
+|---|---|
+| Bucket | Private (all public access blocked, bucket-owner-enforced), SSE-S3 encryption, TLS-only bucket policy, **versioning**. The sync uploads straight to **Glacier Deep Archive** (a lifecycle rule moves anything that arrives in another class). A deleted or overwritten photo stays as an older version for **`NoncurrentDays`** (default 90), then goes; current photos never expire. Kept if the stack is deleted |
+| `<stack>-sync` | May list the bucket and read (`HEAD`), add and delete its current objects. **Can't** delete versions, restore from Deep Archive or change any bucket setting (an explicit deny as well), so a stolen key can hide photos for `NoncurrentDays` at most |
+
+## Deploy
+
+As an administrator (`aws login`), with a globally unique bucket name:
+
+```bash
+aws cloudformation deploy --region eu-west-2 --stack-name greenhedges-photos-offsite --template-file deploy/aws/photos-offsite.yaml --parameter-overrides BucketName=<bucket> --capabilities CAPABILITY_NAMED_IAM
+aws cloudformation update-termination-protection --region eu-west-2 --stack-name greenhedges-photos-offsite --enable-termination-protection
+```
+
+The IAM user is `greenhedges-photos-offsite-sync`.
+
+## Access key
+
+Created by hand, straight into the password manager, as for the users above ("Application running outside AWS" in the
+console, or):
+
+```bash
+aws iam create-access-key --user-name greenhedges-photos-offsite-sync
+```
+
+It goes in rclone's configuration on the host (`/etc/photos-offsite/rclone.conf`), set up by the photo job's host
+setup.
+
+## Restores
+
+Restoring from Deep Archive and reading older versions need an administrator (the sync user can do neither); the
+steps are in the photo job's host setup.
