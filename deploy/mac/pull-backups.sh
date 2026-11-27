@@ -9,17 +9,18 @@ set -euo pipefail
 {
 
 # The service comes from this script's installed name (<service>-pull-backups), and the settings from
-# the file the installer writes. Jobs installed before the scripts were shared set LIBRECOLLECTOR_* instead.
+# the file the installer writes.
 NAME="$(basename "$0")"; NAME="${NAME%-pull-backups}"
-case "$NAME" in librecollector|weathercollector|vehiclemanager|payandpensions|utilities|presents|sure|freshrss) ;; *) NAME=librecollector ;; esac
+case "$NAME" in librecollector|weathercollector|vehiclemanager|payandpensions|utilities|presents|sure|freshrss) ;;
+  *) echo "Run this as <service>-pull-backups, as deploy/mac/install-backup-pull.sh installs it" >&2; exit 2 ;; esac
 CONFIG="$HOME/.config/$NAME/backup-pull.env"
 if [ -f "$CONFIG" ]; then . "$CONFIG"; fi
-HOST="${BACKUP_HOST:-${LIBRECOLLECTOR_HOST:-}}"
-REMOTE_USER="${BACKUP_USER:-${LIBRECOLLECTOR_USER:-}}"
-[ -n "$HOST" ] && [ -n "$REMOTE_USER" ] || {
+HOST="${BACKUP_HOST:-}"
+REMOTE_USER="${BACKUP_USER:-}"
+DEST="${BACKUP_DIR:-}"
+[ -n "$HOST" ] && [ -n "$REMOTE_USER" ] && [ -n "$DEST" ] || {
   case "$NAME" in vehiclemanager) ARG=vehicle-manager ;; payandpensions) ARG=pay-and-pensions ;; utilities) ARG=utilities ;; presents) ARG=presents ;; sure) ARG=sure ;; freshrss) ARG=freshrss ;; *) ARG="${NAME%collector}" ;; esac
   echo "No settings for $NAME in $CONFIG: run deploy/mac/install-backup-pull.sh $ARG" >&2; exit 2; }
-DEST="${BACKUP_DIR:-${LIBRECOLLECTOR_BACKUP_DIR:-$HOME/Backups/LibreCollector}}"
 KEY="$HOME/.ssh/${NAME}_backup"
 KEEP=30                                                  # the host keeps 7; the Mac keeps a month
 PING_URL_FILE="$HOME/.config/$NAME/backup-ping-url"
