@@ -38,7 +38,7 @@ Libre sensor ──► LibreLink app (phone) ──► Abbott LibreView (unchang
 |---|---|---|
 | A FreeStyle Libre sensor with the **LibreLink** app and a **LibreView** account | Yes | Developed and tested with a Libre 2 Plus in the UK. Other sensors that share via LibreLinkUp should work but are untested. |
 | A **LibreLinkUp follower account**, used only by this service | Yes | Free; set up in step 1 below. |
-| An **always-on Linux machine** | Yes | Tested on Ubuntu Server 26.04 on an old x86-64 laptop. A Raspberry Pi 5 or mini PC also suits. The collector uses about 40 MB of RAM. MongoDB (for Nightscout) needs a CPU with AVX (x86) or ARMv8.2 (e.g. Pi 5, not Pi 4). |
+| An **always-on Linux machine** | Yes | Runs on Ubuntu Server 26.04 on a UGREEN DXP2800 GT (an x86-64 NAS); tested on an old x86-64 laptop before that. A Raspberry Pi 5 or mini PC also suits. The collector uses about 40 MB of RAM. MongoDB (for Nightscout) needs a CPU with AVX (x86) or ARMv8.2 (e.g. Pi 5, not Pi 4). |
 | A Mac or Linux machine with the **.NET 10 SDK**, `ssh` and `rsync` | Yes | To build and deploy. The host runs them on Ubuntu's .NET runtime (`aspnetcore-runtime-10.0`). |
 | A [Resend](https://resend.com) account with a verified sending domain | Recommended | Email alerts. Without it, alerts are only logged. |
 | A [healthchecks.io](https://healthchecks.io) account | Recommended | Tells you when the host itself goes silent. Free plan is plenty. |
@@ -72,7 +72,7 @@ Within a few seconds you should see `Logged in to LibreLinkUp`, a `Graph backfil
 
 ### 3. Prepare the host
 
-Follow [deploy/libre/HOST-SETUP.md](../../deploy/libre/HOST-SETUP.md) sections 0–8: name and fixed IP, updates, SSH keys, firewall, unattended upgrades, Tailscale, and the `librecollector` service account. Laptop and disk-encryption specifics are covered there too.
+Follow [deploy/libre/HOST-SETUP.md](../../deploy/libre/HOST-SETUP.md) sections 0–8: name and fixed IP, updates, SSH keys, firewall, unattended upgrades, Tailscale, and the `librecollector` service account. Disk encryption (with TPM unlock) and laptop specifics are covered there too.
 
 ### 4. Configure secrets on the host
 
