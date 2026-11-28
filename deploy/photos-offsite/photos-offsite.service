@@ -16,8 +16,9 @@ Group=photos-offsite
 ExecStart=/opt/photos-offsite/photos-offsite.sh
 EnvironmentFile=/etc/photos-offsite/photos-offsite.env
 # CloudBerry's limit: a run that's still going after 15 hours is stopped (and fails, so healthchecks.io says so). The
-# first upload, about 240 GB, takes a couple of hours.
-RuntimeMaxSec=15h
+# first upload, about 240 GB, takes a couple of hours. For a oneshot service this is TimeoutStartSec (RuntimeMaxSec is
+# ignored), and it's otherwise unlimited.
+TimeoutStartSec=15h
 # Low priority: the other services and the TVs come first. rclone itself needs well under this.
 Nice=15
 IOSchedulingClass=idle

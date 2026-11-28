@@ -157,7 +157,9 @@ command -v jq >/dev/null || fail "jq isn't installed"
 mounted() {
   ls "$1" >/dev/null 2>&1 || return 1
   [ "$CHECK_MOUNTS" = 1 ] || return 0
-  [ "$(findmnt -n -o TARGET --target "$1")" = "$1" ] && [ "$(findmnt -n -o FSTYPE --target "$1")" != autofs ]
+  # Something real mounted on that very folder (not a parent): with an automount, findmnt lists two mounts there,
+  # the autofs placeholder and, once a look has triggered it, the share on top.
+  findmnt -n -o FSTYPE --mountpoint "$1" | grep -qvx autofs
 }
 UPSTREAMS=""
 NAMES=()

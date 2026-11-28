@@ -1,5 +1,5 @@
 # /etc/photos-offsite/rclone.conf on the host (root:photos-offsite, 0640). Never commit the real values. See
-# HOST-SETUP.md §4. Passwords here are rclone-obscured (`rclone obscure -`), which hides them from a glance, not from
+# HOST-SETUP.md §4. Passwords here are rclone-obscured (piped into `rclone obscure -`, HOST-SETUP.md §4), which hides them from a glance, not from
 # anyone who can read the file: the real ones are in your password manager.
 
 # The bucket (deploy/aws/photos-offsite.yaml), as its sync user <stack>-sync.
