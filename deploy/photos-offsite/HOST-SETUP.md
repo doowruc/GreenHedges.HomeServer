@@ -32,10 +32,11 @@ that isn't a mount, or is empty).
 
 ## 2. Packages (on the server)
 
-Ubuntu's rclone (1.60, patched through ESM by unattended upgrades) and the CIFS tools (likely there already):
+Ubuntu's rclone (1.60, patched through ESM by unattended upgrades), the CIFS tools and jq (for the email report;
+both likely there already):
 
 ```bash
-sudo apt install rclone cifs-utils
+sudo apt install rclone cifs-utils jq
 ```
 
 ## 3. The shares
@@ -110,10 +111,19 @@ sudo install -m 0640 -g photos-offsite /dev/null /etc/photos-offsite/filters.txt
 
 A copy of the real file goes in the private notes too; change both together.
 
-## 6. healthchecks.io and the settings file
+## 6. healthchecks.io, the email report and the settings file
 
-A healthchecks.io check, "Photos off-site", period **1 day**, grace **15 hours** (CloudBerry's limit). Then the settings
-file, from [`photos-offsite.env.example`](photos-offsite.env.example), with its ping URL:
+A healthchecks.io check, "Photos off-site", period **1 day**, grace **15 hours** (CloudBerry's limit): it emails if a
+night fails or doesn't run at all.
+
+The **email report** after every run, like CloudBerry's: whether it worked, rclone's summary, and the photos added,
+updated and deleted (the first 200 of each in the email, the full list attached when there are more). It goes through
+Resend with the same API key and sender address as the services' alerts; see them with
+`sudo grep -E '^Alerts__(ResendApiKey|From)=' /etc/vehiclemanager/env` and type them into the settings file (the
+sender's name becomes "Photos off-site"). The report names the photos and folders, as CloudBerry's did.
+
+The settings file, from [`photos-offsite.env.example`](photos-offsite.env.example), with the ping URL and the report's
+settings:
 
 ```bash
 sudo install -m 0640 -g photos-offsite /dev/null /etc/photos-offsite/photos-offsite.env && sudoedit /etc/photos-offsite/photos-offsite.env
@@ -143,12 +153,16 @@ sudo systemctl start --no-block photos-offsite.service && journalctl -u photos-o
 ```
 
 Ctrl+C stops following, not the job. When it's done: `systemctl status photos-offsite` (`status=0/SUCCESS`), the
-healthchecks.io check green with the summary in its last ping, and a second dry run wants to copy nothing. CloudBerry
+report in your inbox (about 64,000 added, in the attached list), the healthchecks.io check green with the summary in its
+last ping, and a second dry run wants to copy nothing. CloudBerry
 keeps running alongside until the restore test (§9) has passed and about four weeks have been green.
 
 ## 8. Day to day
 
-- **The last run:** `journalctl -u photos-offsite -n 30`, or healthchecks.io's log (each ping carries the summary).
+- **The last run:** the morning's email, `journalctl -u photos-offsite -n 30`, or healthchecks.io's log (each ping
+  carries the summary).
+- **No email but the check is green:** the report couldn't be sent (`journalctl -u photos-offsite | grep 'Report email'`
+  shows Resend's answer); the copy itself worked. Fewer emails: `REPORT_WHEN=changes` in the settings file.
 - **A warning about folders not in the filters:** a new top-level folder in the private share. Include it or exclude
   it in `/etc/photos-offsite/filters.txt` (and the private notes); the run carries on either way.
 - **"Max delete count" or rclone exit 7:** the run would have deleted more than 10% of the copies, so it stopped

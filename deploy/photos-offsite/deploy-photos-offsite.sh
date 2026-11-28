@@ -46,6 +46,7 @@ need() { sudo test "$@" || { echo "Missing: test $* (see deploy/photos-offsite/H
 
 id photos-offsite >/dev/null 2>&1 || { echo "No photos-offsite user (HOST-SETUP.md §1)"; exit 1; }
 command -v rclone >/dev/null || { echo "Missing rclone (HOST-SETUP.md §2)"; exit 1; }
+command -v jq >/dev/null || { echo "Missing jq (HOST-SETUP.md §2)"; exit 1; }
 need -f /etc/photos-offsite/photos-offsite.env
 need -f /etc/photos-offsite/rclone.conf
 need -f /etc/photos-offsite/filters.txt

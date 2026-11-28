@@ -18,10 +18,15 @@
 # by photos-offsite.service (photos-offsite.timer). Settings in /etc/photos-offsite/photos-offsite.env
 # (photos-offsite.env.example); rclone's remotes in /etc/photos-offsite/rclone.conf (rclone.conf.example).
 #
-#   photos-offsite.sh            sync, then ping healthchecks.io with rclone's summary
+#   photos-offsite.sh            sync, then email the report and ping healthchecks.io with rclone's summary
 #   photos-offsite.sh --full     the same, comparing sizes (the monthly run)
-#   photos-offsite.sh --dry-run  what a sync would upload and delete (nothing changed, no ping)
+#   photos-offsite.sh --dry-run  what a sync would upload and delete (nothing changed, no email or ping)
 #   photos-offsite.sh --check    the folders the filters don't mention, and exit (nothing read from the bucket)
+#
+# The report, as CloudBerry sent: an email after every run (Resend, like the services' alerts), saying whether it worked
+# and listing the photos added, updated and deleted (the first REPORT_LIST_MAX of each in the email, every one in an
+# attached text file when there are more). REPORT_WHEN=changes sends it only when something changed, a folder isn't in
+# the filters, or the run failed; never, not at all. Without REPORT_RESEND_API_KEY and REPORT_TO, no email.
 #
 # PHOTOS_OFFSITE_CHECK_MOUNTS=0 skips the check that each source is a mount, e.g. to try it with plain folders.
 set -euo pipefail
@@ -45,6 +50,10 @@ TRANSFERS="${PHOTOS_OFFSITE_TRANSFERS:-4}"
 # the limit and the run fails; what it did delete is still in the bucket as older versions.
 MAX_DELETE_PERCENT="${PHOTOS_OFFSITE_MAX_DELETE_PERCENT:-10}"
 MAX_DELETE_ANYWAY=20
+REPORT_WHEN="${REPORT_WHEN:-always}"
+REPORT_LIST_MAX="${REPORT_LIST_MAX:-200}"
+# Only for trying the report against something other than Resend.
+REPORT_RESEND_URL="${REPORT_RESEND_URL:-https://api.resend.com/emails}"
 
 MODE=nightly
 DRY_RUN=0
@@ -56,6 +65,14 @@ case "${1:-}" in
   *) echo "Usage: photos-offsite.sh [--full|--dry-run|--check]" >&2; exit 2 ;;
 esac
 [ "$#" -le 1 ] || { echo "Usage: photos-offsite.sh [--full|--dry-run|--check]" >&2; exit 2; }
+case "$REPORT_WHEN" in always|changes|never) ;; *) echo "REPORT_WHEN must be always, changes or never" >&2; exit 2 ;; esac
+
+STARTED="$(date '+%a %-d %b %Y %H:%M')"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/photos-offsite.XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+: >"$WORK/sync.log"
+WARNING=""
+COPIES="?"
 
 # healthchecks.io: /start, then success or /fail with the reason, so a missed or failed night emails. Not for dry runs
 # and checks.
@@ -63,9 +80,65 @@ ping_heartbeat() {
   [ "$DRY_RUN" = 0 ] && [ "$MODE" != check ] && [ -n "${HEARTBEAT_PING_URL:-}" ] || return 0
   curl -fsS -m 10 --retry 3 -o /dev/null --data-raw "$2" "$HEARTBEAT_PING_URL$1" || echo "Heartbeat ping failed" >&2
 }
+
+# The photos rclone added, updated and deleted, from its log (one path a line, sorted), and their counts.
+list_changes() {
+  local what
+  for what in added:'Copied \(new\)' updated:'Copied \(replaced existing\)' deleted:'Deleted'; do
+    sed -n -E "s/^[0-9\/]+ [0-9:]+ INFO +: (.*): ${what#*:}\$/\1/p" "$WORK/sync.log" | LC_ALL=C sort >"$WORK/${what%%:*}"
+  done
+  ADDED=$(($(wc -l <"$WORK/added"))); UPDATED=$(($(wc -l <"$WORK/updated"))); DELETED=$(($(wc -l <"$WORK/deleted")))
+}
+
+# The email report: send_report <succeeded|FAILED> <summary>. Never fails the run: a report that can't be sent is
+# logged (and healthchecks.io still has the summary).
+send_report() {
+  [ "$DRY_RUN" = 0 ] && [ "$MODE" != check ] && [ "$REPORT_WHEN" != never ] || return 0
+  [ -n "${REPORT_RESEND_API_KEY:-}" ] && [ -n "${REPORT_TO:-}" ] && [ -n "${REPORT_FROM:-}" ] || return 0
+  list_changes
+  if [ "$1" = succeeded ] && [ "$REPORT_WHEN" = changes ] && [ $((ADDED + UPDATED + DELETED)) = 0 ] && [ -z "$WARNING" ]
+  then return 0; fi
+  local section name count more=0
+  : >"$WORK/all.txt"
+  {
+    echo "Photos off-site, $MODE run on $(hostname): $1."
+    echo "Started $STARTED, finished $(date '+%H:%M')."
+    echo
+    echo "$2"
+    for section in Added:added Updated:updated Deleted:deleted; do
+      name="${section%%:*}"; count=$(($(wc -l <"$WORK/${section#*:}")))
+      echo
+      echo "$name ($count):"
+      [ "$count" -gt 0 ] || echo "  none"
+      head -n "$REPORT_LIST_MAX" "$WORK/${section#*:}" | sed 's/^/  /'
+      if [ "$count" -gt "$REPORT_LIST_MAX" ]; then
+        echo "  ... and $((count - REPORT_LIST_MAX)) more (all in the attached list)"
+        more=1
+      fi
+      { echo "$name ($count):"; cat "$WORK/${section#*:}"; echo; } >>"$WORK/all.txt"
+    done
+  } >"$WORK/report.txt"
+  [ "$more" = 1 ] || : >"$WORK/all.txt"
+  local subject="Photos off-site: $1"
+  [ "$1" != succeeded ] || subject="$subject ($ADDED added, $UPDATED updated, $DELETED deleted)"
+  jq -n --arg from "$REPORT_FROM" --arg to "$REPORT_TO" --arg subject "$subject" \
+    --arg file "photos-offsite-$(date +%Y%m%d-%H%M).txt" --rawfile text "$WORK/report.txt" --rawfile all "$WORK/all.txt" \
+    '{from: $from, to: ($to | split(",") | map(gsub("^ +| +$"; ""))), subject: $subject, text: $text}
+     + (if ($all | length) > 0 then {attachments: [{filename: $file, content: ($all | @base64)}]} else {} end)' \
+    >"$WORK/email.json"
+  # The key in a header file, not on curl's command line (where ps would show it).
+  printf 'Authorization: Bearer %s\n' "$REPORT_RESEND_API_KEY" >"$WORK/auth"
+  local code
+  code="$(curl -sS -m 60 --retry 3 -o "$WORK/resend.out" -w '%{http_code}' -H @"$WORK/auth" \
+    -H 'Content-Type: application/json' -A photos-offsite/1.0 --data-binary @"$WORK/email.json" \
+    "$REPORT_RESEND_URL")" || code="curl failed"
+  case "$code" in 2??) echo "Report emailed to $REPORT_TO" ;; *) echo "Report email failed: $code $(cat "$WORK/resend.out" 2>/dev/null)" >&2 ;; esac
+}
+
 fail() {
   trap - ERR
   echo "Photos off-site failed: $1" >&2
+  send_report FAILED "$1" || true
   ping_heartbeat /fail "$1"
   exit 1
 }
@@ -74,6 +147,7 @@ trap 'fail "command at line $LINENO exited with $?"' ERR
 ping_heartbeat /start ""
 
 command -v rclone >/dev/null || fail "rclone isn't installed"
+command -v jq >/dev/null || fail "jq isn't installed"
 [ -r "$RCLONE_CONF" ] || fail "can't read $RCLONE_CONF"
 [ -r "$FILTERS" ] || fail "can't read $FILTERS"
 [ -n "$SOURCES" ] || fail "PHOTOS_OFFSITE_SOURCES is empty (name=folder pairs)"
@@ -110,7 +184,6 @@ for pair in $SOURCES; do
     grep -qF "/$name/$base/" "$FILTERS" || UNLISTED+=("$name/$base")
   done
 done
-WARNING=""
 if [ "${#UNLISTED[@]}" -gt 0 ]; then
   WARNING="Not in the filters (neither included nor excluded): $(printf '%s, ' "${UNLISTED[@]}")"
   WARNING="${WARNING%, }"
@@ -127,9 +200,6 @@ if [ "$DRY_RUN" = 0 ]; then
   exec 9>"$RUN_DIR/photos-offsite.lock"
   flock -n 9 || fail "another run is still going"
 fi
-
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/photos-offsite.XXXXXX")"
-trap 'rm -rf "$WORK"' EXIT
 
 export RCLONE_CONFIG="$RCLONE_CONF"
 # The sources, joined, as a remote defined here rather than in rclone.conf (it only names local folders).
@@ -173,9 +243,12 @@ rclone sync "${COMMON[@]}" "${COMPARE[@]}" ${EXTRA[@]+"${EXTRA[@]}"} \
 
 # rclone's own summary, from its last stats line, and the counts from its log.
 STATS="$(grep -E 'Transferred:|ETA' "$WORK/sync.log" | tail -1 | sed 's/^.*NOTICE: *//' || true)"
-COPIED="$(grep -cE 'INFO *: .*: (Copied|Multi-thread Copied)' "$WORK/sync.log" || true)"
-DELETED="$(grep -cE 'INFO *: .*: Deleted' "$WORK/sync.log" || true)"
-SUMMARY="$MODE: $COPIED uploaded, $DELETED deleted, $COPIES copies before; $STATS"
+list_changes
+SUMMARY="$MODE: $ADDED added, $UPDATED updated, $DELETED deleted, $COPIES copies before; $STATS"
+if [ "$DRY_RUN" = 1 ]; then
+  # A dry run logs what it would do as "Skipped", without telling new from replaced.
+  SUMMARY="dry run of $MODE: $(grep -c ': Skipped copy as --dry-run' "$WORK/sync.log" || true) to upload, $(grep -c ': Skipped delete as --dry-run' "$WORK/sync.log" || true) to delete, $COPIES copies there"
+fi
 [ -z "$WARNING" ] || SUMMARY="$SUMMARY. $WARNING"
 
 if [ "$RC" != 0 ]; then
@@ -183,4 +256,9 @@ if [ "$RC" != 0 ]; then
   fail "rclone exited $RC (see journalctl -u photos-offsite). $SUMMARY. Last errors: $ERRORS"
 fi
 echo "$SUMMARY"
-[ "$DRY_RUN" = 1 ] && echo "Dry run: nothing changed." || ping_heartbeat "" "$SUMMARY"
+if [ "$DRY_RUN" = 1 ]; then
+  echo "Dry run: nothing changed."
+else
+  send_report succeeded "$SUMMARY" || true
+  ping_heartbeat "" "$SUMMARY"
+fi
