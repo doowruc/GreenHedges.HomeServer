@@ -81,19 +81,23 @@ sudo systemctl daemon-reload && sudo systemctl restart remote-fs.target && sudo 
 Make two long random passwords in your password manager, one item "Photos off-site encryption (rclone crypt)" with
 both: the **password** and the **salt**. **Without them the off-site copy can't be read**, and they can never change.
 
-The file, from [`rclone.conf.example`](rclone.conf.example): create it, then fill it in yourself (bucket, the sync
-user's access key from 1Password, and both passwords, each run through `rclone obscure -` first, which reads it from
-the terminal, so it stays out of the shell's history):
+First the two passwords in rclone's obscured form, one at a time. Ubuntu's rclone 1.60 reads one from stdin only when
+it's piped in (run on its own in a terminal, `rclone obscure -` obscures the `-` itself), so this asks for it without
+echoing it and pipes it in, keeping it out of the shell's history and the process list:
+
+```bash
+read -rsp 'Paste, then Enter: ' P && echo && printf '%s\n' "$P" | rclone obscure - ; unset P
+```
+
+Once for the password, once for the salt; each prints the string for the file. `rclone reveal <string>` prints the
+original back, to check. Clear the terminal afterwards.
+
+The file, from [`rclone.conf.example`](rclone.conf.example): create it, then fill in the bucket, the sync user's access
+key from 1Password and the two obscured strings:
 
 ```bash
 sudo install -m 0640 -g photos-offsite /dev/null /etc/photos-offsite/rclone.conf && sudoedit /etc/photos-offsite/rclone.conf
 ```
-
-```bash
-rclone obscure -
-```
-
-(Paste the password, Enter, Ctrl+D; copy the output into `password =`. The same for the salt into `password2 =`.)
 
 Check rclone can see the bucket (empty at first):
 
