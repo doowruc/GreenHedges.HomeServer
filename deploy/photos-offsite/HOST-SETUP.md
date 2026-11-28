@@ -173,8 +173,9 @@ keeps running alongside until the restore test (§9) has passed and about four w
   deleting there. Check the sources are really mounted (`findmnt -t cifs`) and `filters.txt`. If the photos really
   were deleted, run it once with the limit raised:
   `sudo systemd-run --quiet --wait --pipe --collect -p User=photos-offsite -p EnvironmentFile=/etc/photos-offsite/photos-offsite.env -E PHOTOS_OFFSITE_MAX_DELETE_PERCENT=100 /opt/photos-offsite/photos-offsite.sh`.
-- **`Forbidden` (403) on every upload:** rclone's settings lack `acl = bucket-owner-full-control` (rclone 1.60 otherwise
-  sends `private`), or the stack is older than the sync user's `s3:PutObjectAcl`.
+- **`Forbidden` (403) on every upload:** the stack is older than the sync user's `s3:GetObjectVersion`. The photos do
+  arrive; it's rclone's check of each upload (a HEAD of the new version) that's refused. Update the stack and run it
+  again: it skips what's already there.
 - **The monthly run** (first Sunday) compares sizes instead of dates; it takes no longer.
 - **After a change here:** `deploy/photos-offsite/deploy-photos-offsite.sh` again.
 

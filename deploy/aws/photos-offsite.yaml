@@ -109,12 +109,15 @@ Resources:
         why: >-
           the host's rclone key (/etc/photos-offsite/rclone.conf); a sync needs list, HEAD, put and
           delete; on a versioned bucket DeleteObject only adds a delete marker, so the older version
-          survives for NoncurrentDays; s3:PutObjectAcl only because rclone 1.60 (Ubuntu's) always
-          sends a canned ACL with each upload, which S3 authorises as PutObjectAcl too. ACLs are
-          disabled on the bucket (BucketOwnerEnforced), so it can't grant anyone anything
+          survives for NoncurrentDays; s3:GetObjectVersion because, on a versioned bucket, rclone
+          checks each upload with a HEAD of the version it just wrote (without it every upload lands
+          but is reported Forbidden; the objects are in Deep Archive, so it can't download old ones);
+          s3:PutObjectAcl because rclone 1.60 (Ubuntu's) sends a canned ACL header with each upload.
+          ACLs are disabled on the bucket (BucketOwnerEnforced), so it can't grant anyone anything
         must:
           - no s3:DeleteObjectVersion, no bucket configuration changes (explicit deny as well)
           - no s3:RestoreObject (restores are done by an administrator)
+          - GetObjectVersion is read only; DeleteObjectVersion stays denied
     Properties:
       UserName: !Sub "${AWS::StackName}-sync"
       Policies:
@@ -132,6 +135,7 @@ Resources:
                 Effect: Allow
                 Action:
                   - s3:GetObject
+                  - s3:GetObjectVersion
                   - s3:PutObject
                   - s3:PutObjectAcl
                   - s3:DeleteObject
