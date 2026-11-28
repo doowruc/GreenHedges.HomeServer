@@ -106,6 +106,10 @@ Host networking comes back only with Matter or Bluetooth.
 
 - **Image:** `ghcr.io/home-assistant/home-assistant`, pinned to a release (`image:` in the compose file). Upgrading is
   an edit there and a redeploy, after reading the release notes (breaking changes are listed for each release).
+  **2026.11.3**, still the newest release at 2026-11-28. The first upgrade of the trial is 2026.12.0, due in the first
+  week of December: after the disk-write check (about 2026-12-01), so a restart doesn't skew its figures, and after
+  checking the release's breaking changes for the Hue and TP-Link integrations. It's also the first measure of the
+  monthly upkeep.
 - **No `privileged`**, no devices, `no-new-privileges`. The official image runs HA as root inside the container; with
   no host networking, devices or `privileged` that is contained like the other Docker services. (The linuxserver image
   can run as a non-root user, but the official image is what HA supports.)
