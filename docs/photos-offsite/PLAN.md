@@ -13,7 +13,8 @@ restore-test log are in the private notes (`photos-offsite/NOTES.md`).
    photos share, with a few sub-folders (mostly videos) left out. The list is deliberate: folders not on it stay out.
 2. **Run nightly**, unattended, catching up after a missed night; never slow down working hours.
 3. **Keep a deleted or overwritten photo for a while** before it's gone for good (CloudBerry: 30 days).
-4. **Say when it fails**, and leave a record of each run (CloudBerry: an email report every run).
+4. **Say when it fails**, and **email a report of each run** with what was added, updated and deleted (as CloudBerry
+   does).
 5. **Restore** one folder, or everything, with only what's in 1Password.
 
 ## What it replaces
@@ -88,10 +89,12 @@ script and `HOST-SETUP.md`, in the same shape as the Sure, FreshRSS and photo-jo
   and the device-index folder (SMB doesn't carry the Windows hidden and system flags, so these are by name).
   **Warns** (not fails) when a top-level folder appears in the private share that's in neither list, so a new folder is
   a decision, not an accident.
-- **Reporting:** a healthchecks.io check, "Photos off-site", period 1 day, grace 15 hours. The script pings `/start`,
-  then success or `/fail` with rclone's summary (files and bytes copied, deleted, errors) as the ping body, so each
-  run's report is in healthchecks.io's log; healthchecks.io emails on a failure or a missed run. The full log is in
-  the journal (`journalctl -u photos-offsite`).
+- **Reporting:** an **email report after every run**, as CloudBerry sends: succeeded or failed, rclone's summary, and
+  the photos **added, updated and deleted** (the first 200 of each in the email, the full list attached when there are
+  more), through Resend with the services' alert key (`REPORT_WHEN=changes` or `never` for fewer). Also a
+  healthchecks.io check, "Photos off-site", period 1 day, grace 15 hours: the script pings `/start`, then success or
+  `/fail` with the summary, so healthchecks.io emails if a night fails or never runs. The full log is in the journal
+  (`journalctl -u photos-offsite`).
 
 ### The sources, now and later
 
