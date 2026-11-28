@@ -1,0 +1,37 @@
+# The photos' off-site copy (photos-offsite.sh): an rclone sync of the photo folders into their own S3 bucket, encrypted
+# and in Deep Archive. Started by photos-offsite.timer. Installed by deploy/photos-offsite/deploy-photos-offsite.sh into
+# /etc/systemd/system/. Runs as the photos-offsite user, who can only read the sources (read-only mounts, later
+# datasets) and its own settings in /etc/photos-offsite/ (root:photos-offsite, 0640). Run it now with
+# `sudo systemctl start --no-block photos-offsite.service`; its output is in `journalctl -u photos-offsite`.
+[Unit]
+Description=Photos off-site copy
+# The sources are automounts (later datasets), which the script triggers and checks itself.
+After=network-online.target remote-fs.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=photos-offsite
+Group=photos-offsite
+ExecStart=/opt/photos-offsite/photos-offsite.sh
+EnvironmentFile=/etc/photos-offsite/photos-offsite.env
+# CloudBerry's limit: a run that's still going after 15 hours is stopped (and fails, so healthchecks.io says so). The
+# first upload, about 240 GB, takes a couple of hours.
+RuntimeMaxSec=15h
+# Low priority: the other services and the TVs come first. rclone itself needs well under this.
+Nice=15
+IOSchedulingClass=idle
+MemoryMax=1G
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+# /run/photos-offsite, for the lock; kept after a run, so a run by hand uses the same lock.
+RuntimeDirectory=photos-offsite
+RuntimeDirectoryPreserve=yes
