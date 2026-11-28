@@ -1,0 +1,12 @@
+# Starts photos-offsite.service nightly at 01:00 (CloudBerry's time), before the other services' backups (03:30 to
+# 04:47). Persistent: a night missed while the server was off runs at the next boot. Installed and enabled by
+# deploy/photos-offsite/deploy-photos-offsite.sh.
+[Unit]
+Description=Nightly photos off-site copy
+
+[Timer]
+OnCalendar=*-*-* 01:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

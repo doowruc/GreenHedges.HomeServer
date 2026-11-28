@@ -1,0 +1,27 @@
+# /etc/photos-offsite/rclone.conf on the host (root:photos-offsite, 0640). Never commit the real values. See
+# HOST-SETUP.md §4. Passwords here are rclone-obscured (`rclone obscure -`), which hides them from a glance, not from
+# anyone who can read the file: the real ones are in your password manager.
+
+# The bucket (deploy/aws/photos-offsite.yaml), as its sync user <stack>-sync.
+[photos-s3]
+type = s3
+provider = AWS
+env_auth = false
+access_key_id = AKIA…
+secret_access_key = …
+region = eu-west-2
+location_constraint = eu-west-2
+server_side_encryption = AES256
+storage_class = DEEP_ARCHIVE
+# The bucket exists (the stack made it), and the user may not create one.
+no_check_bucket = true
+
+# The encryption on top: contents and names. Without this password and salt the copy can't be read; keep both in the
+# password manager, and never change them (everything would have to be uploaded again).
+[photos-offsite]
+type = crypt
+remote = photos-s3:<bucket>
+filename_encryption = standard
+directory_name_encryption = true
+password = <rclone obscure of the password>
+password2 = <rclone obscure of the salt>

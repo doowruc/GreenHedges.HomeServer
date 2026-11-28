@@ -51,6 +51,7 @@ The **collectors** keep my own copy of data that otherwise only lives in someone
 | `deploy/mac/` | The Mac's daily backup pull, for any service (`install-backup-pull.sh <libre\|weather\|vehicle-manager\|pay-and-pensions\|utilities\|presents\|sure\|freshrss>`) |
 | `deploy/dxp2800gt/` | The UGREEN DXP2800 GT's fans and LEDs under Ubuntu: UGREEN's driver (built and signed by DKMS, with our patch), `ug-hw` running the fans on UGREEN's curves, deploy script and [host setup](deploy/dxp2800gt/HOST-SETUP.md) |
 | `deploy/aws/` | CloudFormation for the shared off-site backup bucket and its write-only users |
+| `deploy/photos-offsite/` | The photos' off-site copy: a nightly rclone sync (encrypted with rclone crypt) of the photo folders into their own Glacier Deep Archive bucket; script, systemd timer, deploy script and [host setup](deploy/photos-offsite/HOST-SETUP.md) |
 | `deploy/local.env.example` | Personal defaults for the deploy scripts (copy to the git-ignored `deploy/local.env`) |
 
 Building, testing and the pull-request workflow: [CONTRIBUTING.md](CONTRIBUTING.md).

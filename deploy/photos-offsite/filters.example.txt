@@ -1,0 +1,20 @@
+# /etc/photos-offsite/filters.txt on the host (root:photos-offsite, 0640): what goes off-site. The real one names the
+# private folders, so it lives only on the host and in the private notes, never in this repository.
+#
+# rclone filter rules (https://rclone.org/filtering/), read top to bottom, the first match wins. Paths start with a
+# source's name from PHOTOS_OFFSITE_SOURCES. photos-offsite.sh adds, before these, excludes for dot files and folders,
+# Thumbs.db, desktop.ini and @eaDir, and after them "- **", so anything not included here stays out.
+#
+# Excludes inside an included folder come first. In a source not taken whole ("+ /<name>/**"), mention every top-level
+# folder, included or excluded: one that isn't mentioned is reported as a warning in each run's summary
+# (photos-offsite.sh --check lists them).
+
+# A share taken whole.
++ /photos/**
+
+# A share taken folder by folder.
+- /private/Holidays/Videos/**
++ /private/Holidays/**
++ /private/Scans/**
+- /private/Downloads/**
+- /private/Memes/**
