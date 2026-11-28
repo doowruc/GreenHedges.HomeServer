@@ -13,6 +13,9 @@ region = eu-west-2
 location_constraint = eu-west-2
 server_side_encryption = AES256
 storage_class = DEEP_ARCHIVE
+# rclone 1.60 always sends an ACL with each upload (private unless set). The bucket has ACLs disabled, where S3
+# accepts only this one (and the sync user may send it).
+acl = bucket-owner-full-control
 # The bucket exists (the stack made it), and the user may not create one.
 no_check_bucket = true
 

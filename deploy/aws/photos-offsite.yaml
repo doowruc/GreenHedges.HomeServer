@@ -109,7 +109,9 @@ Resources:
         why: >-
           the host's rclone key (/etc/photos-offsite/rclone.conf); a sync needs list, HEAD, put and
           delete; on a versioned bucket DeleteObject only adds a delete marker, so the older version
-          survives for NoncurrentDays
+          survives for NoncurrentDays; s3:PutObjectAcl only because rclone 1.60 (Ubuntu's) always
+          sends a canned ACL with each upload, which S3 authorises as PutObjectAcl too. ACLs are
+          disabled on the bucket (BucketOwnerEnforced), so it can't grant anyone anything
         must:
           - no s3:DeleteObjectVersion, no bucket configuration changes (explicit deny as well)
           - no s3:RestoreObject (restores are done by an administrator)
@@ -131,6 +133,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
+                  - s3:PutObjectAcl
                   - s3:DeleteObject
                   - s3:AbortMultipartUpload
                   - s3:ListMultipartUploadParts
