@@ -70,7 +70,7 @@ sync has to list and delete, and the users above may only ever add files.
 | Resource | Settings |
 |---|---|
 | Bucket | Private (all public access blocked, bucket-owner-enforced), SSE-S3 encryption, TLS-only bucket policy, **versioning**. The sync uploads straight to **Glacier Deep Archive** (a lifecycle rule moves anything that arrives in another class). A deleted or overwritten photo stays as an older version for **`NoncurrentDays`** (default 90), then goes; current photos never expire. Kept if the stack is deleted |
-| `<stack>-sync` | May list the bucket and read (`HEAD`), add and delete its current objects. **Can't** delete versions, restore from Deep Archive or change any bucket setting (an explicit deny as well), so a stolen key can hide photos for `NoncurrentDays` at most |
+| `<stack>-sync` | May list the bucket and read (`HEAD`), add and delete its current objects (and send the one ACL S3 accepts with ACLs disabled, which Ubuntu's rclone 1.60 sends with every upload). **Can't** delete versions, restore from Deep Archive or change any bucket setting (an explicit deny as well), so a stolen key can hide photos for `NoncurrentDays` at most |
 
 ## Deploy
 
